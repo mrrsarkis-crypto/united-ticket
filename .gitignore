@@ -1,0 +1,15 @@
+# Dependencies / build
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+.tmp-fnbuild/
+
+# OS junk
+Thumbs.db
+.DS_Store
+
+# Local env / secrets — never commit these
+.env
+.env.*
+!.env.example

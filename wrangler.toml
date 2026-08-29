@@ -1,0 +1,14 @@
+# Cloudflare Pages deployment via wrangler.
+# The static site lives in /public and Functions live in /functions.
+#
+# NOTE: Pages bindings/secrets are dashboard-managed to keep the project in
+# non-authoritative config mode (so dashboard edits aren't wiped).
+# Required bindings (Workers & Pages > ticket-fighter > Settings > Bindings):
+#   KV Namespace  "CASES" -> namespace ticket-fighter-cases
+# Environment Variables / Secrets:
+#   STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999, STRIPE_WEBHOOK_SECRET,
+#   STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL, (optional) SEND_EMAIL_URL, SEND_EMAIL_AUTH
+name = "ticket-fighter"
+account_id = "dc59db902477a26c1031d860bb1b0954"
+
+compatibility_date = "2026-08-29"
