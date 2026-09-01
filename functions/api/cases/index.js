@@ -20,9 +20,10 @@ export async function onRequestPost(context) {
   if (!name || !email || !court) return json({ error: 'name, email, and court are required' }, 400);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'A valid email is required' }, 400);
 
+  const debug = (env.DEBUG_MODE || '0') === '1';
   const priceKey = priceFor(service);
   if (!priceKey) return json({ error: 'Unknown service type' }, 400);
-  if (!env[priceKey]) return json({ error: 'Payment for this service is not configured yet. Contact the site owner.' }, 500);
+  if (!env[priceKey]) return json({ error: 'Payment for this service is not configured yet. Contact the site owner.' + (debug ? ' Missing env ' + priceKey : '') }, 500);
 
   const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
   const notes = JSON.stringify({
@@ -72,7 +73,10 @@ export async function onRequestPost(context) {
       }),
     });
     const session = await stripeRes.json();
-    if (!stripeRes.ok) throw new Error('Stripe error');
+    if (!stripeRes.ok) {
+      if (debug) return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session), hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+      throw new Error('Stripe error');
+    }
     sessionUrl = session.url;
   } catch (e) {
     if (stored && env.CASES) {
@@ -80,7 +84,7 @@ export async function onRequestPost(context) {
         { ...JSON.parse(notes), tracking_code: trackingCode, name, email, court, citation, service, status: 'payment_error', created_at: new Date().toISOString() }
       ));
     }
-    return json({ error: 'Could not create payment session. Please try again.' }, 502);
+    return json({ error: 'Could not create payment session. Please try again.' + (debug ? ' threw: ' + String(e && e.message) + ' hasSecret:' + !!env.STRIPE_SECRET_KEY : ''), hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
   }
 
   return json({ trackingCode, url: sessionUrl, amountLabel: '$' + dollars, stored }, 200);
