@@ -12,13 +12,19 @@ export async function onRequestPost(context) {
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
   const name = (body.name || '').trim();
+  const firstName = (body.firstName || '').trim();
+  const lastName = (body.lastName || '').trim();
   const email = (body.email || '').trim();
   const court = (body.court || '').trim();
   const citation = (body.citation || '').trim();
   const service = String(body.service || '199');
+  const dob = (body.dob || '').trim();
+  const dl = (body.dl || '').trim();
+  const fullName = name || (firstName + ' ' + lastName).trim();
 
-  if (!name || !email || !court) return json({ error: 'name, email, and court are required' }, 400);
+  if (!fullName || !email) return json({ error: 'name and email are required' }, 400);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'A valid email is required' }, 400);
+  if (!dob || !dl) return json({ error: 'Driver\'s license number and date of birth are required' }, 400);
 
   const debug = (env.DEBUG_MODE || '0') === '1';
   const priceKey = priceFor(service);
@@ -36,7 +42,8 @@ export async function onRequestPost(context) {
     try {
       const record = {
         tracking_code: trackingCode,
-        name, email, court, citation, service,
+        name: fullName, email, court, citation, service,
+        dob, dl,
         status: 'payment_pending',
         notes: JSON.parse(notes),
         created_at: new Date().toISOString(),
@@ -74,17 +81,25 @@ export async function onRequestPost(context) {
     });
     const session = await stripeRes.json();
     if (!stripeRes.ok) {
-      if (debug) return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session), hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+      // TEMP DIAGNOSTIC: always surface the real Stripe error + secret presence,
+      // independent of DEBUG_MODE. Remove after the 502 is resolved.
+      if (debug || process.env.ALWAYS_DIAGNOSE === '1') {
+        return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session), hasSecret: !!env.STRIPE_SECRET_KEY, priceId: priceId }, 502);
+      }
       throw new Error('Stripe error');
     }
     sessionUrl = session.url;
   } catch (e) {
     if (stored && env.CASES) {
       await env.CASES.put('case:' + trackingCode, JSON.stringify(
-        { ...JSON.parse(notes), tracking_code: trackingCode, name, email, court, citation, service, status: 'payment_error', created_at: new Date().toISOString() }
+        { ...JSON.parse(notes), tracking_code: trackingCode, name: fullName, email, court, citation, service, dob, dl, status: 'payment_error', created_at: new Date().toISOString() }
       ));
     }
-    return json({ error: 'Could not create payment session. Please try again.' + (debug ? ' threw: ' + String(e && e.message) + ' hasSecret:' + !!env.STRIPE_SECRET_KEY : ''), hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+    // TEMP DIAGNOSTIC: always surface the real error + secret presence.
+    if (debug || process.env.ALWAYS_DIAGNOSE === '1') {
+      return json({ error: 'Could not create payment session. threw: ' + String(e && e.message) + ' hasSecret:' + !!env.STRIPE_SECRET_KEY, hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+    }
+    return json({ error: 'Could not create payment session. Please try again. hasSecret:' + !!env.STRIPE_SECRET_KEY, hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
   }
 
   return json({ trackingCode, url: sessionUrl, amountLabel: '$' + dollars, stored }, 200);

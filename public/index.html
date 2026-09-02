@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1F3D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="UTTD">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>United Traffic Tickets Defense — Fight Your Ticket. Keep Your License.</title>
 <meta name="description" content="United Traffic Tickets Defense helps drivers fight speeding tickets, failure-to-appear, and suspended license reinstatement. AI scans your citation for dismissible defects in 60 seconds. Free consultation.">
 <meta property="og:title" content="United Traffic Tickets Defense — Fight Your Ticket. Keep Your License.">
@@ -29,7 +36,10 @@
       <a class="brand" href="#top">
         <img src="/assets/logo-horizontal.png" alt="United Traffic Tickets Defense" class="brand-logo">
       </a>
-      <div class="nav-links">
+      <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
+      </button>
+      <div class="nav-links" id="navLinks">
         <a href="#services">Services</a>
         <a href="#how">How It Works</a>
         <a href="#build">Start a Case</a>
@@ -132,19 +142,40 @@
       <div class="card intake">
         <div class="drop" id="drop">
           <input type="file" id="fileInput" accept="image/*">
-          <p><strong>Click to upload</strong> or drag a photo of the ticket here</p>
+          <p><strong>Optional:</strong> click to upload or drag a photo of your <strong>ticket slip</strong> here and we'll fill in the fields for you</p>
           <img id="preview" class="preview" style="display:none;" alt="Ticket preview">
         </div>
         <div class="status" id="status"></div>
 
-        <form id="caseForm" style="display:none;">
-          <h3>Your details (review after scan)</h3>
+        <form id="caseForm">
+          <div class="score-panel" id="scorePanel" style="display:none;">
+            <div class="score-head">
+              <span class="score-rank" id="scoreRank">—</span>
+              <span class="score-num" id="scoreNum">—</span>
+            </div>
+            <p class="score-tag">Dismissible defects found on your ticket. This is a guidance score — not a guarantee of any court outcome.</p>
+            <ul class="score-list" id="scoreList"></ul>
+          </div>
+          <h3>Your details</h3>
+          <p class="section-sub" style="text-align:left;">No photo? That's fine — just type the info below. Only your driver's license number and date of birth are required.</p>
           <div class="row">
-            <div class="field"><label>Citation number</label><input type="text" id="f_citation"></div>
-            <div class="field"><label>Violation date</label><input type="text" id="f_date"></div>
+            <div class="field"><label>First name</label><input type="text" id="f_firstname"></div>
+            <div class="field"><label>Last name</label><input type="text" id="f_lastname"></div>
           </div>
           <div class="row">
-            <div class="field"><label>Court / branch</label><input type="text" id="f_court"></div>
+            <div class="field"><label>Email (for results and payment)</label><input type="email" id="f_email"></div>
+            <div class="field"><label>Phone (optional)</label><input type="text" id="f_phone"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Date of birth</label><input type="text" id="f_dob" placeholder="MM/DD/YYYY"></div>
+            <div class="field"><label>Driver's license number</label><input type="text" id="f_dl"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Citation number</label><input type="text" id="f_citation"></div>
+            <div class="field"><label>Courthouse / city where it happened</label><input type="text" id="f_court"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Violation date</label><input type="text" id="f_date"></div>
             <div class="field"><label>Violation code / section</label><input type="text" id="f_code"></div>
           </div>
           <div class="row">
@@ -157,22 +188,19 @@
               </select>
             </div>
           </div>
-          <div class="row">
-            <div class="field"><label>Your full legal name</label><input type="text" id="f_name"></div>
-            <div class="field"><label>Email (for results)</label><input type="email" id="f_email" required></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Mailing address</label><input type="text" id="f_address"></div>
-            <div class="field"><label>Phone (optional)</label><input type="text" id="f_phone"></div>
-          </div>
+          <label>Mailing address (optional)</label>
+          <input type="text" id="f_address">
+          <label>Optional supporting documents</label>
+          <p style="color:rgba(255,255,255,.7);font-size:13px;">Letters from court or DMV, your driver's license card, or driving records from the DMV.</p>
+          <input type="file" id="f_docs" accept="image/*,.pdf" multiple>
+
           <label>Case description / notes</label>
           <textarea id="f_notes" placeholder="Anything you want us to know..."></textarea>
 
           <div class="notice">
-            <strong>Please read — this is a self-help service.</strong> United Traffic Tickets Defense prepares
-            documents and tracks your case. It does not represent you or act as your attorney. You review,
-            correct, and file the Trial by Written Declaration yourself (in pro per). This is not legal advice
-            and does not guarantee any outcome.
+            <strong>What happens next.</strong> Our system scans your ticket, drafts your Trial by Written
+            Declaration, and emails you the prefilled declaration with your ticket and receipt for your
+            records. A licensed human reviews your case before anything is filed with the court.
           </div>
 
           <button type="submit" class="btn btn-amber btn-block" id="submitBtn">Continue to secure payment</button>
@@ -251,5 +279,14 @@
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
 <script src="/app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function (e) {
+      console.warn('SW registration failed', e);
+    });
+  });
+}
+</script>
 </body>
 </html>

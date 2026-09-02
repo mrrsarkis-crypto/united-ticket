@@ -1,5 +1,7 @@
 // POST /api/webhook — Stripe webhook endpoint
 // Expects STRIPE_WEBHOOK_SECRET and a D1 binding CASES.
+import { buildTR205 } from './_tr205.js';
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const signature = request.headers.get('stripe-signature');
@@ -31,7 +33,7 @@ export async function onRequestPost(context) {
 
     if (trackingCode && paid) {
       await updateCasePaid(env, trackingCode);
-      await sendConfirmationEmail(session.customer_email, trackingCode, env);
+      await fulfillCase(env, session, trackingCode);
     }
   }
 
@@ -87,7 +89,68 @@ async function updateCasePaid(env, trackingCode) {
   } catch { /* non-fatal */ }
 }
 
-async function sendConfirmationEmail(email, trackingCode, env) {
+async function fulfillCase(env, session, trackingCode) {
+  // Load the stored case record so the prefilled TR-205 has real data.
+  let caseData = null;
+  if (env.CASES) {
+    try { caseData = await env.CASES.get('case:' + trackingCode, 'json'); } catch {}
+  }
+  const base = caseData || {};
+  const custEmail = session.customer_email || base.email;
+
+  // Build the prefilled TR-205 declaration PDF.
+  let pdfBytes = null;
+  try {
+    pdfBytes = buildTR205({
+      name: base.name, citation: base.citation, court: base.court,
+      dob: base.dob, dl: base.dl,
+      notes: Object.assign({}, base.notes, { created_at: (base.paid_at || base.created_at) }),
+    });
+  } catch (e) { console.error('TR-205 build failed', e); }
+
+  // yyyyMMdd date-named file (military format).
+  const d = base.paid_at ? new Date(base.paid_at) : new Date();
+  const stamp = d.toISOString().slice(0, 10).replace(/-/g, '');
+  const safeCode = (trackingCode || 'case').replace(/[^A-Za-z0-9_-]/g, '');
+  const filename = stamp + '_' + safeCode + '_TR205.pdf';
+
+  // 1) Store the PDF in R2 under a dated "folder" (yyyyMMdd/).
+  let r2Key = null;
+  if (env.R2 && pdfBytes) {
+    try {
+      r2Key = stamp + '/' + filename;
+      await env.R2.put(r2Key, pdfBytes, { httpMetadata: { contentType: 'application/pdf' } });
+      await sendConfirmationEmail(custEmail, trackingCode, env, 'Your declaration is ready (stored in your case files).', { pdfBytes, filename, r2Key });
+    } catch (e) { console.error('R2 store failed', e); }
+  } else if (pdfBytes) {
+    await sendConfirmationEmail(custEmail, trackingCode, env, 'Your prefilled declaration is ready for review.', { pdfBytes, filename, r2Key });
+  } else {
+    await sendConfirmationEmail(custEmail, trackingCode, env);
+  }
+}
+
+async function sendConfirmationEmail(email, trackingCode, env, subject, pdf) {
+  // Preferred: Resend (env.RESEND_API_KEY). Fallback: generic SEND_EMAIL_URL.
+  if (env.RESEND_API_KEY) {
+    try {
+      const form = new FormData();
+      form.append('from', env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>');
+      form.append('to', email);
+      form.append('subject', subject || ('Your Ticket Fighter case is received - ' + trackingCode));
+      form.append('text', 'Thanks for your payment. Your case tracking code is ' + trackingCode +
+        '. Your prefilled Trial by Written Declaration is attached. Review and correct every field before filing.' +
+        (pdf && pdf.r2Key ? ' Stored as ' + pdf.r2Key : '') + '.');
+      if (pdf && pdf.pdfBytes && pdf.filename) {
+        form.append('attachments', new File([pdf.pdfBytes], pdf.filename, { type: 'application/pdf' }));
+      }
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
+        body: form,
+      });
+      return;
+    } catch (e) { console.error('Resend failed', e); }
+  }
   if (env.SEND_EMAIL_URL && env.SEND_EMAIL_AUTH) {
     try {
       await fetch(env.SEND_EMAIL_URL, {
