@@ -54,6 +54,13 @@
   });
 
   function handleFile(file) {
+    // Reject unsupported types early with a clear message.
+    var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || file.type === '';
+    if (!typeOk) {
+      statusEl.textContent = 'Unsupported file type. Please upload a JPG, PNG, or HEIC image.';
+      statusEl.className = 'status';
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function (e) {
       currentImageDataUrl = e.target.result;
@@ -61,13 +68,30 @@
       preview.style.display = 'block';
       statusEl.textContent = 'Scanning ticket...';
       statusEl.className = 'status';
-      Tesseract.recognize(currentImageDataUrl, 'eng').then(function (result) {
-        populateFields(result.data.text);
-        statusEl.textContent = 'Scan complete. Review and correct the fields below.';
-        statusEl.className = 'status ok';
-        caseForm.style.display = 'block';
-        window.__lastOcrText = result.data.text;
-        refreshScore();
+      var progress = document.getElementById('progress');
+      var progressBar = document.getElementById('progressBar');
+      if (progress && progressBar) {
+        progress.style.display = 'block';
+        progressBar.style.width = '8%';
+      }
+      Tesseract.recognize(currentImageDataUrl, 'eng', {
+        logger: function (m) {
+          if (progress && progressBar && m && typeof m.progress === 'number') {
+            var pct = Math.round(m.progress * 100);
+            progressBar.style.width = pct + '%';
+            progress.setAttribute('aria-valuenow', pct);
+          }
+        }
+      }).then(function (result) {
+        setTimeout(function () {
+          if (progress && progressBar) { progressBar.style.width = '100%'; progress.setAttribute('aria-valuenow', 100); }
+          populateFields(result.data.text);
+          statusEl.textContent = 'Scan complete. Review and correct the fields below.';
+          statusEl.className = 'status ok';
+          caseForm.style.display = 'block';
+          window.__lastOcrText = result.data.text;
+          refreshScore();
+        }, 250);
       }).catch(function (err) {
         document.getElementById('f_citation').value = '';
         statusEl.textContent = 'Scan failed: ' + (err && err.message || 'unknown') + '. Fill fields manually below.';

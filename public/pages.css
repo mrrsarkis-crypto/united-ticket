@@ -78,5 +78,9 @@
 .info-box{background:#fff8e8;border:1px solid #f2d9a4;border-radius:12px;padding:16px 18px;
   color:#6b4a00;font-size:14.5px;line-height:1.6;margin:18px 0;}
 
+/* Small legal footnote (on policy pages) */
+.tiny-legal{color:#5a6b83;font-size:13px;line-height:1.6;margin-top:26px;}
+.tiny-legal a{color:#0b4d8c;}
+
 @media (max-width:860px){ .ticket-grid{grid-template-columns:1fr;} .sub-hero h1{font-size:31px;}
   .ch-feature{grid-template-columns:1fr;text-align:center;justify-items:center;} }

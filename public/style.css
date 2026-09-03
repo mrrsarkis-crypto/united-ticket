@@ -6,6 +6,7 @@
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:4px;}
 body{font-family:'Inter',Helvetica,Arial,sans-serif;background:#F8FBFF;color:var(--ink);margin:0;line-height:1.55;}
 img{max-width:100%;}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px;}
@@ -15,7 +16,10 @@ img{max-width:100%;}
 .topbar{background:var(--navy-dark);border-bottom:1px solid rgba(255,255,255,.08);}
 .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding-top:8px;padding-bottom:8px;}
 .topbar-tag{color:rgba(255,255,255,.55);font-size:12.5px;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
 .topbar-phone{color:var(--amber);font-size:13px;font-weight:700;text-decoration:none;}
+.lang-switch{color:rgba(255,255,255,.75);font-size:12.5px;font-weight:600;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,.25);border-radius:999px;}
+.lang-switch:hover{color:#fff;border-color:var(--amber);}
 .nav{background:var(--navy);}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:74px;gap:20px;}
 .brand{display:flex;align-items:center;}
@@ -127,6 +131,9 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .drop input{display:none;}
 .drop p{margin:0;color:rgba(255,255,255,.7);font-size:15px;}
 .drop strong{color:#fff;}
+.drop .drop-hint{color:rgba(255,255,255,.5);font-size:12.5px;margin-top:8px;}
+.progress{height:8px;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden;margin-top:14px;}
+.progress span{display:block;height:100%;width:0%;background:var(--amber);transition:width .25s ease;border-radius:999px;}
 img.preview{max-width:100%;max-height:300px;border-radius:10px;margin-top:14px;display:block;margin-left:auto;margin-right:auto;}
 .status{font-size:13px;color:rgba(255,255,255,.7);margin:10px 0 0;}
 .status.ok{color:#7fd29a;}
@@ -166,6 +173,21 @@ img.preview{max-width:100%;max-height:300px;border-radius:10px;margin-top:14px;d
 /* ---- CTA / contact ---- */
 .section-cta{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;text-align:center;}
 .cta-inner h2{font-size:30px;font-weight:800;margin:0 0 8px;}
+/* ---- FAQ ---- */
+.faq{max-width:760px;margin:0 auto;}
+.faq-item{border:1px solid var(--line);border-radius:12px;background:#fff;margin:10px 0;overflow:hidden;}
+.faq-item summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:15.5px;padding:16px 20px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.faq-item summary::-webkit-details-marker{display:none;}
+.faq-item summary::after{content:"+";font-size:20px;color:var(--amber);flex-shrink:0;}
+.faq-item[open] summary::after{content:"\2013";}
+.faq-body{padding:0 20px 16px;color:#33415c;font-size:14.5px;line-height:1.65;}
+.faq-body p{margin:0;}
+
+/* ---- Yelp trust band ---- */
+.section-yelp{background:var(--cloud);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.yelp-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.yelp-inner h2{font-size:26px;font-weight:800;color:var(--navy);margin:0 0 6px;}
+.yelp-inner p{color:var(--muted);margin:0;font-size:15px;max-width:520px;}
 .cta-inner p{color:rgba(255,255,255,.8);font-size:16px;max-width:520px;margin:0 auto 22px;}
 .muted{color:rgba(255,255,255,.6)!important;font-size:13px!important;}
 

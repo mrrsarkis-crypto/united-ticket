@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin-cases
+
+Sitemap: https://unitedtraffictickets.com/sitemap.xml
