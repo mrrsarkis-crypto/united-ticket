@@ -31,6 +31,11 @@
   <url><loc>https://unitedtraffictickets.com/amp/cdl-ticket</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/amp/courthouses</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/amp/all-courthouses</loc><priority>0.5</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/terms</loc><priority>0.3</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/refund-policy</loc><priority>0.3</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/contact</loc><priority>0.4</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/es</loc><priority>0.4</priority></url>
   <url><loc>https://unitedtraffictickets.com/contact</loc><priority>0.5</priority></url>
   <url><loc>https://unitedtraffictickets.com/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://unitedtraffictickets.com/terms</loc><priority>0.3</priority></url>
