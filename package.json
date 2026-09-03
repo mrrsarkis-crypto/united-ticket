@@ -12,5 +12,8 @@
   "type": "commonjs",
   "devDependencies": {
     "wrangler": "^3.114.17"
+  },
+  "dependencies": {
+    "cloudflare": "^7.1.0"
   }
 }

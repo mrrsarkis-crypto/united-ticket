@@ -134,76 +134,112 @@
     </div>
   </section>
 
-  <section id="build" class="section section-dark">
+  <section id="build" class="section section-light section-form">
     <div class="wrap">
       <h2 class="section-title">Start a Case</h2>
       <p class="section-sub">Upload your citation and review the extracted fields before payment.</p>
 
-      <div class="card intake">
-        <div class="drop" id="drop">
-          <input type="file" id="fileInput" accept="image/*">
-          <p><strong>Optional:</strong> click to upload or drag a photo of your <strong>ticket slip</strong> here and we'll fill in the fields for you</p>
-          <img id="preview" class="preview" style="display:none;" alt="Ticket preview">
+      <div class="card intake intake-card">
+        <div class="intake-trust" aria-label="Trust and credentials">
+          <div class="trust-badge">
+            <span class="trust-badge-mark">&#10003;</span>
+            <span><strong>SBE Certified</strong><em>Small Business Enterprise&nbsp;&middot;&nbsp;serving drivers since 2015</em></span>
+          </div>
+          <div class="trust-secure">
+            <span class="lock">&#128274;</span>
+            <span>Secure checkout</span>
+          </div>
         </div>
-        <div class="status" id="status"></div>
 
-        <form id="caseForm">
+        <div class="intake-step">
+          <h3 class="step-title"><span class="step-no">1</span>Your ticket</h3>
+          <p class="step-help">Take a clear photo of your citation and we'll fill in the details for you. No photo? No problem &mdash; type them below; only your date of birth and driver's license number are required.</p>
+
+          <div class="drop" id="drop">
+            <input type="file" id="fileInput" accept="image/*">
+            <p><strong>Click to upload</strong> or drag a photo of your <strong>ticket slip</strong> here</p>
+            <img id="preview" class="preview" style="display:none;" alt="Ticket preview">
+          </div>
+          <div class="status" id="status"></div>
+
           <div class="score-panel" id="scorePanel" style="display:none;">
             <div class="score-head">
               <span class="score-rank" id="scoreRank">—</span>
               <span class="score-num" id="scoreNum">—</span>
             </div>
-            <p class="score-tag">Dismissible defects found on your ticket. This is a guidance score — not a guarantee of any court outcome.</p>
+            <p class="score-tag">Dismissible defects identified on your citation. This is a guidance score to help you decide whether it's worth pursuing &mdash; not a promise of any court outcome.</p>
             <ul class="score-list" id="scoreList"></ul>
           </div>
-          <h3>Your details</h3>
-          <p class="section-sub" style="text-align:left;">No photo? That's fine — just type the info below. Only your driver's license number and date of birth are required.</p>
-          <div class="row">
-            <div class="field"><label>First name</label><input type="text" id="f_firstname"></div>
-            <div class="field"><label>Last name</label><input type="text" id="f_lastname"></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Email (for results and payment)</label><input type="email" id="f_email"></div>
-            <div class="field"><label>Phone (optional)</label><input type="text" id="f_phone"></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Date of birth</label><input type="text" id="f_dob" placeholder="MM/DD/YYYY"></div>
-            <div class="field"><label>Driver's license number</label><input type="text" id="f_dl"></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Citation number</label><input type="text" id="f_citation"></div>
-            <div class="field"><label>Courthouse / city where it happened</label><input type="text" id="f_court"></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Violation date</label><input type="text" id="f_date"></div>
-            <div class="field"><label>Violation code / section</label><input type="text" id="f_code"></div>
-          </div>
-          <div class="row">
-            <div class="field"><label>Fine / bail amount</label><input type="text" id="f_bail"></div>
-            <div class="field"><label>Service type</label>
-              <select id="f_service">
-                <option value="199">Standard ticket — $199</option>
-                <option value="299">Failure to appear — $299</option>
-                <option value="999">License reinstatement — $999</option>
-              </select>
+        </div>
+
+        <form id="caseForm" class="intake-form" novalidate>
+          <div class="intake-step">
+            <h3 class="step-title"><span class="step-no">2</span>Your details</h3>
+            <p class="step-help">Please confirm who you are so we can prepare and email the correct paperwork.</p>
+            <div class="row">
+              <div class="field"><label for="f_firstname">First name <i>required</i></label><input type="text" id="f_firstname" autocomplete="given-name"></div>
+              <div class="field"><label for="f_lastname">Last name <i>required</i></label><input type="text" id="f_lastname" autocomplete="family-name"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="f_email">Email <i>required</i></label><input type="email" id="f_email" autocomplete="email" placeholder="you@example.com"></div>
+              <div class="field"><label for="f_phone">Phone <i>optional</i></label><input type="text" id="f_phone" autocomplete="tel"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="f_dob">Date of birth <i>required</i></label><input type="text" id="f_dob" placeholder="MM/DD/YYYY"></div>
+              <div class="field"><label for="f_dl">Driver's license number <i>required</i></label><input type="text" id="f_dl"></div>
             </div>
           </div>
-          <label>Mailing address (optional)</label>
-          <input type="text" id="f_address">
-          <label>Optional supporting documents</label>
-          <p style="color:rgba(255,255,255,.7);font-size:13px;">Letters from court or DMV, your driver's license card, or driving records from the DMV.</p>
-          <input type="file" id="f_docs" accept="image/*,.pdf" multiple>
 
-          <label>Case description / notes</label>
-          <textarea id="f_notes" placeholder="Anything you want us to know..."></textarea>
-
-          <div class="notice">
-            <strong>What happens next.</strong> Our system scans your ticket, drafts your Trial by Written
-            Declaration, and emails you the prefilled declaration with your ticket and receipt for your
-            records. A licensed human reviews your case before anything is filed with the court.
+          <div class="intake-step">
+            <h3 class="step-title"><span class="step-no">3</span>Your ticket details</h3>
+            <p class="step-help">Only needed if you didn't upload a photo. These help us draft an accurate Trial by Written Declaration.</p>
+            <div class="row">
+              <div class="field"><label for="f_citation">Citation number</label><input type="text" id="f_citation"></div>
+              <div class="field"><label for="f_court">Courthouse / city</label><input type="text" id="f_court"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="f_date">Violation date</label><input type="text" id="f_date" placeholder="MM/DD/YYYY"></div>
+              <div class="field"><label for="f_code">Violation code / section</label><input type="text" id="f_code"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="f_bail">Fine / bail amount</label><input type="text" id="f_bail" placeholder="$0.00"></div>
+              <div class="field"><label for="f_service">Service type</label>
+                <select id="f_service">
+                  <option value="199">Standard ticket &mdash; $199</option>
+                  <option value="299">Failure to appear &mdash; $299</option>
+                  <option value="999">License reinstatement &mdash; $999</option>
+                </select>
+              </div>
+            </div>
+            <div class="field"><label for="f_address">Mailing address <i>optional</i></label><input type="text" id="f_address" autocomplete="street-address"></div>
+            <div class="field"><label for="f_docs">Supporting documents <i>optional</i></label>
+              <p class="field-hint">Letters from the court or DMV, your license card, or driving records you'd like us to consider.</p>
+              <input type="file" id="f_docs" accept="image/*,.pdf" multiple>
+            </div>
+            <div class="field"><label for="f_notes">Case notes <i>optional</i></label>
+              <textarea id="f_notes" placeholder="Anything you'd like us to know about your situation."></textarea>
+            </div>
           </div>
 
-          <button type="submit" class="btn btn-amber btn-block" id="submitBtn">Continue to secure payment</button>
+          <div class="intake-step intake-review">
+            <h3 class="step-title"><span class="step-no">4</span>Review &amp; pay</h3>
+            <p class="step-help">A licensed member of our team reviews your case before anything is filed. Nothing is charged until your details are complete.</p>
+
+            <div class="notice">
+              <strong>What happens next.</strong> Our system scans your ticket and drafts your Trial by
+              Written Declaration. A licensed human reviews your case before it's finalized, then we
+              email the prefilled declaration, your ticket, and your receipt for your records &mdash;
+              you review, correct, and sign it before anything is filed with the court.
+            </div>
+
+            <div class="pay-assurance">
+              <div class="pay-item"><span>&#10003;</span> You pay nothing if we can't identify a dismissible defect worth pursuing</div>
+              <div class="pay-item"><span>&#10003;</span> Secure encrypted payment &mdash; no charge until your review is confirmed</div>
+            </div>
+
+            <button type="submit" class="btn btn-amber btn-block" id="submitBtn">Continue to secure payment</button>
+            <p class="form-legal">This is a self-help document preparation service, not a law firm, and cannot guarantee outcomes. SBE-certified small business since 2015.</p>
+          </div>
         </form>
       </div>
     </div>
