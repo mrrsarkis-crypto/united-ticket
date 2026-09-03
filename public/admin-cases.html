@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Case Dashboard — United Traffic Tickets Defense</title>
+<style>
+  :root { --navy:#0F1F3D; --amber:#F5A623; --ink:#1a2332; --muted:#5a6b83; --line:#e2e8f0; }
+  * { box-sizing:border-box; font-family:'Inter',system-ui,-apple-system,sans-serif; }
+  body { margin:0; background:#f4f6fa; color:var(--ink); }
+  header { background:var(--navy); color:#fff; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:18px; font-weight:700; }
+  header .meta { font-size:13px; color:#cdd8ec; }
+  .wrap { max-width:1200px; margin:0 auto; padding:24px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:18px; }
+  .tools { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type=text]{ padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; min-width:260px; }
+  button { padding:10px 14px; border:0; border-radius:8px; background:var(--navy); color:#fff; font-weight:600; font-size:14px; cursor:pointer; }
+  button:hover { background:#16305f; }
+  button.link { background:transparent; color:var(--navy); border:1px solid var(--navy); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#f8fafc; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  tr:hover td { background:#fafcff; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .st-pending { background:#fef3c7; color:#92400e; }
+  .st-complete { background:#dcfce7; color:#166534; }
+  .st-other { background:#e2e8f0; color:#334155; }
+  .muted { color:var(--muted); }
+  .empty { padding:40px; text-align:center; color:var(--muted); }
+  .error { background:#fee2e2; color:#991b1b; padding:12px 14px; border-radius:8px; margin-bottom:14px; }
+  .count { font-weight:700; color:var(--navy); }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Case Dashboard</h1>
+  <div class="meta" id="meta">Private submissions list</div>
+</header>
+
+<div class="wrap">
+  <div class="card tools">
+    <input type="text" id="code" placeholder="Enter dashboard code" autocomplete="off">
+    <button id="loadBtn">Load cases</button>
+    <button id="csvBtn" class="link hide">Export CSV</button>
+  </div>
+  <div id="error" class="error hide"></div>
+  <div id="empty" class="empty hide">No cases found yet.</div>
+  <div id="tableWrap" class="hide">
+    <div class="card">
+      <div class="meta"><span class="count" id="count"></span> submission(s)</div>
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>Tracking</th><th>Created</th><th>Status</th><th>Name</th><th>Email</th>
+            <th>Court</th><th>Citation</th><th>Service</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var codeEl = document.getElementById('code');
+  var loadBtn = document.getElementById('loadBtn');
+  var csvBtn = document.getElementById('csvBtn');
+  var errEl = document.getElementById('error');
+  var emptyEl = document.getElementById('empty');
+  var tableWrap = document.getElementById('tableWrap');
+  var rowsEl = document.getElementById('rows');
+  var countEl = document.getElementById('count');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function pill(status) {
+    var p = String(status || '');
+    var cls = 'st-other';
+    if (p.indexOf('payment_pending') === 0) cls = 'st-pending';
+    else if (p.indexOf('payment_complete') === 0) cls = 'st-complete';
+    return '<span class="pill ' + cls + '">' + esc(p) + '</span>';
+  }
+  function render(cases) {
+    rowsEl.innerHTML = '';
+    cases.forEach(function (c) {
+      var n = c.notes || {};
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><b>' + esc(c.tracking_code) + '</b></td>' +
+        '<td>' + esc((c.created_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
+        '<td>' + pill(c.status) + '</td>' +
+        '<td>' + esc(c.name) + '</td>' +
+        '<td>' + esc(c.email) + '</td>' +
+        '<td>' + esc(c.court) + '</td>' +
+        '<td>' + esc(c.citation) + '</td>' +
+        '<td>$' + esc(c.service) + '</td>' +
+        '<td>' + esc(n.notes || '') + '</td>';
+      rowsEl.appendChild(tr);
+    });
+  }
+
+  function showError(msg) {
+    errEl.textContent = msg;
+    errEl.classList.remove('hide');
+    tableWrap.classList.add('hide');
+    emptyEl.classList.add('hide');
+  }
+
+  async function load() {
+    var code = codeEl.value.trim();
+    if (!code) { showError('Enter the dashboard code to continue.'); return; }
+    try {
+      var res = await fetch('/api/cases/admin?code=' + encodeURIComponent(code));
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      errEl.classList.add('hide');
+      csvBtn.classList.remove('hide');
+      var list = data.cases;
+      if (!list.length) {
+        emptyEl.classList.remove('hide');
+        tableWrap.classList.add('hide');
+        countEl.textContent = '0';
+      } else {
+        emptyEl.classList.add('hide');
+        tableWrap.classList.remove('hide');
+        countEl.textContent = list.length;
+        render(list);
+      }
+      csvBtn.dataset.code = code;
+    } catch (e) {
+      showError('Error: ' + e.message);
+    }
+  }
+
+  loadBtn.addEventListener('click', load);
+  codeEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(); });
+  csvBtn.addEventListener('click', function () {
+    var code = csvBtn.dataset.code || '';
+    window.location.href = '/api/cases/admin.csv?code=' + encodeURIComponent(code);
+  });
+
+  var qp = new URLSearchParams(location.search);
+  var initial = qp.get('code');
+  if (initial) { codeEl.value = initial; load(); }
+})();
+</script>
+</body>
+</html>

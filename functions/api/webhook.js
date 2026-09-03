@@ -1,6 +1,7 @@
 // POST /api/webhook — Stripe webhook endpoint
 // Expects STRIPE_WEBHOOK_SECRET and a D1 binding CASES.
 import { buildTR205 } from './_tr205.js';
+import { sendBusinessNotification } from './_shared.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -33,6 +34,7 @@ export async function onRequestPost(context) {
 
     if (trackingCode && paid) {
       await updateCasePaid(env, trackingCode);
+      await notifyPaid(env, session, trackingCode);
       await fulfillCase(env, session, trackingCode);
     }
   }
@@ -87,6 +89,21 @@ async function updateCasePaid(env, trackingCode) {
       : { tracking_code: trackingCode, status: 'payment_complete', paid_at: now, reminder_at: reminderAt, notes: {} };
     await env.CASES.put(key, JSON.stringify(record));
   } catch { /* non-fatal */ }
+}
+
+async function notifyPaid(env, session, trackingCode) {
+  const raw = session && session.amount_total;
+  const dollars = raw ? '$' + (raw / 100).toFixed(2) : '?';
+  await sendBusinessNotification(env, {
+    subject: 'PAYMENT RECEIVED: ' + trackingCode + ' (' + dollars + ')',
+    text: 'A payment just cleared.\n\n' +
+      'Tracking code: ' + trackingCode + '\n' +
+      'Amount: ' + dollars + '\n' +
+      'Customer email: ' + (session.customer_email || '?') + '\n' +
+      'Status: payment_complete — TR-205 drafted and stored.\n' +
+      'Time: ' + new Date().toISOString() + '\n\n' +
+      'Dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || ''),
+  });
 }
 
 async function fulfillCase(env, session, trackingCode) {

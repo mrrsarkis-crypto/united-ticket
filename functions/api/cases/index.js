@@ -1,5 +1,5 @@
 // /api/cases — create a case (POST) and return a Stripe Checkout URL
-import { json, priceFor, rand } from '../_shared.js';
+import { json, priceFor, rand, sendBusinessNotification } from '../_shared.js';
 
 // JSON env bindings expected: STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999
 // D1 binding: CASES
@@ -50,6 +50,20 @@ export async function onRequestPost(context) {
       };
       await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
       stored = true;
+      await sendBusinessNotification(env, {
+        subject: 'New ticket case: ' + trackingCode,
+        text: 'New "Fight My Ticket" submission received.\n\n' +
+          'Tracking code: ' + trackingCode + '\n' +
+          'Name: ' + fullName + '\n' +
+          'Email: ' + email + '\n' +
+          'Court: ' + court + '\n' +
+          'Citation: ' + citation + '\n' +
+          'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00') + '\n' +
+          'Status: awaiting payment (Checkout URL sent to customer)\n' +
+          'Time: ' + record.created_at + '\n\n' +
+          'View in dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || '') + '\n' +
+          'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')',
+      });
     } catch (e) {
       console.error('KV insert failed', e);
     }

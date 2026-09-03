@@ -41,3 +41,27 @@ export function statusHistory(status) {
   };
   return map[status] || [status];
 }
+
+// Send an email to the business owner (env.ADMIN_EMAIL) via Resend.
+// Used to notify on new form submissions and other events. Non-fatal on failure.
+export async function sendBusinessNotification(env, { subject, text, html }) {
+  if (!env.RESEND_API_KEY) return;
+  const to = env.ADMIN_EMAIL || env.RESEND_FROM_TO || '';
+  if (!to) return;
+  try {
+    const from = env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>';
+    const form = new FormData();
+    form.append('from', from);
+    form.append('to', to);
+    form.append('subject', subject);
+    form.append('text', text || subject);
+    if (html) form.append('html', html);
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
+      body: form,
+    });
+  } catch (e) {
+    console.error('Business notification email failed', e);
+  }
+}
