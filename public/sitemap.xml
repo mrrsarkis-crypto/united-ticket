@@ -18,6 +18,19 @@
   <url><loc>https://unitedtraffictickets.com/courthouses/hollywood/</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/courthouses/los-angeles-metropolitan/</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/courthouses/van-nuys/</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/</loc><priority>0.8</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/services</loc><priority>0.7</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/speeding-ticket</loc><priority>0.7</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/red-light-ticket</loc><priority>0.7</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/failure-to-appear</loc><priority>0.7</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/suspended-license</loc><priority>0.7</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/fix-it-ticket</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/reckless-driving</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/cell-phone-ticket</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/stop-sign-ticket</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/cdl-ticket</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/courthouses</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/amp/all-courthouses</loc><priority>0.5</priority></url>
   <url><loc>https://unitedtraffictickets.com/contact</loc><priority>0.5</priority></url>
   <url><loc>https://unitedtraffictickets.com/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://unitedtraffictickets.com/terms</loc><priority>0.3</priority></url>
