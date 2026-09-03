@@ -42,6 +42,60 @@ export function statusHistory(status) {
   return map[status] || [status];
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// POST to Resend with retry-with-backoff on rate limits (429) and server errors (5xx).
+// Resend's default sending limit is 10 requests/second; on a hit it returns 429.
+// Optional attachments: [{ filename, bytes, type }]
+export async function resendSend(env, { from, to, subject, text, html, attachments }) {
+  if (!env.RESEND_API_KEY) return;
+  const form = new FormData();
+  form.append('from', from || env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>');
+  form.append('to', to);
+  form.append('subject', subject);
+  if (text) form.append('text', text);
+  if (html) form.append('html', html);
+  if (attachments) {
+    for (const a of attachments) {
+      if (a && a.bytes && a.filename) {
+        form.append('attachments', new File([a.bytes], a.filename, { type: a.type || 'application/octet-stream' }));
+      }
+    }
+  }
+  const maxAttempts = 4;
+  let attempt = 1;
+  while (attempt <= maxAttempts) {
+    let res;
+    try {
+      res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
+        body: form,
+      });
+    } catch (e) {
+      console.error('Resend request error (attempt ' + attempt + ')', e);
+      if (attempt === maxAttempts) return false;
+      await sleep(600 * attempt);
+      attempt++;
+      continue;
+    }
+    if (res.ok) return true;
+    // Retry on 429 (rate limit) and 5xx (transient server error).
+    if (res.status === 429 || res.status >= 500) {
+      console.warn('Resend ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + ')');
+      if (attempt === maxAttempts) return false;
+      const retryAfter = Number(res.headers.get('retry-after') || 0);
+      await sleep((retryAfter || 600) * attempt);
+      attempt++;
+      continue;
+    }
+    // 4xx (other) errors are permanent — parsing/validation etc. Do not retry.
+    console.error('Resend permanent error ' + res.status, await res.text().catch(() => ''));
+    return false;
+  }
+  return false;
+}
+
 // Send an email to the business owner (env.ADMIN_EMAIL) via Resend.
 // Used to notify on new form submissions and other events. Non-fatal on failure.
 // Optional attachments: [{ filename, bytes, type }]
@@ -50,24 +104,12 @@ export async function sendBusinessNotification(env, { subject, text, html, attac
   const to = env.ADMIN_EMAIL || env.RESEND_FROM_TO || '';
   if (!to) return;
   try {
-    const from = env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>';
-    const form = new FormData();
-    form.append('from', from);
-    form.append('to', to);
-    form.append('subject', subject);
-    form.append('text', text || subject);
-    if (html) form.append('html', html);
-    if (attachments) {
-      for (const a of attachments) {
-        if (a && a.bytes && a.filename) {
-          form.append('attachments', new File([a.bytes], a.filename, { type: a.type || 'application/octet-stream' }));
-        }
-      }
-    }
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
-      body: form,
+    await resendSend(env, {
+      to,
+      subject,
+      text,
+      html,
+      attachments,
     });
   } catch (e) {
     console.error('Business notification email failed', e);
