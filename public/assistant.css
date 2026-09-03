@@ -1,0 +1,80 @@
+/* Ticket Document Assistant page */
+.ast-wrap { max-width: 880px; }
+
+.ast-card {
+  background: #fff;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 14px;
+  padding: 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(15, 31, 61, 0.06);
+}
+.ast-card h2 { margin: 0 0 6px; color: var(--navy, #0F1F3D); font-size: 20px; }
+.ast-card .muted { color: var(--muted, #5a6b83); margin-top: 0; }
+
+.ast-drop {
+  border: 2px dashed var(--line, #cbd5e1);
+  border-radius: 12px;
+  padding: 34px 18px;
+  text-align: center;
+  color: var(--muted, #5a6b83);
+  cursor: pointer;
+  background: #f8fafc;
+  transition: border-color .15s, background .15s;
+  margin: 14px 0;
+}
+.ast-drop.drag, .ast-drop:hover { border-color: var(--amber, #F5A623); background: #fff8ec; }
+.ast-drop strong { color: var(--navy, #0F1F3D); }
+.ast-preview { max-width: 320px; max-height: 320px; margin: 12px auto 0; display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+
+.ast-check { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; font-size: 14px; color: var(--ink, #1a2332); }
+.ast-check input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+
+.ast-btn { margin-top: 12px; width: 100%; justify-content: center; }
+.ast-arrow { margin-left: 6px; }
+
+.ast-status { font-size: 14px; color: var(--navy, #0F1F3D); margin-top: 12px; min-height: 18px; }
+.ast-status.err { color: #991b1b; }
+
+.ast-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; margin-top: 10px; }
+.ast-fieldrow { display: flex; flex-direction: column; }
+.ast-fieldrow label { font-size: 13px; font-weight: 600; color: var(--navy, #0F1F3D); margin-bottom: 5px; }
+.ast-fieldrow input {
+  padding: 10px 12px; border: 1px solid var(--line, #e2e8f0); border-radius: 8px;
+  font-size: 14px; background: #fff; outline: none; transition: border-color .15s;
+}
+.ast-fieldrow input:focus { border-color: var(--amber, #F5A623); }
+@media (max-width: 640px) { .ast-fields { grid-template-columns: 1fr; } }
+
+.ast-legibility { grid-column: 1 / -1; font-size: 13px; color: var(--muted, #5a6b83); background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
+
+.ast-nextsteps { margin-top: 22px; background: #fff8ec; border: 1px solid #f6e2b8; border-radius: 12px; padding: 16px 18px; }
+.ast-nextsteps h3 { margin: 0 0 4px; color: var(--navy, #0F1F3D); font-size: 16px; }
+.ast-nl { font-size: 13px; color: var(--muted, #8a6d3b); display: block; margin-bottom: 10px; }
+.ast-step { margin-bottom: 12px; }
+.ast-step:last-child { margin-bottom: 0; }
+.ast-step strong { color: var(--navy, #0F1F3D); display: block; margin-bottom: 2px; }
+.ast-step p { margin: 0; font-size: 14px; color: var(--ink, #1a2332); }
+
+.ast-chat {
+  background: #f7f9fc; border: 1px solid var(--line, #e2e8f0); border-radius: 12px;
+  padding: 14px; height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-top: 14px;
+}
+.ast-msg { display: flex; }
+.ast-msg.user { justify-content: flex-end; }
+.ast-msg .bubble { max-width: 80%; padding: 10px 13px; border-radius: 12px; font-size: 14px; line-height: 1.45; }
+.ast-msg.user .bubble { background: var(--navy, #0F1F3D); color: #fff; border-top-right-radius: 4px; }
+.ast-msg.assistant .bubble { background: #fff; color: var(--ink, #1a2332); border: 1px solid var(--line, #e2e8f0); border-top-left-radius: 4px; }
+
+.ast-chatinput { display: flex; gap: 10px; margin-top: 12px; }
+.ast-chatinput input {
+  flex: 1; padding: 11px 13px; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; font-size: 14px; outline: none;
+}
+.ast-chatinput input:focus { border-color: var(--amber, #F5A623); }
+.ast-chatbtn { background: var(--navy, #0F1F3D); color: #fff; border: 0; border-radius: 8px; padding: 0 18px; font-weight: 600; cursor: pointer; }
+
+.ast-approve { margin-top: 22px; border-top: 1px solid var(--line, #e2e8f0); padding-top: 18px; }
+.ast-caveat { margin-top: 12px; }
+
+/* Empty-field placeholder input styling */
+.ast-fieldrow input[value=""]::placeholder { color: #b6c0cf; }

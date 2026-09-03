@@ -5,19 +5,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0F1F3D">
-<title>Reckless Driving Ticket — VC 23103 Help — United Traffic Tickets Defense</title>
-<link rel="amphtml" href="/amp/reckless-driving">
-<meta name="description" content="Reckless or careless driving (VC 23103) is a serious California charge. We help you review the citation and prepare your written defense. Free scan.">
-<!-- Google AdSense -->
+<title>Ticket Document Assistant — United Traffic Tickets Defense</title>
+<meta name="description" content="Upload a photo of your California traffic citation. Our AI assistant reads the key fields for your review, explains your options in plain language, and — with your approval — sends your verified details to our secured document-preparation flow. Not legal advice, and outcomes are never guaranteed.">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395" crossorigin="anonymous"></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/pages.css">
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png"></head>
+<link rel="stylesheet" href="/assistant.css">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
 <body>
 <header class="site-header">
   <div class="topbar">
@@ -35,7 +34,7 @@
         <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
       </button>
       <div class="nav-links" id="navLinks">
-        <a href="/#services">Services</a>
+        <a href="/">Home</a>
         <li class="drop">
           <a href="/services">We Fight</a>
           <ul>
@@ -50,25 +49,23 @@
             <li><a href="/cdl-ticket">CDL Ticket</a></li>
           </ul>
         </li>
-        <a href="/#how">How It Works</a>
+        <a href="/resources">Resources</a>
         <li class="drop">
           <a href="/courthouses">Courthouses</a>
           <ul>
-            <li><a href="/all-courthouses">All 58 CA Counties</a></li>
             <li><a href="/courthouses/stanley-mosk">Stanley Mosk (DTLA)</a></li>
             <li><a href="/courthouses/chatsworth">Chatsworth</a></li>
             <li><a href="/courthouses/hollywood">Hollywood</a></li>
             <li><a href="/courthouses/los-angeles-metropolitan">Metropolitan (LA)</a></li>
             <li><a href="/courthouses/van-nuys">Van Nuys</a></li>
+            <li><a href="/courthouses">All Courthouses</a></li>
           </ul>
         </li>
-        <a href="/#track">Track</a>
-          <a href="/resources">Resources</a>
-  <a href="/faq">FAQ</a>
-  <a href="/about">About</a>
+        <a href="/faq">FAQ</a>
+        <a href="/about">About</a>
         <a href="/assistant">Assistant</a>
         <a href="/#contact">Contact</a>
-        <a class="cta" href="/#build">Free Ticket Scan</a>
+        <a class="cta" href="/assistant">Scan My Ticket</a>
       </div>
     </div>
   </nav>
@@ -77,51 +74,75 @@
 <main class="subpage">
   <section class="sub-hero">
     <div class="wrap">
-      <div class="breadcrumb"><a href="/">Home</a> &rsaquo; <a href="/services">Services</a> &rsaquo; Reckless & Careless Driving (VC 23103)</div>
-      <p class="eyebrow">We Fight</p>
-      <h1>Reckless &amp; Careless Driving (VC 23103)</h1>
-      <p class="sub">Reckless driving is more than a ticket — it can add 2 points and, in some cases, becomes a misdemeanor. We help you review the citation and prepare a written defense.</p>
+      <div class="breadcrumb"><a href="/">Home</a> &rsaquo; Assistant</div>
+      <p class="eyebrow">AI Ticket Document Assistant</p>
+      <h1>Understand your California ticket — then decide.</h1>
+      <p class="sub">Upload a photo of your citation. The assistant reads the key fields for your review, explains your options in plain language, and drafts nothing, contacts no one, and sends anything only after you explicitly approve.</p>
     </div>
   </section>
 
-  <section class="pg-section alt">
-    <div class="wrap">
-      <div class="prose">
-        <h2>Why reckless driving needs real attention</h2>
-        <p>A speeding conviction in California adds a point to your driving record, can raise your insurance, and incurs court costs in addition to the fine. For commercial drivers, even one "reportable" conviction can threaten a CDL. Many citations are eligible for dismissal — but only where defects on the written citation are properly raised and the court agrees. We do not guarantee any dismissal.</p>
+  <section class="pg-section">
+    <div class="wrap ast-wrap">
+      <!-- STAGE 1: UPLOAD + CONSENT -->
+      <div class="ast-card" id="stage1">
+        <h2>Step 1 — Upload your citation</h2>
+        <p class="muted">Supported: JPG, PNG, HEIC. For best results, use a clear, well-lit photo with all fields visible.</p>
 
-        <h2>Defects we look for</h2>
-        <ul><li><strong>Elements of the charge</strong> — whether the citation actually alleges the required elements of "willful or wanton" disregard..</li>
-        <li><strong>Officer observation</strong> — continuous, accurate observation required to support VC 23103..</li>
-        <li><strong>Witness / evidence chain</strong> — collisions often hinge on witness statements that may be incomplete or missing..</li>
-        <li><strong>Code section accuracy</strong> — whether VC 23103 vs. 23103.5 (alcohol-related) is correctly cited..</li>
-        <li><strong>Factual precision</strong> — the written facts must match the charge — mismatches are a classic defense..</li>
-        </ul>
+        <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload ticket image">
+          <input type="file" id="astFile" accept="image/*" hidden>
+          <p><strong>Click to upload</strong> or drag a photo of your ticket here</p>
+          <img id="astPreview" class="ast-preview" style="display:none" alt="Ticket preview">
+        </div>
 
-        <h2>How written-declaration defense works</h2>
-        <p>We prepare a written declaration that organizes your statement and any evidence, focused on the elements the court must prove.</p>
+        <label class="ast-check">
+          <input type="checkbox" id="astConsentBool">
+          <span>I agree that my ticket photo will be sent to a third-party AI service solely to extract the citation fields and explain my options. I understand it will not be sold, and I can stop at any time.</span>
+        </label>
 
-        <div class="info-box">We help prepare documents and do not appear in court. For a potential misdemeanor, consider whether independent legal advice is appropriate for your situation.</div>
-
-        <h2>Scan the ticket now</h2>
-        <p>Upload a photo of your citation for a free scan. We review the extracted details and flag anything that may be worth professional review — before you pay anything.</p>
+        <button type="button" class="btn btn-amber ast-btn" id="astScan">Scan my ticket <span class="ast-arrow">&rarr;</span></button>
+        <div class="ast-status" id="astStatus" role="status"></div>
       </div>
-      <a class="btn btn-amber" href="/#build">SCAN MY TICKET — FREE</a>
-      <div class="related-links">
-        <a href="/speeding-ticket">Speeding Tickets</a>
-        <a href="/red-light-ticket">Red Light Ticket</a>
-        <a href="/cdl-ticket">CDL Ticket</a>
-        <a href="/suspended-license">Suspended License</a>
-        <a href="/services">All Services</a>
-      </div>
-    </div>
-  </section>
 
-  <section class="page-cta">
-    <div class="wrap">
-      <h2>Seen a possible defect? Act fast.</h2>
-      <p>Response windows matter. Upload your citation for a free AI scan now.</p>
-      <a class="btn btn-amber" href="/#build">SCAN MY TICKET — FREE</a>
+      <!-- STAGE 2: VERIFY EXTRACTED FIELDS -->
+      <div class="ast-card" id="stage2" style="display:none">
+        <h2>Step 2 — Verify the extracted information</h2>
+        <p class="muted">Review and correct anything the assistant got wrong. This verified information is what we would use to prepare documents — you control it.</p>
+
+        <div class="ast-fields" id="astFields"></div>
+
+        <div class="ast-nextsteps">
+          <h3>Your options, in plain language</h3>
+          <em class="ast-nl">Information, not legal advice. The right choice depends on your court, your record, and the facts. Outcomes are never guaranteed.</em>
+          <div id="astSteps"></div>
+        </div>
+
+        <button type="button" class="btn btn-amber ast-btn" id="astContinue">Looks right — continue <span class="ast-arrow">&rarr;</span></button>
+        <div class="ast-status" id="astStatus2" role="status"></div>
+      </div>
+
+      <!-- STAGE 3: ASK QUESTIONS + APPROVE -->
+      <div class="ast-card" id="stage3" style="display:none">
+        <h2>Step 3 — Ask questions, then approve</h2>
+        <p class="muted">Ask the assistant anything about your next steps or how a prepared document would work. Nothing here files or contacts anyone.</p>
+
+        <div class="ast-chat" id="astChat" aria-live="polite"></div>
+
+        <form class="ast-chatinput" id="astChatForm">
+          <input type="text" id="astChatMsg" placeholder="Ask about deadlines, traffic school, contesting, documents..." autocomplete="off">
+          <button type="submit" class="btn ast-chatbtn">Send</button>
+        </form>
+        <div class="ast-status" id="astChatStatus" role="status"></div>
+
+        <div class="ast-approve">
+          <label class="ast-check">
+            <input type="checkbox" id="astApprove">
+            <span><strong>I approve</strong> — I have reviewed and verified the citation details above, and I authorize United Traffic Tickets Defense to start document preparation using those details. I understand this is a paid service (document preparation, attorney review before filing) and that no outcome is guaranteed. I understand nothing is filed with any court or sent to anyone until I complete checkout.</span>
+          </label>
+          <button type="button" class="btn btn-amber ast-btn" id="astCheckout">Approve &amp; continue to secure checkout <span class="ast-arrow">&rarr;</span></button>
+          <div class="ast-status" id="astCheckoutStatus" role="status"></div>
+          <p class="tiny ast-caveat">Not a law firm. Document preparation and case-tracking service. Outcomes not guaranteed. See <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.</p>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -143,27 +164,27 @@
     </div>
     <div class="footer-links">
       <strong>Resources</strong>
-      
       <a href="/resources">Traffic Ticket Help Guides</a>
       <a href="/faq">FAQ</a>
       <a href="/courthouses">California Courthouses</a>
-      <a href="/all-courthouses">All 58 CA Counties</a>
       <a href="https://www.courts.ca.gov/forms.htm" rel="noopener" target="_blank">CA Court Forms (outbound)</a>
       <a href="https://www.chp.ca.gov" rel="noopener" target="_blank">CA Highway Patrol (outbound)</a>
       <a href="https://www.dmv.ca.gov/portal/drivers-licenses-identification-cards/" rel="noopener" target="_blank">CA DMV License (outbound)</a>
     </div>
     <div class="footer-links">
       <strong>Company</strong>
-      
       <a href="/accessibility">Accessibility</a>
       <a href="/">Home</a>
+      <a href="/about">About</a>
       <a href="/#how">How It Works</a>
       <a href="/#track">Track a Case</a>
       <a href="/#contact">Contact Us</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms of Use</a>
+      <a href="/refund-policy">Refund Policy</a>
       <a href="tel:+18182058271">(818) 205-8271</a> &middot; <a href="tel:+14244506387">(424) 450-6387</a>
       <a href="mailto:unitedtraffictickets@gmail.com">unitedtraffictickets@gmail.com</a>
-    
-      <a href="/about">About</a></div>
+    </div>
   </div>
   <div class="footer-legal">
     <div class="wrap">
@@ -173,10 +194,13 @@
   </div>
 </footer>
 
-<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="/assistant.js" defer></script>
 <script>
-(function(){ var v=document.getElementById('navToggle'),l=document.getElementById('navLinks');
-v.addEventListener('click',function(){var o=l.classList.toggle('open');v.classList.toggle('open',o);v.setAttribute('aria-expanded',o?'true':'false');});})();
+document.getElementById('year').textContent = new Date().getFullYear();
+(function(){
+  var v = document.getElementById('navToggle'), l = document.getElementById('navLinks');
+  if (v && l) v.addEventListener('click', function(){ var o=l.classList.toggle('open'); v.classList.toggle('open',o); v.setAttribute('aria-expanded',o?'true':'false'); });
+})();
 </script>
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }

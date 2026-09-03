@@ -44,6 +44,42 @@ export function statusHistory(status) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Anthropic Messages API helper (direct fetch, no SDK dependency — matches the
+// Cloudflare Workers runtime the same way the Stripe calls do).
+// Returns the parsed JSON body on success, or throws an Error with the
+// anthropic status/message on failure.
+export const ANTHROPIC_DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+
+export async function anthropic(env, { system, messages, max_tokens = 1024, temperature = 0.2 }) {
+  const key = env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error('Anthropic API key not configured');
+  const model = env.ANTHROPIC_MODEL || ANTHROPIC_DEFAULT_MODEL;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, system, messages, max_tokens, temperature }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error('Anthropic HTTP ' + res.status + ': ' + text.slice(0, 500));
+  }
+  return res.json();
+}
+
+// Pull the concatenated text out of an Anthropic response message's content.
+export function anthropicText(data) {
+  const parts = data && data.content;
+  if (!Array.isArray(parts)) return '';
+  return parts
+    .filter((p) => p && p.type === 'text')
+    .map((p) => p.text || '')
+    .join('');
+}
+
 // POST to Resend with retry-with-backoff on rate limits (429) and server errors (5xx).
 // Resend's default sending limit is 10 requests/second; on a hit it returns 429.
 // Optional attachments: [{ filename, bytes, type }]
