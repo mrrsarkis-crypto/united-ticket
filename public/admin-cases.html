@@ -55,7 +55,7 @@
         <thead>
           <tr>
             <th>Tracking</th><th>Created</th><th>Status</th><th>Name</th><th>Email</th>
-            <th>Court</th><th>Citation</th><th>Service</th><th>Notes</th>
+            <th>Court</th><th>Citation</th><th>Service</th><th>DL photo</th><th>Notes</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -92,6 +92,10 @@
     rowsEl.innerHTML = '';
     cases.forEach(function (c) {
       var n = c.notes || {};
+      var dlPhoto = n.dlPhoto || '';
+      var dlCell = dlPhoto
+        ? '<a href="' + dlPhoto + '" target="_blank" rel="noopener">view</a>'
+        : '<span class="muted">no</span>';
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td><b>' + esc(c.tracking_code) + '</b></td>' +
@@ -102,6 +106,7 @@
         '<td>' + esc(c.court) + '</td>' +
         '<td>' + esc(c.citation) + '</td>' +
         '<td>$' + esc(c.service) + '</td>' +
+        '<td>' + dlCell + '</td>' +
         '<td>' + esc(n.notes || '') + '</td>';
       rowsEl.appendChild(tr);
     });

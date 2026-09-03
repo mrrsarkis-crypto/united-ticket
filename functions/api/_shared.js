@@ -44,7 +44,8 @@ export function statusHistory(status) {
 
 // Send an email to the business owner (env.ADMIN_EMAIL) via Resend.
 // Used to notify on new form submissions and other events. Non-fatal on failure.
-export async function sendBusinessNotification(env, { subject, text, html }) {
+// Optional attachments: [{ filename, bytes, type }]
+export async function sendBusinessNotification(env, { subject, text, html, attachments }) {
   if (!env.RESEND_API_KEY) return;
   const to = env.ADMIN_EMAIL || env.RESEND_FROM_TO || '';
   if (!to) return;
@@ -56,6 +57,13 @@ export async function sendBusinessNotification(env, { subject, text, html }) {
     form.append('subject', subject);
     form.append('text', text || subject);
     if (html) form.append('html', html);
+    if (attachments) {
+      for (const a of attachments) {
+        if (a && a.bytes && a.filename) {
+          form.append('attachments', new File([a.bytes], a.filename, { type: a.type || 'application/octet-stream' }));
+        }
+      }
+    }
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },

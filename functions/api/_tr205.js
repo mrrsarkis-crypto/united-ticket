@@ -132,3 +132,92 @@ function renderPdf(rows, W, H, M) {
 
   return new TextEncoder().encode(pdf);
 }
+
+// Build a client Retainer Agreement PDF (confidential work product NOT included).
+// The client signs this to engage services. Fee is itemized.
+export function buildRetainer(data) {
+  data = data || {};
+  const name = data.name || '';
+  const email = data.email || '';
+  const tracking = data.tracking || '';
+  const service = data.service || '';
+  const fee = data.fee || '0.00';
+  const date = data.date || '';
+
+  const W = 215.9, H = 279.4, M = 18;
+  const rows = [];
+  const push = (x, y, text, size, font) => {
+    rows.push({ x, y, text: escapePdfText(text), size: size || 10, font: font || 'Helvetica' });
+  };
+
+  push(M, H - 22, 'RETAINER AGREEMENT', 13, 'Helvetica-Bold');
+  push(M, H - 28, 'United Traffic Tickets Defense  -  unitedtraffictickets.com  -  (818) 205-8271', 8, 'Helvetica');
+  push(M, H - 34, 'Case reference: ' + tracking, 9, 'Helvetica');
+
+  push(M, H - 50, 'THIS RETAINER AGREEMENT ("Agreement") is entered into as of this ' + (date || '____ day of ________, 20__') + ',', 9);
+  push(M + 4, H - 58, 'by and between United Traffic Tickets Defense ("Firm") and the client named below ("Client"):', 9);
+
+  push(M, H - 74, 'Client name: ' + (name || '[NAME]'), 10, 'Helvetica-Bold');
+  push(M, H - 80, 'Client email: ' + (email || '[EMAIL]'), 10);
+  push(M, H - 86, 'Selected services: ' + (service || '[service]'), 10);
+
+  push(M, H - 100, '1. SERVICES', 9, 'Helvetica-Bold');
+  push(M + 4, H - 106, 'The Firm will analyze the subject traffic citation, prepare the applicable declaration and', 9);
+  push(M + 4, H - 112, 'defense materials for the Client\u2019s review, and assist as described in the selected service tier.', 9);
+
+  push(M, H - 126, '2. FEE', 9, 'Helvetica-Bold');
+  push(M + 4, H - 132, 'Client agrees to pay the Firm a fee of $' + fee + ' for the selected services. This fee covers', 9);
+  push(M + 4, H - 138, 'the work described above. Payment has been (or will be) processed via the Firm\u2019s secure checkout.', 9);
+
+  push(M, H - 152, '3. SCOPE / NO GUARANTEE', 9, 'Helvetica-Bold');
+  push(M + 4, H - 158, 'The Firm does not guarantee any particular outcome. No legal advice is given through this', 9);
+  push(M + 4, H - 164, 'self-help service. Client is solely responsible for the accuracy of all information provided and', 9);
+  push(M + 4, H - 170, 'for reviewing and filing any documents as applicable.', 9);
+
+  push(M, H - 184, '4. SIGNATURE', 9, 'Helvetica-Bold');
+  push(M + 4, H - 190, 'By signing below, Client agrees to the terms of this retainer and confirms the information provided.', 9);
+
+  push(M, H - 206, 'Client printed name: ' + (name || '______________________'), 10);
+  push(M, H - 214, 'Date: ______________________', 10);
+  push(M, H - 226, 'Client signature: ______________________________________', 10);
+
+  return renderPdf(rows, W, H, M);
+}
+
+// Build a Payment Receipt PDF for the client (never includes confidential work product).
+export function buildReceipt(data) {
+  data = data || {};
+  const name = data.name || '';
+  const email = data.email || '';
+  const tracking = data.tracking || '';
+  const fee = data.fee || '0.00';
+  const date = data.date || new Date().toISOString().slice(0, 10);
+
+  const W = 215.9, H = 279.4, M = 18;
+  const rows = [];
+  const push = (x, y, text, size, font) => {
+    rows.push({ x, y, text: escapePdfText(text), size: size || 10, font: font || 'Helvetica' });
+  };
+
+  push(M, H - 22, 'PAYMENT RECEIPT', 13, 'Helvetica-Bold');
+  push(M, H - 28, 'United Traffic Tickets Defense  -  (818) 205-8271', 8, 'Helvetica');
+
+  push(M, H - 44, 'Receipt', 10, 'Helvetica-Bold');
+  push(M, H - 52, 'Date: ' + date, 10);
+  push(M, H - 58, 'Case reference (tracking): ' + tracking, 10);
+  push(M, H - 64, 'Billed to: ' + name + '  (' + email + ')', 10);
+
+  push(M, H - 80, 'Description', 10, 'Helvetica-Bold');
+  push(M + 90, H - 80, 'Amount', 10, 'Helvetica-Bold');
+  push(M, H - 88, 'Traffic ticket defense services', 10);
+  push(M + 90, H - 88, '$' + fee, 10);
+  push(M, H - 96, 'Total paid', 10, 'Helvetica-Bold');
+  push(M + 90, H - 96, '$' + fee, 10, 'Helvetica-Bold');
+
+  push(M, H - 116, 'This receipt confirms payment received. Your signed retainer is provided separately.', 9);
+  push(M + 4, H - 122, 'For questions contact (818) 205-8271 or the case tracking page.', 9);
+
+  push(M, H - 140, 'Thank you for your business.', 10, 'Helvetica-Oblique');
+
+  return renderPdf(rows, W, H, M);
+}

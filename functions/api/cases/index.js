@@ -32,9 +32,11 @@ export async function onRequestPost(context) {
   if (!env[priceKey]) return json({ error: 'Payment for this service is not configured yet. Contact the site owner.' + (debug ? ' Missing env ' + priceKey : '') }, 500);
 
   const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
+  const dlPhoto = (body.dlPhoto || '').trim();
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
-    address: body.address || '', phone: body.phone || '', notes: body.notes || ''
+    address: body.address || '', phone: body.phone || '', notes: body.notes || '',
+    dlPhoto: dlPhoto || ''
   });
 
   let stored = false;
@@ -50,19 +52,34 @@ export async function onRequestPost(context) {
       };
       await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
       stored = true;
+      const n = record.notes || {};
+      const info =
+        'Name: ' + fullName + '\n' +
+        'Email: ' + email + '\n' +
+        'DOB: ' + dob + '\n' +
+        'Driver license #: ' + dl + '\n' +
+        'Court: ' + court + '\n' +
+        'Citation #: ' + citation + '\n' +
+        'Violation date: ' + (n.date || '—') + '\n' +
+        'Code/section: ' + (n.code || '—') + '\n' +
+        'Bail amount: ' + (n.bail || '—') + '\n' +
+        'Address: ' + (n.address || '—') + '\n' +
+        'Phone: ' + (n.phone || '—') + '\n' +
+        'Extras/notes: ' + (n.notes || '—') + '\n' +
+        'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
+        'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
       await sendBusinessNotification(env, {
         subject: 'New ticket case: ' + trackingCode,
-        text: 'New "Fight My Ticket" submission received.\n\n' +
+        text: 'New "Fight My Ticket" submission received (awaiting payment — Checkout URL sent to customer).\n\n' +
+          '— CASE —\n' +
           'Tracking code: ' + trackingCode + '\n' +
-          'Name: ' + fullName + '\n' +
-          'Email: ' + email + '\n' +
-          'Court: ' + court + '\n' +
-          'Citation: ' + citation + '\n' +
-          'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00') + '\n' +
-          'Status: awaiting payment (Checkout URL sent to customer)\n' +
+          'Status: payment_pending\n' +
           'Time: ' + record.created_at + '\n\n' +
+          '— SUBMITTED ONLINE INFO —\n' +
+          info + '\n\n' +
           'View in dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || '') + '\n' +
-          'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')',
+          'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')\n\n' +
+          '(The prefilled TBD / TR-205 will be emailed here once payment clears.)',
       });
     } catch (e) {
       console.error('KV insert failed', e);

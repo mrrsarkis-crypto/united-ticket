@@ -109,6 +109,8 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .intake-step .status.ok{color:var(--ok);}
 .intake-card label{color:#44547a;font-size:12px;margin:16px 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
 .intake-card label i{font-style:normal;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;margin-left:4px;}
+.intake-card label i.highrec{color:#c07d0a;font-weight:700;background:#fff5e0;padding:2px 7px;border-radius:999px;border:1px solid #f2d9a4;}
+.intake-card .field-file{display:block;font-size:12.5px;color:var(--ok);font-weight:600;margin-top:4px;}
 .intake-card .field-hint{font-size:12.5px;color:var(--muted);margin:2px 0 6px;text-transform:none;letter-spacing:0;font-weight:400;}
 .intake-card input[type=text],.intake-card input[type=email],.intake-card input[type=number],.intake-card select,.intake-card textarea{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px;font-family:inherit;background:#FBFCFE;color:var(--ink);}
 .intake-card input:focus,.intake-card select:focus,.intake-card textarea:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,166,35,.18);}

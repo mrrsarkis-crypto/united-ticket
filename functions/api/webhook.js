@@ -1,6 +1,6 @@
 // POST /api/webhook — Stripe webhook endpoint
 // Expects STRIPE_WEBHOOK_SECRET and a D1 binding CASES.
-import { buildTR205 } from './_tr205.js';
+import { buildTR205, buildRetainer, buildReceipt } from './_tr205.js';
 import { sendBusinessNotification } from './_shared.js';
 
 export async function onRequestPost(context) {
@@ -34,8 +34,8 @@ export async function onRequestPost(context) {
 
     if (trackingCode && paid) {
       await updateCasePaid(env, trackingCode);
-      await notifyPaid(env, session, trackingCode);
-      await fulfillCase(env, session, trackingCode);
+      const caseData = await loadCase(env, trackingCode);
+      await fulfillCase(env, session, trackingCode, caseData);
     }
   }
 
@@ -91,74 +91,122 @@ async function updateCasePaid(env, trackingCode) {
   } catch { /* non-fatal */ }
 }
 
-async function notifyPaid(env, session, trackingCode) {
+async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) {
   const raw = session && session.amount_total;
   const dollars = raw ? '$' + (raw / 100).toFixed(2) : '?';
+  const notes = base.notes || {};
+  const info =
+    'Name: ' + (base.name || '—') + '\n' +
+    'Email: ' + (base.email || (session && session.customer_email) || '—') + '\n' +
+    'DOB: ' + (base.dob || '—') + '\n' +
+    'Driver license #: ' + (base.dl || '—') + '\n' +
+    'Court: ' + (base.court || '—') + '\n' +
+    'Citation #: ' + (base.citation || '—') + '\n' +
+    'Violation date: ' + (notes.date || '—') + '\n' +
+    'Code/section: ' + (notes.code || '—') + '\n' +
+    'Bail amount: ' + (notes.bail || '—') + '\n' +
+    'Address: ' + (notes.address || '—') + '\n' +
+    'Phone: ' + (notes.phone || '—') + '\n' +
+    'Extras/notes: ' + (notes.notes || '—') + '\n' +
+    'DL photo uploaded: ' + (notes.dlPhoto ? 'yes' : 'no');
+  const atts = (pdfBytes && filename)
+    ? [{ filename, bytes: pdfBytes, type: 'application/pdf' }]
+    : [];
   await sendBusinessNotification(env, {
-    subject: 'PAYMENT RECEIVED: ' + trackingCode + ' (' + dollars + ')',
-    text: 'A payment just cleared.\n\n' +
+    subject: 'PAID CASE + TBD: ' + trackingCode + ' (' + dollars + ')',
+    text: 'Payment cleared. The prefilled Trial by Written Declaration (TR-205 / TBD) is attached, and here is the information the customer submitted online.\n\n' +
+      '— CASE —\n' +
       'Tracking code: ' + trackingCode + '\n' +
       'Amount: ' + dollars + '\n' +
-      'Customer email: ' + (session.customer_email || '?') + '\n' +
-      'Status: payment_complete — TR-205 drafted and stored.\n' +
+      'Status: payment_complete\n' +
       'Time: ' + new Date().toISOString() + '\n\n' +
-      'Dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || ''),
+      '— SUBMITTED ONLINE INFO —\n' +
+      info + '\n\n' +
+      'Dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || '') + '\n' +
+      'R2 file: ' + (filename ? 'stored as ' + (base.paid_at ? new Date(base.paid_at).toISOString().slice(0, 10).replace(/-/g, '') + '/' : '') + filename : 'n/a'),
+    attachments: atts,
   });
 }
 
-async function fulfillCase(env, session, trackingCode) {
-  // Load the stored case record so the prefilled TR-205 has real data.
-  let caseData = null;
-  if (env.CASES) {
-    try { caseData = await env.CASES.get('case:' + trackingCode, 'json'); } catch {}
-  }
+async function fulfillCase(env, session, trackingCode, caseData) {
   const base = caseData || {};
   const custEmail = session.customer_email || base.email;
 
-  // Build the prefilled TR-205 declaration PDF.
-  let pdfBytes = null;
+  const d = base.paid_at ? new Date(base.paid_at) : new Date();
+  const stamp = d.toISOString().slice(0, 10).replace(/-/g, '');
+  const safeCode = (trackingCode || 'case').replace(/[^A-Za-z0-9_-]/g, '');
+  const paidAt = d.toISOString();
+  const raw = session && session.amount_total;
+  const dollars = raw ? (raw / 100).toFixed(2) : '0.00';
+
+  // Confidential TR-205 (TBD) — goes ONLY to the business, never the client.
+  let tr205Bytes = null;
   try {
-    pdfBytes = buildTR205({
+    tr205Bytes = buildTR205({
       name: base.name, citation: base.citation, court: base.court,
       dob: base.dob, dl: base.dl,
       notes: Object.assign({}, base.notes, { created_at: (base.paid_at || base.created_at) }),
     });
   } catch (e) { console.error('TR-205 build failed', e); }
 
-  // yyyyMMdd date-named file (military format).
-  const d = base.paid_at ? new Date(base.paid_at) : new Date();
-  const stamp = d.toISOString().slice(0, 10).replace(/-/g, '');
-  const safeCode = (trackingCode || 'case').replace(/[^A-Za-z0-9_-]/g, '');
-  const filename = stamp + '_' + safeCode + '_TR205.pdf';
+  // Client docs: retainer (to sign) + receipt. No work product.
+  let retainerBytes = null, receiptBytes = null;
+  try {
+    retainerBytes = buildRetainer({
+      name: base.name, email: custEmail, tracking: trackingCode,
+      service: 'Traffic ticket defense', fee: dollars, date: paidAt.slice(0, 10),
+    });
+  } catch (e) { console.error('Retainer build failed', e); }
+  try {
+    receiptBytes = buildReceipt({
+      name: base.name, email: custEmail, tracking: trackingCode,
+      fee: dollars, date: paidAt.slice(0, 10),
+    });
+  } catch (e) { console.error('Receipt build failed', e); }
 
-  // 1) Store the PDF in R2 under a dated "folder" (yyyyMMdd/).
-  let r2Key = null;
-  if (env.R2 && pdfBytes) {
+  const r2Tr205File = stamp + '_' + safeCode + '_TR205.pdf';
+
+  // 1) Notify the business: TBD (TR-205) + online info + R2 path.
+  await notifyPaid(env, session, trackingCode, base, tr205Bytes, r2Tr205File);
+
+  // 2) Store the TR-205 in R2 under a dated folder.
+  if (env.R2 && tr205Bytes) {
     try {
-      r2Key = stamp + '/' + filename;
-      await env.R2.put(r2Key, pdfBytes, { httpMetadata: { contentType: 'application/pdf' } });
-      await sendConfirmationEmail(custEmail, trackingCode, env, 'Your declaration is ready (stored in your case files).', { pdfBytes, filename, r2Key });
+      await env.R2.put(stamp + '/' + r2Tr205File, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
     } catch (e) { console.error('R2 store failed', e); }
-  } else if (pdfBytes) {
-    await sendConfirmationEmail(custEmail, trackingCode, env, 'Your prefilled declaration is ready for review.', { pdfBytes, filename, r2Key });
-  } else {
-    await sendConfirmationEmail(custEmail, trackingCode, env);
   }
+
+  // 3) Email the CLIENT the retainer + receipt (NOT the work product).
+  await sendConfirmationEmail(custEmail, trackingCode, env, {
+    retainerBytes, receiptBytes, tracking: trackingCode, fee: dollars,
+  });
 }
 
-async function sendConfirmationEmail(email, trackingCode, env, subject, pdf) {
+async function loadCase(env, trackingCode) {
+  if (!env.CASES) return null;
+  try { return await env.CASES.get('case:' + trackingCode, 'json'); } catch { return null; }
+}
+
+async function sendConfirmationEmail(email, trackingCode, env, docs) {
   // Preferred: Resend (env.RESEND_API_KEY). Fallback: generic SEND_EMAIL_URL.
+  const retainerBytes = docs && docs.retainerBytes;
+  const receiptBytes = docs && docs.receiptBytes;
+  const fee = (docs && docs.fee) || '';
   if (env.RESEND_API_KEY) {
     try {
       const form = new FormData();
       form.append('from', env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>');
       form.append('to', email);
-      form.append('subject', subject || ('Your Ticket Fighter case is received - ' + trackingCode));
-      form.append('text', 'Thanks for your payment. Your case tracking code is ' + trackingCode +
-        '. Your prefilled Trial by Written Declaration is attached. Review and correct every field before filing.' +
-        (pdf && pdf.r2Key ? ' Stored as ' + pdf.r2Key : '') + '.');
-      if (pdf && pdf.pdfBytes && pdf.filename) {
-        form.append('attachments', new File([pdf.pdfBytes], pdf.filename, { type: 'application/pdf' }));
+      form.append('subject', 'Your United Traffic Tickets Defense receipt & retainer');
+      form.append('text', 'Thank you for your payment of $' + fee + ' (case ' + trackingCode + ').\n\n' +
+        'Please review and sign the attached Retainer Agreement and keep the attached Receipt for your records.\n' +
+        'You can track your case progress here: https://unitedtraffictickets.com/#track (code ' + trackingCode + ').\n\n' +
+        'If you have any questions, call (818) 205-8271.');
+      if (retainerBytes) {
+        form.append('attachments', new File([retainerBytes], 'Retainer_Agreement_' + trackingCode + '.pdf', { type: 'application/pdf' }));
+      }
+      if (receiptBytes) {
+        form.append('attachments', new File([receiptBytes], 'Receipt_' + trackingCode + '.pdf', { type: 'application/pdf' }));
       }
       await fetch('https://api.resend.com/emails', {
         method: 'POST',

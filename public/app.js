@@ -9,6 +9,21 @@
   var submitBtn = document.getElementById('submitBtn');
   var currentImageDataUrl = null;
   var currentCaseId = null;
+  var currentDlDataUrl = null;
+  var dlPhotoInput = document.getElementById('f_dlPhoto');
+  var dlPhotoNameEl = document.getElementById('dlPhotoName');
+  if (dlPhotoInput && dlPhotoNameEl) {
+    dlPhotoInput.addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) { currentDlDataUrl = null; dlPhotoNameEl.textContent = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        currentDlDataUrl = ev.target.result;
+        dlPhotoNameEl.textContent = 'Uploaded: ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
   var navToggle = document.getElementById('navToggle');
   var navLinks = document.getElementById('navLinks');
@@ -213,7 +228,8 @@
       code: get('f_code'), bail: get('f_bail'),
       name: (get('f_firstname') + ' ' + get('f_lastname')).trim(),
       email: get('f_email'), address: get('f_address'), phone: get('f_phone'),
-      dob: get('f_dob'), dl: get('f_dl'), notes: get('f_notes'), service: get('f_service')
+      dob: get('f_dob'), dl: get('f_dl'), notes: get('f_notes'), service: get('f_service'),
+      dlPhoto: currentDlDataUrl || ''
     };
 
     // First and last name are both required; then only DL and DOB are strictly
