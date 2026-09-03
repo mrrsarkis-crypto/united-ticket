@@ -51,8 +51,19 @@
         "closes": "18:30"
       }],
       "sameAs": ["https://www.yelp.com/biz/united-traffic-tickets-defense-van-nuys-2"],
-      "description": "Document preparation and case-tracking service with attorney review before filing. Not a law firm. Outcomes not guaranteed.",
-      "areaServed": "Van Nuys and Los Angeles County, California",
+      "description": "Document preparation and case-tracking service with California Certified Paralegal review and attorney support for court appearances. Not a law firm. Outcomes not guaranteed.",
+      "foundingDate": "2015",
+      "founder": {
+        "@type": "Person",
+        "name": "Sarkis Tulumdzhyan",
+        "jobTitle": "Founder, Owner and CEO"
+      },
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "California SBE Certification",
+        "value": "2053854"
+      },
+      "areaServed": "Los Angeles County and all of California",
       "priceRange": "$$"
     },
     {
@@ -61,7 +72,7 @@
         {
           "@type": "Question",
           "name": "Is this a law firm or legal advice?",
-          "acceptedAnswer": { "@type": "Answer", "text": "No. United Traffic Tickets Defense is a document-preparation and case-tracking service. We are not a law firm and do not provide legal advice. Documents are reviewed by a licensed professional before filing." }
+          "acceptedAnswer": { "@type": "Answer", "text": "No. United Traffic Tickets Defense is a document-preparation and case-tracking service. We are not a law firm and do not provide legal advice. Your file is reviewed by a California Certified Paralegal, and attorneys licensed in California review the file and appear in court as needed." }
         },
         {
           "@type": "Question",
@@ -143,6 +154,9 @@
           </ul>
         </li>
         <a href="#track">Track</a>
+          <a href="/resources">Resources</a>
+  <a href="/faq">FAQ</a>
+  <a href="/about">About</a>
         <a href="#contact">Contact</a>
         <a class="cta" href="#build">Free Ticket Scan</a>
       </div>
@@ -164,8 +178,8 @@
         </div>
         <div class="hero-badges">
           <span><strong>Free</strong> citation scan</span>
-          <span><strong>15+</strong> years' experience</span>
-          <span><strong>1000s</strong> of citations reviewed</span>
+          <span><strong>Founded</strong> 2015</span>
+          <span><strong>SBE</strong> Certified</span>
         </div>
       </div>
       <div class="hero-visual">
@@ -446,6 +460,8 @@
     </div>
     <div class="footer-links">
       <strong>Company</strong>
+      
+      <a href="/accessibility">Accessibility</a>
       <a href="#top">Home</a>
       <a href="#how">How It Works</a>
       <a href="#contact">Contact Us</a>
@@ -454,7 +470,8 @@
       <a href="/terms">Terms of Use</a>
       <a href="/refund-policy">Refund Policy</a>
       <a href="/contact">Contact &amp; Legal Info</a>
-    </div>
+    
+      <a href="/about">About</a></div>
   </div>
   <div class="footer-legal">
     <div class="wrap">
@@ -476,5 +493,16 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<div class="consent-bar" id="uttConsent" role="dialog" aria-label="Cookie consent">
+  <div class="consent-inner">
+    <div class="consent-text">This site uses cookies for essential functions and, if you consent, for analytics and personalized advertising via Google AdSense. See our <a href="/privacy">Privacy Policy</a> for details.</div>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn consent-btn-ok" id="uttConsentAccept">Accept</button>
+      <button type="button" class="consent-btn consent-btn-no" id="uttConsentDecline">Essential only</button>
+    </div>
+  </div>
+</div>
+<script src="/consent.js" defer></script>
 </body>
 </html>

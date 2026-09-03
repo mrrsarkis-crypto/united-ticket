@@ -43,7 +43,10 @@
         <a href="/#how">How It Works</a>
         <a href="/#track">Track</a>
         <a href="/contact">Contact</a>
-        <a class="cta" href="/#build">Free Ticket Scan</a>
+            <a href="/resources">Resources</a>
+  <a href="/faq">FAQ</a>
+  <a href="/about">About</a>
+<a class="cta" href="/#build">Free Ticket Scan</a>
       </div>
     </div>
   </nav>
@@ -86,14 +89,36 @@
         <h2>How we store and protect it</h2>
         <p>Ticket photos, driver's-license information, dates of birth, and supporting documents are stored in access-controlled storage. Access is restricted to staff who need it to prepare or review your case. Payments are handled by a PCI-compliant processor (Stripe); we do not store your full card details.</p>
 
+        <h2>Cookies, advertising, and Google AdSense</h2>
+        <p>We use cookies and similar technologies to operate the site, understand how visitors use it, and to display third-party advertising through <strong>Google AdSense</strong>. Google and its partners use advertising cookies (including, where applicable, the Google Advertising Cookie and the DoubleClick Cookie) to serve and personalize ads based on your visits to this site and other websites, to limit how often you see an ad, and to measure advertising performance.</p>
+        <ul>
+          <li><strong>Essential cookies</strong> are required for the site to function (for example, to keep your session and remember your scroll position in the ticket-upload flow).</li>
+          <li><strong>Analytics cookies</strong> help us understand aggregate usage so we can improve the site.</li>
+          <li><strong>Advertising cookies</strong> are used by Google AdSense to deliver and measure ads. They are only loaded on pages that display advertising (not on the ticket-upload, payment, or case-tracking flow).</li>
+        </ul>
+        <p>You can learn more about how Google collects and uses data, and how to control it, at <a href="https://policies.google.com/technologies/partner-sites" rel="noopener" target="_blank">Google's "How Google uses information from sites or apps that use our services"</a> and the <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">Google Ads/AdSense privacy options</a>.</p>
+        <p><strong>Opting out of personalized advertising:</strong> you can opt out of personalized advertising from Google through <a href="https://adssettings.google.com" rel="noopener" target="_blank">Google's Ads Settings</a>, and through the NAI / industry opt-out pages linked there. Where required by law or Google policy, we obtain your consent before loading advertising cookies, and we honor your choice via a consent banner on the site.</p>
+
+        <h2>Our ads never run in your private flow</h2>
+        <p>We deliberately do <strong>not</strong> place advertising inside or directly beside the ticket-upload, payment, or case-tracking steps. Advertising appears only on informational pages.</p>
+
+        <h2>Rights under the CCPA/CPRA (California residents)</h2>
+        <p>If you are a California resident, the California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA) give you rights to:</p>
+        <ul>
+          <li><strong>Know</strong> what personal information we collect, use, and share.</li>
+          <li><strong>Access</strong> a copy of the personal information we hold about you.</li>
+          <li><strong>Delete</strong> your personal information, subject to legal exceptions.</li>
+          <li><strong>Opt out</strong> of the "sale" or "sharing" of personal information. We do not sell personal information, and we do not knowingly share personal information for cross-context behavioral advertising in a way that would trigger a sale under the CCPA.</li>
+          <li><strong>Correct</strong> inaccurate personal information we hold about you.</li>
+          <li><strong>Non-discrimination</strong> — we will not treat you differently for exercising these rights.</li>
+        </ul>
+        <p>We do not sell the personal information of any resident.</p>
+
         <h2>How long we keep it</h2>
         <p>We retain case records for as long as needed to provide the service and to satisfy legal/record-keeping obligations, and for a reasonable period afterward. You may request deletion earlier (see below). We delete personal data when it is no longer needed for these purposes.</p>
 
         <h2>Your rights</h2>
-        <p>You may request a copy of the personal information we hold about you, ask us to correct it, or ask us to delete it. To do so, contact us with your name and the email or tracking code used for your case. We will act on verified requests within a reasonable time. If you believe we have mishandled your personal information, you may also contact your state's data-protection authority.</p>
-
-        <h2>Cookies and analytics</h2>
-        <p>We may use cookies and analytics to understand how visitors use the site and to measure advertising performance. We do not sell this information.</p>
+        <p>You may request a copy of the personal information we hold about you, ask us to correct it, or ask us to delete it. To do so, contact us with your name and the email or tracking code used for your case. We will act on verified requests within a reasonable time. If you believe we have mishandled your personal information, you may also contact your state's data-protection authority (in California, the California Privacy Protection Agency).</p>
 
         <h2>Updates</h2>
         <p>We may update this policy from time to time. Changes are effective when posted on this page.</p>
@@ -119,10 +144,13 @@
     </div>
     <div class="footer-links">
       <strong>Company</strong>
+      
+      <a href="/accessibility">Accessibility</a>
       <a href="/">Home</a>
       <a href="/contact">Contact Us</a>
       <a href="tel:+18182058271">(818) 205-8271</a> &middot; <a href="tel:+14244506387">(424) 450-6387</a>
-    </div>
+    
+      <a href="/about">About</a></div>
   </div>
   <div class="footer-legal">
     <div class="wrap">
@@ -137,5 +165,16 @@
 (function(){ var v=document.getElementById('navToggle'),l=document.getElementById('navLinks');
 v.addEventListener('click',function(){var o=l.classList.toggle('open');v.classList.toggle('open',o);v.setAttribute('aria-expanded',o?'true':'false');});})();
 </script>
+
+<div class="consent-bar" id="uttConsent" role="dialog" aria-label="Cookie consent">
+  <div class="consent-inner">
+    <div class="consent-text">This site uses cookies for essential functions and, if you consent, for analytics and personalized advertising via Google AdSense. See our <a href="/privacy">Privacy Policy</a> for details.</div>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn consent-btn-ok" id="uttConsentAccept">Accept</button>
+      <button type="button" class="consent-btn consent-btn-no" id="uttConsentDecline">Essential only</button>
+    </div>
+  </div>
+</div>
+<script src="/consent.js" defer></script>
 </body>
 </html>

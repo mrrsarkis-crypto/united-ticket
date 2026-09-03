@@ -34,6 +34,7 @@
       <div class="nav-links">
         <a href="/#services">Servicios</a>
         <a href="/#track">Seguimiento</a>
+        <a href="/faq">Preguntas Frecuentes</a>
         <a href="/">English</a>
         <a class="cta" href="/#build">Escaneo Gratis</a>
       </div>
@@ -152,5 +153,16 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+<div class="consent-bar" id="uttConsent" role="dialog" aria-label="Consentimiento de cookies">
+  <div class="consent-inner">
+    <div class="consent-text">Este sitio usa cookies para funciones esenciales y, si acepta, para análisis y publicidad personalizada a través de Google AdSense. Consulte nuestra <a href="/privacy">Política de Privacidad</a>.</div>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn consent-btn-ok" id="uttConsentAccept">Aceptar</button>
+      <button type="button" class="consent-btn consent-btn-no" id="uttConsentDecline">Solo esenciales</button>
+    </div>
+  </div>
+</div>
+<script src="/consent.js" defer></script>
 </body>
 </html>

@@ -63,6 +63,9 @@
           </ul>
         </li>
         <a href="/#track">Track</a>
+          <a href="/resources">Resources</a>
+  <a href="/faq">FAQ</a>
+  <a href="/about">About</a>
         <a href="/#contact">Contact</a>
         <a class="cta" href="/#build">Free Ticket Scan</a>
       </div>
@@ -138,6 +141,9 @@
     </div>
     <div class="footer-links">
       <strong>Resources</strong>
+      
+      <a href="/resources">Traffic Ticket Help Guides</a>
+      <a href="/faq">FAQ</a>
       <a href="/courthouses">California Courthouses</a>
       <a href="/all-courthouses">All 58 CA Counties</a>
       <a href="https://www.courts.ca.gov/forms.htm" rel="noopener" target="_blank">CA Court Forms (outbound)</a>
@@ -146,13 +152,16 @@
     </div>
     <div class="footer-links">
       <strong>Company</strong>
+      
+      <a href="/accessibility">Accessibility</a>
       <a href="/">Home</a>
       <a href="/#how">How It Works</a>
       <a href="/#track">Track a Case</a>
       <a href="/#contact">Contact Us</a>
       <a href="tel:+18182058271">(818) 205-8271</a> &middot; <a href="tel:+14244506387">(424) 450-6387</a>
       <a href="mailto:unitedtraffictickets@gmail.com">unitedtraffictickets@gmail.com</a>
-    </div>
+    
+      <a href="/about">About</a></div>
   </div>
   <div class="footer-legal">
     <div class="wrap">
@@ -170,5 +179,16 @@ v.addEventListener('click',function(){var o=l.classList.toggle('open');v.classLi
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
 </script>
+
+<div class="consent-bar" id="uttConsent" role="dialog" aria-label="Cookie consent">
+  <div class="consent-inner">
+    <div class="consent-text">This site uses cookies for essential functions and, if you consent, for analytics and personalized advertising via Google AdSense. See our <a href="/privacy">Privacy Policy</a> for details.</div>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn consent-btn-ok" id="uttConsentAccept">Accept</button>
+      <button type="button" class="consent-btn consent-btn-no" id="uttConsentDecline">Essential only</button>
+    </div>
+  </div>
+</div>
+<script src="/consent.js" defer></script>
 </body>
 </html>
