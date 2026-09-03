@@ -198,5 +198,16 @@ document.getElementById('year').textContent = new Date().getFullYear();
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
 </script>
+
+<div class="consent-bar" id="uttConsent" role="dialog" aria-label="Cookie consent">
+  <div class="consent-inner">
+    <div class="consent-text">This site uses cookies for essential functions and, if you consent, for analytics and personalized advertising via Google AdSense. See our <a href="/privacy">Privacy Policy</a> for details.</div>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn consent-btn-ok" id="uttConsentAccept">Accept</button>
+      <button type="button" class="consent-btn consent-btn-no" id="uttConsentDecline">Essential only</button>
+    </div>
+  </div>
+</div>
+<script src="/consent.js" defer></script>
 </body>
 </html>
