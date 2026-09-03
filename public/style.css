@@ -49,7 +49,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .hero-badges{display:flex;gap:28px;flex-wrap:wrap;}
 .hero-badges span{font-size:13px;color:rgba(255,255,255,.7);}
 .hero-badges strong{display:block;font-size:20px;color:#fff;}
-.hero-img{width:100%;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.4);}
+.hero-img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.4);}
 
 /* ---- Guarantee strip ---- */
 .strip-guarantee{background:var(--amber);}
