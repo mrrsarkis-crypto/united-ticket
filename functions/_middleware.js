@@ -8,7 +8,7 @@ export async function onRequest(context) {
   newHeaders.set('X-Frame-Options', 'DENY');
   newHeaders.set('Referrer-Policy', 'no-referrer');
   if (newHeaders.get('content-type') && newHeaders.get('content-type').includes('text/html')) {
-    newHeaders.set('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:; style-src 'self'; connect-src 'self' https://api.stripe.com;");
+    newHeaders.set('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://pagead2.googlesyndication.com 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https://pagead2.googlesyndication.com https://tpc.googlesyndication.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.stripe.com https://adservice.google.com; frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com;");
   }
   newHeaders.set('Access-Control-Allow-Origin', '*');
   newHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
