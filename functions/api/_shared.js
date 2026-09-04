@@ -54,13 +54,15 @@ export async function anthropic(env, { system, messages, max_tokens = 1024, temp
   const key = env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('Anthropic API key not configured');
   const model = env.ANTHROPIC_MODEL || ANTHROPIC_DEFAULT_MODEL;
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': key,
+    'anthropic-version': '2023-06-01',
+  };
+  if (env.ANTHROPIC_WORKSPACE_ID) headers['anthropic-workspace-id'] = env.ANTHROPIC_WORKSPACE_ID;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
+    headers,
     body: JSON.stringify({ model, system, messages, max_tokens, temperature }),
   });
   if (!res.ok) {
