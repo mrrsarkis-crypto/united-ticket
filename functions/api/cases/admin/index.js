@@ -34,7 +34,7 @@ export async function onRequestGet(context) {
 }
 
 function csv(records) {
-  const cols = ['tracking_code', 'created_at', 'status', 'paid_at', 'name', 'email', 'court', 'citation', 'service', 'dob', 'dl', 'notes'];
+  const cols = ['tracking_code', 'created_at', 'status', 'paid_at', 'name', 'email', 'court', 'citation', 'service', 'dob', 'dl', 'session_id', 'notes'];
   const esc = (v) => {
     if (v == null) return '';
     const s = typeof v === 'object' ? JSON.stringify(v) : String(v);

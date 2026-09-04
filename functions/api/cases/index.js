@@ -33,6 +33,9 @@ export async function onRequestPost(context) {
 
   const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
   const dlPhoto = (body.dlPhoto || '').trim();
+  // Optional assistant session id (already validated by the assistant endpoints,
+  // but sanitize again here as defense-in-depth).
+  const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
     address: body.address || '', phone: body.phone || '', notes: body.notes || '',
@@ -48,9 +51,15 @@ export async function onRequestPost(context) {
         dob, dl,
         status: 'payment_pending',
         notes: JSON.parse(notes),
+        session_id: sessionId || undefined,
         created_at: new Date().toISOString(),
       };
       await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
+      // Reverse index: session -> case, so a case can be found from an assistant
+      // session id. TTL matches the assistant session expiry (14 days).
+      if (sessionId) {
+        await env.CASES.put('sessioncase:' + sessionId, trackingCode, { expirationTtl: 60 * 60 * 24 * 14 });
+      }
       stored = true;
       const n = record.notes || {};
       const info =
@@ -67,6 +76,7 @@ export async function onRequestPost(context) {
         'Phone: ' + (n.phone || '—') + '\n' +
         'Extras/notes: ' + (n.notes || '—') + '\n' +
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
+        'Assist. session: ' + (record.session_id || '—') + '\n' +
         'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
       await sendBusinessNotification(env, {
         subject: 'New ticket case: ' + trackingCode,

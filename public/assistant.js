@@ -243,6 +243,7 @@
 
     var v = collectVerified();
     var payload = {
+      sessionId: sessionId,
       name: first + ' ' + last,
       email: email,
       court: v.courtOrAgency || v.location || '',
