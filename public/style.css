@@ -118,6 +118,11 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .intake-step .step-title{display:flex;align-items:center;gap:12px;color:var(--navy);font-size:20px;font-weight:800;margin:0 0 6px;}
 .step-no{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .step-help{color:var(--muted);font-size:14px;margin:0 0 18px;line-height:1.6;max-width:640px;}
+.photo-note{margin:0 0 18px;padding:14px 16px 12px;background:#FFF7E8;border:1px solid #F2D9A4;border-left:5px solid var(--amber);border-radius:12px;max-width:640px;}
+.photo-note-main{margin:0;color:var(--ink);font-size:15px;line-height:1.55;font-weight:500;}
+.photo-note-main strong{color:var(--navy);}
+.photo-note-icon{margin-right:6px;}
+.photo-note-sub{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5;}
 .intake-step .drop{background:#fff;}
 .intake-step .drop p{color:var(--muted);}
 .intake-step .drop strong{color:var(--navy);}
