@@ -1,0 +1,58 @@
+# Deploy static site + Pages Functions to Cloudflare Pages via the Pages
+# deployment API (direct upload) on every push to main.
+#
+# NOTE: This uses a long-lived Cloudflare API token (Pages: Edit) stored as a
+# GitHub Actions secret. Cloudflare does not yet offer official OIDC-only
+# ("trusted publishing") deploys for Pages, so an API token is the supported
+# path today. The token never has to be pasted in chat — it lives only as a
+# GitHub repository secret.
+#
+# One-time setup (Cloudflare dashboard):
+#   My Profile > API Tokens > Create Token > "Cloudflare Pages: Edit" (account
+#   scoped to this account only). Copy the token.
+#
+# One-time setup (GitHub repo):
+#   Settings > Secrets and variables > Actions:
+#     - Secret  CLOUDFLARE_API_TOKEN   = the Pages:Edit token above
+#     - Variable CLOUDFLARE_ACCOUNT_ID = dc59db902477a26c1031d860bb1b0954
+#     - Variable CLOUDFLARE_PROJECT_NAME = ticket-fighter
+#
+# IMPORTANT: moving to GitHub Actions deploys means the site is deployed via the
+# Pages deployment API instead of Cloudflare's built-in GitHub integration.
+# Disconnect the old GitHub integration in Pages > Settings > Builds &
+# deployments (or keep it but be aware you'll have two deploy triggers). Pages
+# Functions under /functions and KV/env/secret bindings are all read at runtime
+# and are unaffected by how the code is uploaded.
+
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CLOUDFLARE_PROJECT_NAME }}
+          directory: public
+          branch: main
+          wranglerVersion: "3"
