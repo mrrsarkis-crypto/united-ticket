@@ -37,13 +37,27 @@
       cookieEnabled: cookieEnabled(),
     };
 
-    function enableAds() {
-      // Push any queued ad units created before consent (auto ads + manual).
-      try {
-        if (window.adsbygoogle) {
+    // The advertising/advertising-cookie script must not load before consent.
+    // We inject the AdSense script tag only after the user accepts.
+    function loadAdScript() {
+      var src =
+        'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395';
+      if (document.querySelector('script[data-utt-ad]')) return;
+      var s = document.createElement('script');
+      s.setAttribute('data-utt-ad', '1');
+      s.async = true;
+      s.src = src;
+      s.crossOrigin = 'anonymous';
+      s.onload = function () {
+        try {
           (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }
-      } catch (e) {}
+        } catch (e) {}
+      };
+      document.head.appendChild(s);
+    }
+
+    function enableAds() {
+      try { loadAdScript(); } catch (e) {}
     }
 
     if (choice === 'accepted') {
