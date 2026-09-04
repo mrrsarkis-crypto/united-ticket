@@ -223,36 +223,42 @@
 
   // APPROVE + CHECKOUT ---------------------------------------------------
   els.astCheckout.addEventListener('click', async function () {
+    // Validate contact form first.
+    var first = (document.getElementById('c_first').value || '').trim();
+    var last = (document.getElementById('c_last').value || '').trim();
+    var email = (document.getElementById('c_email').value || '').trim();
+    var dl = (document.getElementById('c_dl').value || '').trim();
+    var dob = (document.getElementById('c_dob').value || '').trim();
+    var phone = (document.getElementById('c_phone').value || '').trim();
+    var address = (document.getElementById('c_address').value || '').trim();
+
     if (!els.astApprove.checked) {
       setStatus(els.astCheckoutStatus, 'Please check the approval box to confirm you verified the details and authorize document preparation.', true);
       return;
     }
-    var v = collectVerified();
-    // Collect contact info for the case.
-    var name = prompt('Your full name as it appears on the citation (required):');
-    if (!name || !name.trim()) { setStatus(els.astCheckoutStatus, 'Name is required.', true); return; }
-    var email = prompt('Your email (for documents and case tracking, required):');
+    if (!first || !last) { setStatus(els.astCheckoutStatus, 'Please enter your first and last name.', true); return; }
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setStatus(els.astCheckoutStatus, 'A valid email is required.', true); return; }
-    var dl = prompt('Your California driver\'s license number (required):');
-    if (!dl) { setStatus(els.astCheckoutStatus, 'Driver\'s license number is required.', true); return; }
-    var dob = prompt('Your date of birth (MM/DD/YYYY):');
-    if (!dob) { setStatus(els.astCheckoutStatus, 'Date of birth is required.', true); return; }
+    if (!dl) { setStatus(els.astCheckoutStatus, 'Your driver\'s license number is required.', true); return; }
+    if (!dob) { setStatus(els.astCheckoutStatus, 'Your date of birth is required.', true); return; }
 
+    var v = collectVerified();
     var payload = {
-      name: name.trim(),
-      email: email.trim(),
+      name: first + ' ' + last,
+      email: email,
       court: v.courtOrAgency || v.location || '',
       citation: v.citationNumber || '',
       service: '199',
-      dob: dob.trim(),
-      dl: dl.trim(),
+      dob: dob,
+      dl: dl,
+      address: address,
+      phone: phone,
       dlPhoto: base64Data || '',
       notes: {
         date: v.violationDate || '',
         code: v.violationCode || '',
         bail: v.bailAmount || '',
-        address: '',
-        phone: '',
+        address: address,
+        phone: phone,
         notes: 'Submitted via AI Ticket Document Assistant. Verified citation summary: ' +
           JSON.stringify(v) + '. Session: ' + sessionId
       }

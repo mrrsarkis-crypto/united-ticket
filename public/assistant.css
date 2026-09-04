@@ -48,6 +48,11 @@
 
 .ast-legibility { grid-column: 1 / -1; font-size: 13px; color: var(--muted, #5a6b83); background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
 
+.ast-contact { margin-top: 22px; padding-top: 4px; }
+.ast-contact h3 { margin: 0 0 4px; color: var(--navy, #0F1F3D); font-size: 16px; }
+.ast-contact .muted { margin-top: 0; margin-bottom: 12px; }
+.ast-fieldrow.span2 { grid-column: 1 / -1; }
+
 .ast-nextsteps { margin-top: 22px; background: #fff8ec; border: 1px solid #f6e2b8; border-radius: 12px; padding: 16px 18px; }
 .ast-nextsteps h3 { margin: 0 0 4px; color: var(--navy, #0F1F3D); font-size: 16px; }
 .ast-nl { font-size: 13px; color: var(--muted, #8a6d3b); display: block; margin-bottom: 10px; }
