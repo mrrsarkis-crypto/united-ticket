@@ -1,16 +1,30 @@
 # Cloudflare Pages deployment via wrangler.
 # The static site lives in /public and Functions live in /functions.
 #
-# NOTE: Pages bindings/secrets are dashboard-managed to keep the project in
-# non-authoritative config mode (so dashboard edits aren't wiped).
-# Required bindings (Workers & Pages > ticket-fighter > Settings > Bindings):
-#   KV Namespace  "CASES" -> namespace ticket-fighter-cases
-# Environment Variables / Secrets:
+# Bindings below mirror the live project config (verified against the Cloudflare
+# dashboard on 2026-09-04). They must be declared here so `wrangler pages deploy`
+# in CI (GitHub Actions) resolves them and so local `wrangler pages dev` works.
+#   KV Namespace "CASES" -> namespace ticket-fighter-cases
+#   R2 Bucket     "R2"    -> bucket united-cases
+#
+# Runtime secrets are NOT stored in this file. Configure them in the Cloudflare
+# dashboard (Workers & Pages > ticket-fighter > Settings > Bindings) under
+# Environment Variables / Secrets or, for local dev, a `wrangler.toml` is not used
+# for secrets. Required secrets include:
 #   STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999, STRIPE_WEBHOOK_SECRET,
 #   STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL, (optional) SEND_EMAIL_URL, SEND_EMAIL_AUTH
 #   ANTHROPIC_API_KEY (required for /api/assistant/*), (optional) ANTHROPIC_MODEL
 #   (default claude-3-5-sonnet-20241022)
 name = "ticket-fighter"
 account_id = "dc59db902477a26c1031d860bb1b0954"
+pages_build_output_dir = "public"
 
 compatibility_date = "2026-08-29"
+
+[[kv_namespaces]]
+binding = "CASES"
+id = "9a4dddc310f2406a86f9e3c3da65565d"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "united-cases"

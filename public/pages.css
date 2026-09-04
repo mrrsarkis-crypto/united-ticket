@@ -7,10 +7,32 @@
 .nav-links .drop>ul{display:none;position:absolute;top:100%;left:0;min-width:230px;
   background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;
   box-shadow:0 14px 30px rgba(0,0,0,.14);z-index:50;}
-.nav-links .drop:hover>ul,.nav-links .drop:focus-within>ul{display:block;}
+/* Desktop: open on hover (and keyboard focus). Scoped to hover-capable devices
+   so it does not fight the mobile tap-to-open behavior. */
+@media(hover:hover){
+  .nav-links .drop:hover>ul{display:block;}
+}
+.nav-links .drop>a:focus-visible+ul{display:block;}
+/* A programmatically set .open class always shows the submenu — this is what
+   makes tap/click work on touch devices (and desktop). */
+.nav-links .drop.open>ul{display:block;}
 .nav-links .drop>ul a{color:var(--ink);display:block;padding:9px 12px;font-size:13.5px;border-radius:6px;}
 .nav-links .drop>ul a:hover{background:#f1f5fb;color:var(--navy);}
 .nav-links .drop>a{display:flex;align-items:center;}
+/* Mobile (menu-open) dropdown: stacked under the toggle, collapsed until it
+   gains .open (tap). Overrides the desktop absolute panel for touch screens. */
+@media(max-width:860px){
+  .nav-links li.drop{position:static;}
+  .nav-links .drop>ul{position:static;box-shadow:none;background:transparent;border:none;
+    padding:0 0 4px 12px;min-width:0;}
+  .nav-links .drop>ul a{white-space:normal;font-size:14.5px;padding:11px 12px;
+    border-bottom:1px solid rgba(255,255,255,.06);border-radius:0;color:rgba(255,255,255,.82);}
+  .nav-links .drop>ul a:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .nav-links .drop>ul a::after{display:none;}
+  .nav-links .drop>a::after{content:'';width:7px;height:7px;border-right:2px solid rgba(255,255,255,.75);
+    border-bottom:2px solid rgba(255,255,255,.75);transform:rotate(45deg);margin-left:6px;margin-top:-3px;transition:transform .15s;}
+  .nav-links .drop.open>a::after{transform:rotate(225deg);margin-top:3px;}
+}
 
 /* Sub-page layout */
 .subpage{min-height:100vh;}

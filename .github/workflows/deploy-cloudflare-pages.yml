@@ -14,15 +14,14 @@
 # One-time setup (GitHub repo):
 #   Settings > Secrets and variables > Actions:
 #     - Secret  CLOUDFLARE_API_TOKEN   = the Pages:Edit token above
-#     - Variable CLOUDFLARE_ACCOUNT_ID = dc59db902477a26c1031d860bb1b0954
-#     - Variable CLOUDFLARE_PROJECT_NAME = ticket-fighter
+#     - Secret  CLOUDFLARE_ACCOUNT_ID  = dc59db902477a26c1031d860bb1b0954
 #
 # IMPORTANT: moving to GitHub Actions deploys means the site is deployed via the
 # Pages deployment API instead of Cloudflare's built-in GitHub integration.
 # Disconnect the old GitHub integration in Pages > Settings > Builds &
-# deployments (or keep it but be aware you'll have two deploy triggers). Pages
-# Functions under /functions and KV/env/secret bindings are all read at runtime
-# and are unaffected by how the code is uploaded.
+# deployments (or keep it but be aware you'll have two deploy triggers).
+# wrangler.toml declares the KV (CASES) and R2 (united-cases) bindings; runtime
+# secrets stay in the dashboard and are read from env at runtime.
 
 name: Deploy to Cloudflare Pages
 
@@ -39,7 +38,7 @@ jobs:
       deployments: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -58,4 +57,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy public --project-name=ticket-fighter
-          
