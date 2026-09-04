@@ -16,7 +16,6 @@
 #   ANTHROPIC_API_KEY (required for /api/assistant/*), (optional) ANTHROPIC_MODEL
 #   (default claude-3-5-sonnet-20241022)
 name = "ticket-fighter"
-account_id = "dc59db902477a26c1031d860bb1b0954"
 pages_build_output_dir = "public"
 
 compatibility_date = "2026-08-29"
