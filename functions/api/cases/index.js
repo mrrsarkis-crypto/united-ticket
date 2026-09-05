@@ -122,25 +122,32 @@ export async function onRequestPost(context) {
     });
     const session = await stripeRes.json();
     if (!stripeRes.ok) {
-      // TEMP DIAGNOSTIC: always surface the real Stripe error + secret presence,
-      // independent of DEBUG_MODE. Remove after the 502 is resolved.
-      if (debug || process.env.ALWAYS_DIAGNOSE === '1') {
-        return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session), hasSecret: !!env.STRIPE_SECRET_KEY, priceId: priceId }, 502);
+      console.error('Stripe checkout session failed', stripeRes.status, session);
+      if (debug) {
+        return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session) }, 503);
       }
       throw new Error('Stripe error');
     }
     sessionUrl = session.url;
   } catch (e) {
     if (stored && env.CASES) {
-      await env.CASES.put('case:' + trackingCode, JSON.stringify(
-        { ...JSON.parse(notes), tracking_code: trackingCode, name: fullName, email, court, citation, service, dob, dl, status: 'payment_error', created_at: new Date().toISOString() }
-      ));
+      try {
+        const existing = await env.CASES.get('case:' + trackingCode, 'json');
+        await env.CASES.put('case:' + trackingCode, JSON.stringify({
+          ...(existing || {}),
+          tracking_code: trackingCode,
+          name: fullName, email, court, citation, service, dob, dl,
+          status: 'payment_error',
+        }));
+      } catch (kvErr) {
+        console.error('KV payment_error update failed', kvErr);
+      }
     }
-    // TEMP DIAGNOSTIC: always surface the real error + secret presence.
-    if (debug || process.env.ALWAYS_DIAGNOSE === '1') {
-      return json({ error: 'Could not create payment session. threw: ' + String(e && e.message) + ' hasSecret:' + !!env.STRIPE_SECRET_KEY, hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+    console.error('Could not create payment session', e);
+    if (debug) {
+      return json({ error: 'Could not create payment session. ' + String(e && e.message) }, 503);
     }
-    return json({ error: 'Could not create payment session. Please try again. hasSecret:' + !!env.STRIPE_SECRET_KEY, hasSecret: !!env.STRIPE_SECRET_KEY }, 502);
+    return json({ error: 'Could not create payment session. Please try again.' }, 503);
   }
 
   return json({ trackingCode, url: sessionUrl, amountLabel: '$' + dollars, stored }, 200);

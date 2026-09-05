@@ -1,15 +1,12 @@
 // GET /api/cases/admin?code=ADMIN_CODE  — list all submissions (private)
 // GET /api/cases/admin.csv?code=ADMIN_CODE — CSV export
-import { json } from '../../_shared.js';
+import { json, unauthorizedIfNotAdmin } from '../../_shared.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
+  const denied = unauthorizedIfNotAdmin(request, env);
+  if (denied) return denied;
   const url = new URL(request.url);
-  const provided = (url.searchParams.get('code') || '').trim();
-  const allowed = (env.ADMIN_CODE || '').trim();
-  if (!allowed || provided !== allowed) {
-    return json({ error: 'Unauthorized' }, 401);
-  }
   if (!env.CASES) return json({ error: 'Case database not configured' }, 500);
 
   let records = [];

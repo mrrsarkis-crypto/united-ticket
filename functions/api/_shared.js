@@ -6,6 +6,16 @@ export function json(data, status = 200) {
   });
 }
 
+/** Require ?code=ADMIN_CODE. Returns a 401 Response, or null if the request is allowed. */
+export function unauthorizedIfNotAdmin(request, env) {
+  const provided = (new URL(request.url).searchParams.get('code') || '').trim();
+  const allowed = (env.ADMIN_CODE || '').trim();
+  if (!allowed || provided !== allowed) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+  return null;
+}
+
 export function priceFor(service) {
   if (service === '199') return 'STRIPE_PRICE_199';
   if (service === '299') return 'STRIPE_PRICE_299';
