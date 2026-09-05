@@ -13,8 +13,10 @@
 # for secrets. Required secrets include:
 #   STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999, STRIPE_WEBHOOK_SECRET,
 #   STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL, (optional) SEND_EMAIL_URL, SEND_EMAIL_AUTH
-#   ANTHROPIC_API_KEY (required for /api/assistant/*), (optional) ANTHROPIC_MODEL
-#   (default claude-3-5-sonnet-20241022)
+#   GEMINI_API_KEY — free tier — powers /api/assistant/* (chat + photo scan).
+#   (optional) ANTHROPIC_API_KEY — paid — used instead of Gemini if present.
+#   (optional) ANTHROPIC_MODEL (default claude-3-5-sonnet-20241022)
+#   (optional) GEMINI_MODEL (default gemini-flash-latest)
 name = "ticket-fighter"
 pages_build_output_dir = "public"
 

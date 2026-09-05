@@ -11,7 +11,7 @@
 //  - Only the site's existing paid workflow ( /api/cases -> Stripe checkout )
 //    can actually start document preparation, and only after an explicit
 //    human approval on the client.
-import { json, anthropic, anthropicText, rand } from '../_shared.js';
+import { json, assistantChat, rand } from '../_shared.js';
 
 const CHAT_SYSTEM =
   'You are the ticket-document assistant for "United Traffic Tickets Defense", a California ' +
@@ -28,7 +28,7 @@ const CHAT_SYSTEM =
   '  or otherwise contact anyone or anything on the user\'s behalf. That is always done later by ' +
   '  the site only after the user explicitly approves and completes checkout.\n' +
   '- Any DRAFT you produce must be clearly labeled UNREVIEWED and unverified.\n' +
-  '- If the user asks about urgent issues (active warrant, DUI or serious charge, missed ' +
+  '- If the user asks about urgent issues (active warrant, serious charge, missed ' +
   '  deadline, commercial license at stake), tell them to contact a licensed attorney or the ' +
   '  relevant court promptly.\n' +
   '- Be concise, plain, and kind. Use the conversation history to stay consistent.\n' +
@@ -148,30 +148,20 @@ export async function onRequestPost(context) {
 
   let finalText;
   try {
-    // Step 1: send the conversation to the model with tools available.
-    let data = await anthropic(env, {
+    // Runs on free Gemini (GEMINI_API_KEY) when no paid Anthropic key is set.
+    const res = await assistantChat(env, {
       system: CHAT_SYSTEM,
       messages: history,
       max_tokens: 1024,
       tools: TOOLS,
+      resolveTool: (name, input) => toolResult(name, input),
     });
-
-    let turns = 0;
-    while (data && data.stop_reason === 'tool_use' && turns < 4) {
-      turns++;
-      history.push({ role: 'assistant', content: data.content });
-      const toolUses = (data.content || []).filter((c) => c.type === 'tool_use');
-      for (const tu of toolUses) {
-        history.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: toolResult(tu.name, tu.input).content }] });
-      }
-      data = await anthropic(env, { system: CHAT_SYSTEM, messages: history, max_tokens: 1024, tools: TOOLS });
-    }
-
-    finalText = anthropicText(data);
+    finalText = res.text;
+    history = res.history;
   } catch (e) {
-    console.error('Anthropic chat error', e);
+    console.error('Assistant chat error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
-    return json({ error: 'The assistant is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 502);
+    return json({ error: 'The assistant is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 503);
   }
 
   // Cap stored history to keep KV blobs small (trim from the front, keep the

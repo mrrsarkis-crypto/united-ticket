@@ -163,3 +163,240 @@ export async function sendBusinessNotification(env, { subject, text, html, attac
     console.error('Business notification email failed', e);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Gemini (free tier) helpers
+//
+// The AI assistant features normally call the paid Anthropic API. When
+// ANTHROPIC_API_KEY is not configured, the same endpoints fall back to
+// Google's Gemini free tier (GEMINI_API_KEY, default model gemini-flash-latest —
+// both text and image capable). Set GEMINI_MODEL to override the model.
+// ---------------------------------------------------------------------------
+
+export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
+
+// Pick which AI provider is available: paid Anthropic first, then free Gemini.
+export function pickAiProvider(env) {
+  if (env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (env.GEMINI_API_KEY) return 'gemini';
+  return null;
+}
+
+async function geminiFetch(env, model, body) {
+  const maxAttempts = 4;
+  let attempt = 1;
+  while (attempt <= maxAttempts) {
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (res.ok) return res.json();
+    // Retry on 429 (rate limit) and 503 (transient overload) — both common on
+    // the free tier. Permanent errors (4xx other than 429) are thrown immediately.
+    if (res.status === 429 || res.status === 503) {
+      if (attempt === maxAttempts) {
+        const text = await res.text().catch(() => '');
+        throw new Error('Gemini HTTP ' + res.status + ' after ' + maxAttempts + ' retries: ' + text.slice(0, 400));
+      }
+      const retryAfter = Number(res.headers.get('retry-after') || 0);
+      const delay = retryAfter || 800 * Math.pow(2, attempt - 1); // 800, 1600, 3200ms
+      await new Promise((r) => setTimeout(r, delay));
+      attempt++;
+      continue;
+    }
+    const text = await res.text().catch(() => '');
+    throw new Error('Gemini HTTP ' + res.status + ': ' + text.slice(0, 500));
+  }
+}
+
+// Convert an Anthropic-shaped message history (roles user/assistant, string or
+// block-array content incl. tool_use / tool_result) into Gemini "contents".
+// Consecutive same-role messages are merged (Gemini requires alternating
+// user/model turns).
+function geminiContents(history) {
+  const idName = {};
+  for (const m of history) {
+    if (Array.isArray(m && m.content)) {
+      for (const c of m.content) {
+        if (c && c.type === 'tool_use' && c.id) idName[c.id] = c.name;
+      }
+    }
+  }
+  const out = [];
+  for (const m of history) {
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    const parts = [];
+    if (typeof m.content === 'string') {
+      parts.push({ text: m.content });
+    } else if (Array.isArray(m.content)) {
+      for (const c of m.content) {
+        if (!c) continue;
+        if (c.type === 'text') parts.push({ text: c.text || '' });
+        else if (c.type === 'tool_use') {
+          const fcall = { name: c.name, args: c.input || {} };
+          if (c.thought_signature) fcall.id = c.thought_id;
+          parts.push(c.thought_signature
+            ? { functionCall: fcall, thoughtSignature: c.thought_signature }
+            : { functionCall: fcall });
+        }
+        else if (c.type === 'tool_result') {
+          const txt = Array.isArray(c.content)
+            ? c.content.map((x) => (x && x.text) || '').join('')
+            : String(c.content == null ? '' : c.content);
+          let response = {};
+          try { response = JSON.parse(txt); } catch { response = { content: txt }; }
+          parts.push({ functionResponse: { name: idName[c.tool_use_id] || '', response } });
+        }
+      }
+    } else if (m.content != null) {
+      parts.push({ text: String(m.content) });
+    }
+    const last = out[out.length - 1];
+    if (last && last.role === role) last.parts.push.apply(last.parts, parts);
+    else out.push({ role, parts });
+  }
+  return out;
+}
+
+// Anthropic tool definitions -> Gemini function declarations.
+function geminiTools(tools) {
+  if (!tools || !tools.length) return undefined;
+  return [{ functionDeclarations: tools.map((t) => ({ name: t.name, description: t.description || '', parameters: t.input_schema })) }];
+}
+
+// Call the model once and pull candidate text + tool calls out of the reply.
+function geminiReplyParts(data) {
+  const content = data && data.candidates && data.candidates[0] && data.candidates[0].content;
+  if (!content || !Array.isArray(content.parts)) return { text: '', calls: [], signature: '' };
+  const calls = [];
+  let signature = '';
+  let text = '';
+  for (const p of content.parts) {
+    if (p && typeof p.text === 'string') text += p.text;
+    if (p && p.thoughtSignature) signature = p.thoughtSignature;
+    if (p && p.functionCall) {
+      calls.push({
+        name: p.functionCall.name,
+        args: p.functionCall.args || {},
+        signature: p.thoughtSignature || '',
+        id: p.functionCall.id || '',
+      });
+    }
+  }
+  return { text, calls, signature };
+}
+
+// Run a conversational turn against whichever AI provider is configured.
+// opts: { system, messages, max_tokens, temperature, tools, resolveTool }
+// resolveTool(name, input) returns the tool-result content (array of {type:'text'} blocks).
+// Returns { text, history } where history is the Anthropic-shaped message array
+// (including any tool_use / tool_result turns) ready to persist in KV.
+export async function assistantChat(env, opts) {
+  const provider = pickAiProvider(env);
+  if (!provider) throw new Error('No AI provider configured. Set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY.');
+  const { system, messages, max_tokens = 1024, temperature = 0.2, tools, resolveTool } = opts;
+
+  if (provider === 'anthropic') {
+    let data = await anthropic(env, { system, messages, max_tokens, temperature, tools });
+    const history = messages.slice();
+    while (data && data.stop_reason === 'tool_use' && tools) {
+      history.push({ role: 'assistant', content: data.content });
+      const toolUses = (data.content || []).filter((c) => c.type === 'tool_use');
+      if (!toolUses.length) break;
+      for (const tu of toolUses) {
+        history.push({
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: tu.id, content: resolveTool ? resolveTool(tu.name, tu.input).content : [] }],
+        });
+      }
+      data = await anthropic(env, { system, messages: history, max_tokens, temperature, tools });
+    }
+    return { text: anthropicText(data), history };
+  }
+
+  // Gemini path: same loop, modelling tool_use / tool_result the same way so
+  // the persisted history stays provider-portable.
+  const model = env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const history = messages.slice();
+  let text = '';
+  for (let turn = 0; turn < 4; turn++) {
+    const data = await geminiFetch(env, model, {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: geminiContents(history),
+      generationConfig: { maxOutputTokens: max_tokens, temperature },
+      tools: geminiTools(tools),
+    });
+    const rep = geminiReplyParts(data);
+    if (rep.text) text = rep.text;
+    if (!rep.calls.length) break;
+    const assistantBlocks = [];
+    const resultBlocks = [];
+    for (const call of rep.calls) {
+      const id = call.id || 'tu_' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      const block = { type: 'tool_use', id, name: call.name, input: call.args };
+      // Persist Gemini's thought_signature (required by Gemini 3 models for
+      // function calling) as extra fields so it survives the KV round-trip and
+      // is re-emitted on the next turn. Ignored by Anthropic.
+      if (call.signature) { block.thought_signature = call.signature; block.thought_id = id; }
+      assistantBlocks.push(block);
+      resultBlocks.push({
+        type: 'tool_result',
+        tool_use_id: id,
+        content: resolveTool ? resolveTool(call.name, call.args).content : [],
+      });
+    }
+    history.push({ role: 'assistant', content: assistantBlocks });
+    history.push({ role: 'user', content: resultBlocks });
+  }
+  return { text, history };
+}
+
+// Scan a ticket image against whichever AI provider is configured.
+// opts: { system, prompt, base64, mediaType, max_tokens, temperature }
+// Returns the model's text output.
+export async function assistantExtract(env, opts) {
+  const provider = pickAiProvider(env);
+  if (!provider) throw new Error('No AI provider configured. Set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY.');
+  const { system, prompt, base64, mediaType, max_tokens = 1500, temperature = 0 } = opts;
+
+  if (provider === 'anthropic') {
+    const data = await anthropic(env, {
+      system,
+      max_tokens,
+      temperature,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt },
+          ],
+        },
+      ],
+    });
+    return anthropicText(data);
+  }
+
+  const model = env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const data = await geminiFetch(env, model, {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType: mediaType, data: base64 } },
+          { text: prompt },
+        ],
+      },
+    ],
+    generationConfig: { maxOutputTokens: max_tokens, temperature },
+  });
+  return geminiReplyParts(data).text;
+}

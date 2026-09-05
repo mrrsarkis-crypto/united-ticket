@@ -66,6 +66,14 @@
       currentImageDataUrl = e.target.result;
       preview.src = currentImageDataUrl;
       preview.style.display = 'block';
+      if (typeof Tesseract === 'undefined') {
+        statusEl.textContent = 'Scanner engine failed to load (network or script blocked). Fill the fields manually below.';
+        statusEl.className = 'status';
+        caseForm.style.display = 'block';
+        window.__lastOcrText = '';
+        refreshScore();
+        return;
+      }
       statusEl.textContent = 'Scanning ticket...';
       statusEl.className = 'status';
       var progress = document.getElementById('progress');

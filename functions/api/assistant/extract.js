@@ -6,7 +6,7 @@
 // Policy: NO image is processed unless the client signals consent (and we
 // reject without it). The assistant never promises dismissal or asserts an
 // unchecked legal conclusion — that constraint lives in the system prompt.
-import { json, anthropic, anthropicText } from '../_shared.js';
+import { json, assistantExtract } from '../_shared.js';
 
 const EXTRACT_SYSTEM =
   'You are the ticket-document assistant for "United Traffic Tickets Defense", a ' +
@@ -76,39 +76,30 @@ export async function onRequestPost(context) {
   if (!base64 || base64.length < 64) return json({ error: 'Image data appears empty or invalid.' }, 400);
 
   try {
-    const data = await anthropic(env, {
+    // Runs on free Gemini (GEMINI_API_KEY, vision-capable) when no paid
+    // Anthropic key is set.
+    const text = await assistantExtract(env, {
       system: EXTRACT_SYSTEM,
+      base64,
+      mediaType,
       max_tokens: 1500,
       temperature: 0,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            {
-              type: 'text',
-              text:
-                'Read this California traffic citation photograph and extract the citation ' +
-                'fields described in your instructions. Output ONLY the JSON object.',
-            },
-          ],
-        },
-      ],
+      prompt:
+        'Read this California traffic citation photograph and extract the citation ' +
+        'fields described in your instructions. Output ONLY the JSON object.',
     });
-
-    const text = anthropicText(data);
     let parsed;
     try {
       parsed = JSON.parse(extractJson(text));
     } catch {
-      return json({ error: 'Could not interpret the ticket image. Please try a clearer photo.', raw: text.slice(0, 500) }, 502);
+      return json({ error: 'Could not interpret the ticket image. Please try a clearer photo.', raw: text.slice(0, 500) }, 503);
     }
 
     return json({ ok: true, extracted: parsed, raw: text.slice(0, 4000) }, 200);
   } catch (e) {
-    console.error('Anthropic extract error', e);
+    console.error('Extract error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
-    return json({ error: 'The AI scan is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 502);
+    return json({ error: 'The AI scan is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 503);
   }
 }
 
