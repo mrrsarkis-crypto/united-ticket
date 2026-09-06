@@ -54,10 +54,11 @@
   });
 
   function handleFile(file) {
-    // Reject unsupported types early with a clear message.
-    var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || file.type === '';
+    // Accept images (JPG/PNG/HEIC) and PDFs; reject others early with a clear message.
+    var name = (file && file.name || '').toLowerCase();
+    var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || file.type === 'application/pdf' || /\.(png|jpe?g|heic|pdf)$/i.test(name);
     if (!typeOk) {
-      statusEl.textContent = 'Unsupported file type. Please upload a JPG, PNG, or HEIC image.';
+      statusEl.textContent = 'Unsupported file type. Please upload a JPG, PNG, or HEIC image, or a PDF.';
       statusEl.className = 'status';
       return;
     }
@@ -66,42 +67,153 @@
       currentImageDataUrl = e.target.result;
       preview.src = currentImageDataUrl;
       preview.style.display = 'block';
-      statusEl.textContent = 'Scanning ticket...';
+      statusEl.textContent = 'Scanning your document...';
       statusEl.className = 'status';
+      caseForm.style.display = 'block';
       var progress = document.getElementById('progress');
       var progressBar = document.getElementById('progressBar');
-      if (progress && progressBar) {
-        progress.style.display = 'block';
-        progressBar.style.width = '8%';
-      }
-      Tesseract.recognize(currentImageDataUrl, 'eng', {
-        logger: function (m) {
-          if (progress && progressBar && m && typeof m.progress === 'number') {
-            var pct = Math.round(m.progress * 100);
-            progressBar.style.width = pct + '%';
-            progress.setAttribute('aria-valuenow', pct);
-          }
+      if (progress && progressBar) { progress.style.display = 'block'; progressBar.style.width = '8%'; }
+      // Primary path: server-side AI scan (Gemini vision) which can read a
+      // ticket, a driver's license, or any court/DMV mail-out document.
+      serverScan(currentImageDataUrl).then(function (extracted) {
+        applyServerExtract(extracted);
+      }).catch(function () {
+        if (file.type === 'application/pdf' || /\.pdf$/i.test(name)) {
+          hideProgress(progress, progressBar);
+          statusEl.textContent = 'Could not scan this PDF automatically. Please upload a photo of the document, or fill the fields below.';
+          statusEl.className = 'status';
+        } else {
+          // Fallback: on-device OCR for images so the scan still works offline.
+          localOcr(currentImageDataUrl, progress, progressBar);
         }
-      }).then(function (result) {
-        setTimeout(function () {
-          if (progress && progressBar) { progressBar.style.width = '100%'; progress.setAttribute('aria-valuenow', 100); }
-          populateFields(result.data.text);
-          statusEl.textContent = 'Scan complete. Review and correct the fields below.';
-          statusEl.className = 'status ok';
-          caseForm.style.display = 'block';
-          window.__lastOcrText = result.data.text;
-          refreshScore();
-        }, 250);
-      }).catch(function (err) {
-        document.getElementById('f_citation').value = '';
-        statusEl.textContent = 'Scan failed: ' + (err && err.message || 'unknown') + '. Fill fields manually below.';
-        statusEl.className = 'status';
-        caseForm.style.display = 'block';
-        window.__lastOcrText = '';
-        refreshScore();
       });
     };
     reader.readAsDataURL(file);
+  }
+
+  function hideProgress(progress, progressBar) {
+    if (progress && progressBar) { progressBar.style.width = '100%'; }
+    if (progress) { setTimeout(function () { progress.style.display = 'none'; }, 300); }
+  }
+
+  async function serverScan(dataUrl) {
+    var res = await fetch('/api/assistant/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ consent: true, docType: 'auto', image: dataUrl })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error((data && data.error) || 'Scan failed');
+    return data && data.extracted;
+  }
+
+  function setField(id, val) {
+    var el = document.getElementById(id);
+    if (el && val != null && val !== '') el.value = val;
+  }
+
+  function firstOf() {
+    for (var i = 0; i < arguments.length; i++) {
+      var f = arguments[i];
+      if (f && f.value) return f.value;
+    }
+    return '';
+  }
+
+  function applyServerExtract(ext) {
+    var progress = document.getElementById('progress');
+    hideProgress(progress, document.getElementById('progressBar'));
+    if (!ext) {
+      window.__lastOcrText = '';
+      refreshScore();
+      return;
+    }
+    var name = (ext.defendantName && ext.defendantName.value || '').trim();
+    if (name) {
+      var parts = name.split(/\s+/);
+      setField('f_firstname', parts[0] || '');
+      setField('f_lastname', parts.slice(1).join(' ') || '');
+    }
+    setField('f_dob', ext.dateOfBirth && ext.dateOfBirth.value);
+    setField('f_dl', ext.drivingLicenseNumber && ext.drivingLicenseNumber.value);
+    setField('f_citation', ext.citationNumber && ext.citationNumber.value);
+    setField('f_date', firstOf(ext.violationDate, ext.courtDate, ext.dueDate));
+    setField('f_court', ext.courtOrAgency && ext.courtOrAgency.value);
+    setField('f_code', ext.violationCode && ext.violationCode.value);
+    setField('f_bail', ext.bailAmount && ext.bailAmount.value);
+    setField('f_address', ext.mailingAddress && ext.mailingAddress.value);
+
+    // Build a readable text blob from extracted values so the client-side
+    // defect scoring still has something genuine to check against.
+    window.__lastOcrText = [];
+    Object.keys(ext).forEach(function (k) {
+      var v = ext[k];
+      if (v && v.value && typeof v.value === 'string') window.__lastOcrText.push(v.value);
+    });
+    window.__lastOcrText = window.__lastOcrText.join(' ');
+
+    var leg = ext.legibility || 'unknown';
+    statusEl.textContent = 'Scan complete (readability: ' + leg + '). Review and correct the fields below.';
+    statusEl.className = 'status ok';
+    refreshScore();
+    syncTicketSection();
+  }
+
+  function collapseTicket(collapse) {
+    var fields = document.getElementById('ticketFields');
+    var toggle = document.getElementById('ticketToggle');
+    if (!fields || !toggle) return;
+    fields.classList.toggle('collapsed', collapse);
+    toggle.setAttribute('aria-expanded', collapse ? 'false' : 'true');
+    toggle.textContent = collapse ? 'Show ticket details to correct anything' : 'Hide ticket details';
+  }
+
+  function syncTicketSection() {
+    var fields = document.getElementById('ticketFields');
+    var help = document.getElementById('ticketHelp');
+    if (!fields || !help) return;
+    var filled = !!currentImageDataUrl && !!get('f_citation') && !!get('f_court');
+    collapseTicket(filled);
+    help.textContent = filled
+      ? 'Auto-filled from your uploaded document — correct anything wrong below.'
+      : (!currentImageDataUrl
+        ? 'Only needed if you didn\'t upload a document. Citations aren\'t filed until a licensed professional on our team reviews the details.'
+        : 'A few fields could not be read from your document — please add them below.');
+  }
+
+  var ticketToggle = document.getElementById('ticketToggle');
+  if (ticketToggle) ticketToggle.addEventListener('click', function () {
+    var fields = document.getElementById('ticketFields');
+    if (fields) collapseTicket(!fields.classList.contains('collapsed'));
+  });
+
+  function localOcr(dataUrl, progress, progressBar) {
+    Tesseract.recognize(dataUrl, 'eng', {
+      logger: function (m) {
+        if (progress && progressBar && m && typeof m.progress === 'number') {
+          var pct = Math.round(m.progress * 100);
+          progressBar.style.width = pct + '%';
+          progress.setAttribute('aria-valuenow', pct);
+        }
+      }
+    }).then(function (result) {
+      setTimeout(function () {
+        hideProgress(progress, progressBar);
+        populateFields(result.data.text);
+        statusEl.textContent = 'Scan complete (local scan). Review and correct the fields below.';
+        statusEl.className = 'status ok';
+        window.__lastOcrText = result.data.text;
+        refreshScore();
+        syncTicketSection();
+      }, 250);
+    }).catch(function (err) {
+      if (document.getElementById('f_citation')) document.getElementById('f_citation').value = '';
+      hideProgress(progress, progressBar);
+      statusEl.textContent = 'Scan failed: ' + (err && err.message || 'unknown') + '. Fill fields manually below.';
+      statusEl.className = 'status';
+      window.__lastOcrText = '';
+      refreshScore();
+    });
   }
 
   function extract(re, text) {
@@ -275,6 +387,7 @@
       return;
     }
     if (!currentImageDataUrl && (!f.citation || !f.court)) {
+      syncTicketSection();
       statusEl.textContent = 'Without a ticket photo, please enter your citation number and courthouse/city.';
       statusEl.className = 'status';
       return;

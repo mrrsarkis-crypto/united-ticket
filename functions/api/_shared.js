@@ -92,6 +92,383 @@ export function anthropicText(data) {
     .join('');
 }
 
+// === AI provider selection: Anthropic -> Groq -> Gemini =====================
+// The /api/assistant/* routes prefer Anthropic when a paid ANTHROPIC_API_KEY is
+// set, otherwise Groq (OpenAI-compatible, free tier, great tool calling), and
+// finally the Google Gemini free tier (also the only provider with vision for
+// /api/assistant/extract — Groq keys here expose no vision model). Everything
+// the assistant needs is routed through assistantChat / assistantExtract below
+// so the route handlers do not care which provider answered.
+
+export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
+export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-120b';
+
+export function pickAiProvider(env) {
+  if (env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (env.GROQ_API_KEY) return 'groq';
+  if (env.GEMINI_API_KEY) return 'gemini';
+  return null;
+}
+
+// POST to the Gemini generateContent endpoint with a retry-with-backoff on the
+// 429 / 503 responses the free tier uses to throttle requests.
+export async function geminiFetch(env, model, contents, opts = {}) {
+  const key = env.GEMINI_API_KEY;
+  if (!key) throw new Error('Gemini API key not configured');
+  const body = { contents };
+  if (opts.system) body.systemInstruction = { parts: [{ text: opts.system }] };
+  if (opts.tools && opts.tools.length) body.tools = opts.tools;
+  if (opts.generationConfig) body.generationConfig = opts.generationConfig;
+
+  const maxAttempts = 4;
+  const delays = [800, 1600, 3200, 6400];
+  let attempt = 1;
+  for (;;) {
+    let res;
+    try {
+      res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-goog-api-key': key },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      console.error('Gemini request error (attempt ' + attempt + ')', e);
+      if (attempt >= maxAttempts) throw e;
+      await sleep(delays[attempt - 1]);
+      attempt++;
+      continue;
+    }
+    if (res.ok) return res.json();
+    if ((res.status === 429 || res.status === 503) && attempt < maxAttempts) {
+      let waitMs = delays[attempt - 1];
+      if (res.status === 429) {
+        const text = await res.text().catch(() => '');
+        const m = /retry in (\d+(?:\.\d+)?)s/i.exec(text);
+        if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 45000));
+      }
+      console.warn('Gemini ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
+      await sleep(waitMs);
+      attempt++;
+      continue;
+    }
+    const text = await res.text().catch(() => '');
+    throw new Error('Gemini HTTP ' + res.status + ': ' + text.slice(0, 500));
+  }
+}
+
+// Convert Anthropic-shaped conversation history into Gemini `contents`.
+// Gemini rejects consecutive same-role turns, so adjacent turns are merged.
+// tool_use -> functionCall, tool_result -> functionResponse.
+// Gemini 3 models attach a thought signature at the PART level
+// (`part.thought_signature` / `part.thoughtSignature`) — it must be re-sent on
+// the FIRST functionCall part of each step in the current turn, else the API
+// returns a 400 ("Function call is missing a thought_signature").
+export function geminiContents(history) {
+  const toolIdToName = new Map();
+  const merged = [];
+  const push = (role, part) => {
+    const last = merged[merged.length - 1];
+    if (last && last.role === role) last.parts.push(part);
+    else merged.push({ role, parts: [part] });
+  };
+  for (const m of history || []) {
+    const role = m && m.role === 'assistant' ? 'model' : 'user';
+    if (typeof m.content === 'string') {
+      push(role, { text: m.content });
+      continue;
+    }
+    for (const block of Array.isArray(m.content) ? m.content : []) {
+      if (!block) continue;
+      if (block.type === 'text') {
+        push(role, { text: block.text || '' });
+      } else if (block.type === 'image') {
+        const src = block.source || {};
+        push(role, { inlineData: { mimeType: src.media_type || 'image/jpeg', data: src.data || '' } });
+      } else if (block.type === 'tool_use') {
+        const call = { name: block.name || 'unknown_tool', args: block.input || {} };
+        if (block.id) call.id = block.id;
+        toolIdToName.set(block.id, call.name);
+        const part = { functionCall: call };
+        const sig = block.thoughtSignature || block.thought_signature;
+        if (sig) {
+          part.thought_signature = sig;
+          part.thoughtSignature = sig;
+        }
+        push(role, part);
+      } else if (block.type === 'tool_result') {
+        const text = Array.isArray(block.content)
+          ? block.content.filter((c) => c && c.type === 'text').map((c) => c.text || '').join('\n')
+          : String(block.content != null ? block.content : '');
+        push('user', { functionResponse: { name: toolIdToName.get(block.tool_use_id) || 'unknown_tool', response: { content: text } } });
+      }
+    }
+  }
+  return merged;
+}
+
+// Convert Anthropic tool definitions into a Gemini tools object.
+export function geminiTools(tools) {
+  if (!tools || !tools.length) return [];
+  return [
+    {
+      functionDeclarations: tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.input_schema || { type: 'object', properties: {} },
+      })),
+    },
+  ];
+}
+
+// Pull the assistant text and any pending function calls out of a Gemini
+// response. Each functionCall part carries its own thought signature at the
+// part level (`part.thought_signature` / `part.thoughtSignature`, Gemini 3)
+// which must be held on the stored tool_use so the next turn can re-emit it.
+export function geminiReplyParts(data) {
+  const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+  const text = parts.filter((p) => p.text != null).map((p) => p.text || '').join('');
+  const toolUses = [];
+  let i = 0;
+  for (const p of parts) {
+    if (p.functionCall) {
+      toolUses.push({
+        id: p.functionCall.id || 'fc-' + Date.now().toString(36) + '-' + i++,
+        name: p.functionCall.name,
+        input: p.functionCall.args || {},
+        thoughtSignature: p.thought_signature || p.thoughtSignature,
+      });
+    }
+  }
+  return { text, toolUses };
+}
+
+// POST to the Groq OpenAI-compatible chat completions endpoint with the same
+// retry-with-backoff strategy used for Gemini.
+export async function groqFetch(env, messages, opts = {}) {
+  const key = env.GROQ_API_KEY;
+  if (!key) throw new Error('Groq API key not configured');
+  const body = { model: opts.model || GROQ_DEFAULT_MODEL, messages, stream: false };
+  if (opts.tools && opts.tools.length) {
+    body.tools = opts.tools;
+    body.tool_choice = 'auto';
+  }
+  if (opts.temperature != null) body.temperature = opts.temperature;
+  if (opts.max_tokens) body.max_tokens = opts.max_tokens;
+
+  const maxAttempts = 4;
+  const delays = [800, 1600, 3200, 6400];
+  let attempt = 1;
+  for (;;) {
+    let res;
+    try {
+      res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      console.error('Groq request error (attempt ' + attempt + ')', e);
+      if (attempt >= maxAttempts) throw e;
+      await sleep(delays[attempt - 1]);
+      attempt++;
+      continue;
+    }
+    if (res.ok) return res.json();
+    if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
+      const text = await res.text().catch(() => '');
+      let waitMs = delays[attempt - 1];
+      const m = /retry after[:\s]+(\d+)s?/i.exec(text) || /(?:again|retry) in (\d+)/i.exec(text);
+      if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 45000));
+      console.warn('Groq ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
+      await sleep(waitMs);
+      attempt++;
+      continue;
+    }
+    const text = await res.text().catch(() => '');
+    throw new Error('Groq HTTP ' + res.status + ': ' + text.slice(0, 500));
+  }
+}
+
+// Convert Anthropic-shaped conversation history into OpenAI chat messages.
+// tool_use -> assistant tool_calls, tool_result -> tool-role messages, image
+// blocks are dropped (no vision model on this Groq key).
+export function groqMessages(history) {
+  const messages = [];
+  for (const m of history || []) {
+    if (typeof m.content === 'string') {
+      messages.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content });
+      continue;
+    }
+    let text = '';
+    const toolCalls = [];
+    for (const b of Array.isArray(m.content) ? m.content : []) {
+      if (!b) continue;
+      if (b.type === 'text') {
+        text += b.text || '';
+      } else if (b.type === 'image') {
+        // no vision on Groq; ignore
+      } else if (b.type === 'tool_use') {
+        toolCalls.push({
+          id: b.id,
+          type: 'function',
+          function: { name: b.name, arguments: JSON.stringify(b.input || {}) },
+        });
+      } else if (b.type === 'tool_result') {
+        const t = Array.isArray(b.content)
+          ? b.content.filter((c) => c && c.type === 'text').map((c) => c.text || '').join('\n')
+          : String(b.content != null ? b.content : '');
+        messages.push({ role: 'tool', tool_call_id: b.tool_use_id, content: t });
+      }
+    }
+    if (m.role === 'assistant') {
+      if (text || toolCalls.length) {
+        messages.push({ role: 'assistant', content: text || null, tool_calls: toolCalls.length ? toolCalls : undefined });
+      }
+    } else if (text) {
+      messages.push({ role: 'user', content: text });
+    }
+  }
+  return messages;
+}
+
+// Convert Anthropic tool definitions into the OpenAI tools format Groq uses.
+export function groqTools(tools) {
+  if (!tools || !tools.length) return [];
+  return tools.map((t) => ({
+    type: 'function',
+    function: { name: t.name, description: t.description, parameters: t.input_schema || { type: 'object', properties: {} } },
+  }));
+}
+
+// Pull assistant text and pending function calls out of a Groq response.
+export function groqReply(data) {
+  const msg = (data && data.choices && data.choices[0] && data.choices[0].message) || {};
+  const text = msg.content || '';
+  const toolUses = (msg.tool_calls || [])
+    .filter((tc) => tc && tc.type === 'function' && tc.function)
+    .map((tc) => {
+      let input = {};
+      try {
+        input = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+      } catch (e) {
+        input = {};
+      }
+      return { id: tc.id, name: tc.function.name, input };
+    });
+  return { text, toolUses };
+}
+// and returns { text, history } in Anthropic shape so routes can store the
+// conversation in KV exactly as before.
+export async function assistantChat(env, { system, messages, tools, resolveTool }) {
+  const provider = pickAiProvider(env);
+  if (provider === 'anthropic') {
+    let data = await anthropic(env, { system, messages, max_tokens: 1024, tools });
+    let turns = 0;
+    while (data && data.stop_reason === 'tool_use' && turns < 4) {
+      turns++;
+      messages.push({ role: 'assistant', content: data.content });
+      const toolUses = (data.content || []).filter((c) => c.type === 'tool_use');
+      for (const tu of toolUses) {
+        messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) }] });
+      }
+      data = await anthropic(env, { system, messages, max_tokens: 1024, tools });
+    }
+    return { text: anthropicText(data), history: messages };
+  }
+
+  if (provider === 'gemini') {
+    let data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, geminiContents(messages), {
+      system,
+      tools: geminiTools(tools),
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+    });
+    let turns = 0;
+    for (;;) {
+      const reply = geminiReplyParts(data);
+      const assistantBlocks = [];
+      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
+      for (const tu of reply.toolUses) {
+        const block = { type: 'tool_use', id: tu.id, name: tu.name, input: tu.input };
+        if (tu.thoughtSignature) block.thoughtSignature = tu.thoughtSignature;
+        assistantBlocks.push(block);
+      }
+      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
+      if (!reply.toolUses.length) return { text: reply.text, history: messages };
+      if (turns >= 4) return { text: reply.text, history: messages };
+      turns++;
+      const userBlocks = [];
+      for (const tu of reply.toolUses) {
+        userBlocks.push({ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) });
+      }
+      messages.push({ role: 'user', content: userBlocks });
+      data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, geminiContents(messages), {
+        system,
+        tools: geminiTools(tools),
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+      });
+    }
+  }
+
+  if (provider === 'groq') {
+    let data = await groqFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
+    let turns = 0;
+    for (;;) {
+      const reply = groqReply(data);
+      const assistantBlocks = [];
+      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
+      for (const tu of reply.toolUses) {
+        assistantBlocks.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
+      }
+      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
+      if (!reply.toolUses.length) return { text: reply.text, history: messages };
+      if (turns >= 4) return { text: reply.text, history: messages };
+      turns++;
+      for (const tu of reply.toolUses) {
+        messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) }] });
+      }
+      data = await groqFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
+    }
+  }
+
+  throw new Error('No AI provider configured (set ANTHROPIC_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)');
+}
+
+// Provider-agnostic single-shot vision extractor. Returns the raw model text
+// (the route parses the JSON contract itself). Only Anthropic and Gemini have
+// vision -- a Groq provider selection is clamped to Gemini.
+export async function assistantExtract(env, { system, base64, mediaType, prompt }) {
+  const provider = pickAiProvider(env) === 'groq' ? 'gemini' : pickAiProvider(env);
+  if (provider === 'anthropic') {
+    const data = await anthropic(env, {
+      system,
+      max_tokens: 1500,
+      temperature: 0,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt },
+          ],
+        },
+      ],
+    });
+    return anthropicText(data);
+  }
+
+  if (provider === 'gemini') {
+    const data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, [
+      { role: 'user', parts: [{ inlineData: { mimeType: mediaType, data: base64 } }, { text: prompt }] },
+    ], {
+      system,
+      generationConfig: { maxOutputTokens: 1500, temperature: 0 },
+    });
+    return geminiReplyParts(data).text;
+  }
+
+  throw new Error('No vision provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY)');
+}
+
 // POST to Resend with retry-with-backoff on rate limits (429) and server errors (5xx).
 // Resend's default sending limit is 10 requests/second; on a hit it returns 429.
 // Optional attachments: [{ filename, bytes, type }]

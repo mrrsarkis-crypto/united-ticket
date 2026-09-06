@@ -11,7 +11,7 @@
 //  - Only the site's existing paid workflow ( /api/cases -> Stripe checkout )
 //    can actually start document preparation, and only after an explicit
 //    human approval on the client.
-import { json, anthropic, anthropicText, rand } from '../_shared.js';
+import { json, assistantChat, rand } from '../_shared.js';
 
 const CHAT_SYSTEM =
   'You are the ticket-document assistant for "United Traffic Tickets Defense", a California ' +
@@ -148,28 +148,16 @@ export async function onRequestPost(context) {
 
   let finalText;
   try {
-    // Step 1: send the conversation to the model with tools available.
-    let data = await anthropic(env, {
+    const result = await assistantChat(env, {
       system: CHAT_SYSTEM,
       messages: history,
-      max_tokens: 1024,
       tools: TOOLS,
+      resolveTool: (name, input) => toolResult(name, input).content,
     });
-
-    let turns = 0;
-    while (data && data.stop_reason === 'tool_use' && turns < 4) {
-      turns++;
-      history.push({ role: 'assistant', content: data.content });
-      const toolUses = (data.content || []).filter((c) => c.type === 'tool_use');
-      for (const tu of toolUses) {
-        history.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: toolResult(tu.name, tu.input).content }] });
-      }
-      data = await anthropic(env, { system: CHAT_SYSTEM, messages: history, max_tokens: 1024, tools: TOOLS });
-    }
-
-    finalText = anthropicText(data);
+    finalText = result.text;
+    history = result.history;
   } catch (e) {
-    console.error('Anthropic chat error', e);
+    console.error('AI chat error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
     return json({ error: 'The assistant is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 502);
   }

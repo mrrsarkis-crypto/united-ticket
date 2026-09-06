@@ -251,7 +251,7 @@
   <section id="build" class="section section-light section-form">
     <div class="wrap">
       <h2 class="section-title">Start a Case</h2>
-      <p class="section-sub">Upload your citation and review the extracted fields before payment.</p>
+      <p class="section-sub">Upload your ticket, driver's license, or any court or DMV notice &mdash; we pull your details from it, and you review before payment.</p>
 
       <div class="card intake intake-card">
         <div class="intake-trust" aria-label="Trust and credentials">
@@ -266,17 +266,17 @@
         </div>
 
         <div class="intake-step">
-          <h3 class="step-title"><span class="step-no">1</span>Your ticket</h3>
+          <h3 class="step-title"><span class="step-no">1</span>Your ticket or document</h3>
           <div class="photo-note" role="note">
-            <p class="photo-note-main"><span class="photo-note-icon" aria-hidden="true">&#128247;</span><strong>No typing needed &mdash; just snap a photo.</strong> Upload your ticket and the details below fill in automatically.</p>
-            <p class="photo-note-sub">No photo? No problem &mdash; type them below; only your date of birth and driver's license number are required.</p>
+            <p class="photo-note-main"><span class="photo-note-icon" aria-hidden="true">&#128247;</span><strong>No typing needed &mdash; just snap a photo.</strong> Upload your ticket, driver's license, or any notice from the court or DMV and the details below fill in automatically.</p>
+            <p class="photo-note-sub">No document handy? No problem &mdash; type them below; only your date of birth and driver's license number are required.</p>
           </div>
 
           <div class="drop" id="drop">
-            <input type="file" id="fileInput" accept="image/*" aria-label="Upload a photo of your ticket">
-            <p><strong>Click to upload</strong> or drag a photo of your <strong>ticket slip</strong> here</p>
-            <p class="drop-hint">Supported formats: JPG, PNG, HEIC. Best results with a clear, well-lit photo with all fields visible.</p>
-            <div class="progress" id="progress" style="display:none;" role="progressbar" aria-label="Scanning your ticket" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
+            <input type="file" id="fileInput" accept="image/*,.pdf,application/pdf" aria-label="Upload a photo or scan of your ticket, driver's license, or court/DMV document">
+            <p><strong>Click to upload</strong> or drag your <strong>ticket, driver's license, or court/DMV notice</strong> here</p>
+            <p class="drop-hint">Supported formats: JPG, PNG, HEIC, PDF. Court and DMV mail-outs work too &mdash; they repeat the same details as your ticket.</p>
+            <div class="progress" id="progress" style="display:none;" role="progressbar" aria-label="Scanning your document" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
             <img id="preview" class="preview" style="display:none;" alt="Ticket preview">
           </div>
           <div class="status" id="status"></div>
@@ -312,42 +312,46 @@
               <input type="file" id="f_dlPhoto" accept="image/*,.pdf">
               <span class="field-file" id="dlPhotoName"></span>
             </div>
+            <div class="field"><label for="f_address">Mailing address <i>optional</i></label><input type="text" id="f_address" autocomplete="street-address"></div>
           </div>
 
-          <div class="intake-step">
+          <div class="intake-step" id="ticketSection">
             <h3 class="step-title"><span class="step-no">3</span>Your ticket details</h3>
-            <p class="step-help">Only needed if you didn't upload a photo. These help us draft an accurate Trial by Written Declaration.</p>
-            <div class="row">
-              <div class="field"><label for="f_citation">Citation number</label><input type="text" id="f_citation"></div>
-              <div class="field"><label for="f_court">Courthouse / city</label><input type="text" id="f_court"></div>
-            </div>
-            <div class="row">
-              <div class="field"><label for="f_date">Violation date</label><input type="text" id="f_date" placeholder="MM/DD/YYYY"></div>
-              <div class="field"><label for="f_code">Violation code / section</label><input type="text" id="f_code"></div>
-            </div>
-            <div class="row">
-              <div class="field"><label for="f_bail">Fine / bail amount</label><input type="text" id="f_bail" placeholder="$0.00"></div>
-              <div class="field"><label for="f_service">Service type</label>
-                <select id="f_service">
-                  <option value="199">Standard ticket &mdash; $199</option>
-                  <option value="299">Failure to appear &mdash; $299</option>
-                  <option value="999">License reinstatement &mdash; $999</option>
-                </select>
+            <p class="step-help" id="ticketHelp">Only needed if you didn't upload a document. Citations aren't filed until a licensed professional on our team reviews the details.</p>
+            <button type="button" class="ticket-toggle" id="ticketToggle" aria-expanded="true">Hide ticket details</button>
+            <div id="ticketFields">
+              <div class="row">
+                <div class="field"><label for="f_citation">Citation number</label><input type="text" id="f_citation"></div>
+                <div class="field"><label for="f_court">Courthouse / city</label><input type="text" id="f_court"></div>
               </div>
-            </div>
-            <div class="field"><label for="f_address">Mailing address <i>optional</i></label><input type="text" id="f_address" autocomplete="street-address"></div>
-            <div class="field"><label for="f_docs">Supporting documents <i>optional</i></label>
-              <p class="field-hint">Letters from the court or DMV, your license card, or driving records you'd like us to consider.</p>
-              <input type="file" id="f_docs" accept="image/*,.pdf" multiple>
-            </div>
-            <div class="field"><label for="f_notes">Case notes <i>optional</i></label>
-              <textarea id="f_notes" placeholder="Anything you'd like us to know about your situation."></textarea>
+              <div class="row">
+                <div class="field"><label for="f_date">Violation date</label><input type="text" id="f_date" placeholder="MM/DD/YYYY"></div>
+                <div class="field"><label for="f_code">Violation code / section</label><input type="text" id="f_code"></div>
+              </div>
+              <div class="row">
+                <div class="field"><label for="f_bail">Fine / bail amount</label><input type="text" id="f_bail" placeholder="$0.00"></div>
+              </div>
+              <div class="field"><label for="f_docs">Supporting documents <i>optional</i></label>
+                <p class="field-hint">Letters from the court or DMV, your license card, or driving records you'd like us to consider.</p>
+                <input type="file" id="f_docs" accept="image/*,.pdf" multiple>
+              </div>
+              <div class="field"><label for="f_notes">Case notes <i>optional</i></label>
+                <textarea id="f_notes" placeholder="Anything you'd like us to know about your situation."></textarea>
+              </div>
             </div>
           </div>
 
           <div class="intake-step intake-review">
-            <h3 class="step-title"><span class="step-no">4</span>Review &amp; pay</h3>
-            <p class="step-help">A licensed member of our team reviews your case before anything is filed. Nothing is charged until your details are complete.</p>
+            <h3 class="step-title"><span class="step-no">4</span>Service &amp; review</h3>
+            <p class="step-help">Choose a service, then review before payment. A licensed member of our team reviews your case before anything is filed; nothing is charged until your details are complete.</p>
+
+            <div class="field"><label for="f_service">Service</label>
+              <select id="f_service">
+                <option value="199">Standard ticket &mdash; $199</option>
+                <option value="299">Failure to appear &mdash; $299</option>
+                <option value="999">License reinstatement &mdash; $999</option>
+              </select>
+            </div>
 
             <div class="notice">
               <strong>What happens next.</strong> Our system scans your ticket and drafts paperwork.
