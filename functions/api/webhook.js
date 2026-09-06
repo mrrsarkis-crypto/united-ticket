@@ -1,5 +1,5 @@
 // POST /api/webhook — Stripe webhook endpoint
-// Expects STRIPE_WEBHOOK_SECRET and a D1 binding CASES.
+// Expects STRIPE_WEBHOOK_SECRET and a KV CASES binding.
 import { buildTR205, buildRetainer, buildReceipt } from './_tr205.js';
 import { sendBusinessNotification, resendSend } from './_shared.js';
 
@@ -46,8 +46,8 @@ function json(data, status) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-// Proper Stripe webhook signature verification.
-// Stripes sends:  t=<timestamp>,v1=<hex>  where hex = HMAC-SHA256("t>.<payload>", secret)
+// Verify Stripe's signed timestamp and HMAC. Reject old/future signatures to
+// prevent a captured webhook from being replayed indefinitely.
 async function verifySignature(raw, signature, secret) {
   try {
     const parts = {};
@@ -57,7 +57,13 @@ async function verifySignature(raw, signature, secret) {
     });
     const timestamp = parts.t;
     const v1 = (parts.v1 || '').toLowerCase();
-    if (!timestamp || !v1) return false;
+    if (!timestamp || !v1 || !/^\d+$/.test(timestamp) || !/^[0-9a-f]+$/.test(v1)) return false;
+
+    const timestampSeconds = Number(timestamp);
+    if (!Number.isSafeInteger(timestampSeconds)) return false;
+    const toleranceSeconds = 5 * 60;
+    const age = Math.floor(Date.now() / 1000) - timestampSeconds;
+    if (Math.abs(age) > toleranceSeconds) return false;
 
     const signedPayload = `${timestamp}.${raw}`;
     const encoder = new TextEncoder();
@@ -68,8 +74,9 @@ async function verifySignature(raw, signature, secret) {
     const mac = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
     const expected = [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('');
 
+    if (v1.length !== expected.length) return false;
     let diff = 0;
-    for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ (v1.charCodeAt(i) || 0);
+    for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
     return diff === 0;
   } catch {
     return false;
