@@ -7,7 +7,7 @@
 // any notice/bill-of-sorts from the court or DMV (mail-out versions repeat
 // the same identity + citation details as the ticket). Pass docType in the
 // body to hint at what the document is ("ticket" | "license" | "notice" |
-// "auto" — default "auto" lets the model figure it out).
+// "record" | "auto" — default "auto" lets the model figure it out).
 //
 // Policy: NO document is processed unless the client signals consent (and we
 // reject without it). The assistant never promises dismissal or asserts an
@@ -23,12 +23,14 @@ const EXTRACT_SYSTEM =
   '- Never promise dismissal, a win, a specific outcome, or that a court will side ' +
   '  with anyone. Never assert an unchecked legal conclusion.\n' +
   '- The provided document is the single source of truth for extraction. It may be a ' +
-  '  California traffic citation (ticket / TR-205), a driver\'s license card, or a ' +
-  '  notice or letter from a court or the DMV. Court/DMV mail-out notices usually ' +
-  '  repeat the same identity and citation details as the ticket — treat any reading ' +
-  '  found there as valid.\n' +
+  '  California traffic citation (ticket / TR-205), a driver\'s license card, an ' +
+  '  official DMV driving record (driver record / DL printout), or a notice or letter ' +
+  '  from a court or the DMV. Court/DMV mail-out notices usually repeat the same ' +
+  '  identity and citation details as the ticket — treat any reading found there as ' +
+  '  valid.\n' +
   '- If a field is not visible or not legible, set its value to null and its "found" ' +
   '  to false. Never invent values.\n' +
+  '- If the document is NOT a driving record, "drivingRecord" must be null.\n' +
   '- Output ONLY valid JSON matching the shape described in the user message. No ' +
   '  markdown, no commentary, no preamble.\n' +
   '\n' +
@@ -42,6 +44,16 @@ const EXTRACT_SYSTEM =
   '  officerId (badge/serial), location (street / intersection / highway), ' +
   '  vehicleMake, vehicleModel, vehiclePlate (state + number), bailAmount (fine / ' +
   '  bail / amount due), dueDate (payment due date, if stamped).\n' +
+  '- Driving record (an official DMV driver-record / DL printout, or a court "record ' +
+  '  of actions" notice): always include "drivingRecord" in your output. When the ' +
+  '  document is a driving record it must contain: issuedDate, licenseStatus, ' +
+  '  licenseClass, and items — an array of the record\'s entries. A missing or ' +
+  '  illegible record field is null. Each item is: { type: one of "FTA" (failure to ' +
+  '  appear), "FTP" (failure to pay), "conviction", "action", "accident", "other"; ' +
+  '  date (entry date); code (VC section); description (short plain wording); court ' +
+  '  (court or agency named); disposition (e.g. "sentenced", "dismissed") }. Include ' +
+  '  EVERY resolvable entry (FTA, FTP, conviction, action) you can read — do not ' +
+  '  summarize, skip, or merge entries.\n' +
   '- Legibility of the document overall.\n' +
   '\n' +
   'Each field in the output must be an object:\n' +
@@ -96,7 +108,8 @@ export async function onRequestPost(context) {
     docType === 'ticket' ? 'This is a California traffic citation (ticket). ' :
     docType === 'license' ? 'This is a driver\'s license card. ' :
     docType === 'notice' ? 'This is a court or DMV notice / letter. ' :
-    'This may be a traffic citation, a driver\'s license, or a court/DMV notice. ';
+    docType === 'record' ? 'This is an official DMV driving record (driver record / DL printout). ' :
+    'This may be a traffic citation, a driver\'s license, a court or DMV notice, or an official DMV driving record. ';
 
   try {
     const text = await assistantExtract(env, {

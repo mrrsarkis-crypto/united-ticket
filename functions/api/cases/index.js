@@ -22,9 +22,8 @@ export async function onRequestPost(context) {
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
 
-  if (!fullName || !email) return json({ error: 'name and email are required' }, 400);
+  if (!email) return json({ error: 'An email is required' }, 400);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'A valid email is required' }, 400);
-  if (!dob || !dl) return json({ error: 'Driver\'s license number and date of birth are required' }, 400);
 
   const debug = (env.DEBUG_MODE || '0') === '1';
   const priceKey = priceFor(service);
@@ -36,10 +35,33 @@ export async function onRequestPost(context) {
   // Optional assistant session id (already validated by the assistant endpoints,
   // but sanitize again here as defense-in-depth).
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
+  // Record matters scanned from an official DMV driving record. Each is a
+  // resolvable entry (FTA, FTP, conviction, action) the client checked to address.
+  const matters = (Array.isArray(body.matters) ? body.matters : [])
+    .slice(0, 25)
+    .filter((m) => m && typeof m === 'object')
+    .map((m) => ({
+      type: String(m.type || 'other').slice(0, 40),
+      code: String(m.code || '').slice(0, 40),
+      date: String(m.date || '').slice(0, 30),
+      description: String(m.description || '').slice(0, 200),
+      court: String(m.court || '').slice(0, 80),
+    }))
+    .filter((m) => m.type || m.code || m.description);
+  const mattersLine = matters.length
+    ? matters.map((m) =>
+        '  • ' + (m.type || '').toUpperCase() +
+        (m.code ? ' ' + m.code : '') +
+        (m.date ? ' ' + m.date : '') +
+        (m.description ? ' — ' + m.description : '') +
+        (m.court ? ' (' + m.court + ')' : '')
+      ).join('\n')
+    : '  • none';
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
     address: body.address || '', phone: body.phone || '', notes: body.notes || '',
-    dlPhoto: dlPhoto || ''
+    dlPhoto: dlPhoto || '',
+    matters: matters || []
   });
 
   let stored = false;
@@ -76,6 +98,7 @@ export async function onRequestPost(context) {
         'Phone: ' + (n.phone || '—') + '\n' +
         'Extras/notes: ' + (n.notes || '—') + '\n' +
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
+        'Other matter(s) on record to address:\n' + mattersLine + '\n' +
         'Assist. session: ' + (record.session_id || '—') + '\n' +
         'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
       await sendBusinessNotification(env, {

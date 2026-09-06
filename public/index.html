@@ -268,14 +268,14 @@
         <div class="intake-step">
           <h3 class="step-title"><span class="step-no">1</span>Your ticket or document</h3>
           <div class="photo-note" role="note">
-            <p class="photo-note-main"><span class="photo-note-icon" aria-hidden="true">&#128247;</span><strong>No typing needed &mdash; just snap a photo.</strong> Upload your ticket, driver's license, or any notice from the court or DMV and the details below fill in automatically.</p>
-            <p class="photo-note-sub">No document handy? No problem &mdash; type them below; only your date of birth and driver's license number are required.</p>
+            <p class="photo-note-main"><span class="photo-note-icon" aria-hidden="true">&#128247;</span><strong>No typing needed &mdash; just upload.</strong> A ticket, license, court, or DMV document works.</p>
+            <p class="photo-note-sub">No document handy? Just type your email below and add what you have.</p>
           </div>
 
           <div class="drop" id="drop">
             <input type="file" id="fileInput" accept="image/*,.pdf,application/pdf" aria-label="Upload a photo or scan of your ticket, driver's license, or court/DMV document">
-            <p><strong>Click to upload</strong> or drag your <strong>ticket, driver's license, or court/DMV notice</strong> here</p>
-            <p class="drop-hint">Supported formats: JPG, PNG, HEIC, PDF. Court and DMV mail-outs work too &mdash; they repeat the same details as your ticket.</p>
+            <p><strong>Click to upload</strong> or drag your <strong>ticket, license, or court/DMV notice</strong> here</p>
+            <p class="drop-hint">A photo or PDF works (JPG, PNG, HEIC). An official DMV driving record works too &mdash; we&rsquo;ll check it for other tickets.</p>
             <div class="progress" id="progress" style="display:none;" role="progressbar" aria-label="Scanning your document" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
             <img id="preview" class="preview" style="display:none;" alt="Ticket preview">
           </div>
@@ -289,23 +289,30 @@
             <p class="score-tag">Dismissible defects identified on your citation. This is a guidance score to help you decide whether it's worth pursuing &mdash; not a promise of any court outcome.</p>
             <ul class="score-list" id="scoreList"></ul>
           </div>
+
+          <div class="record-panel" id="recordPanel" style="display:none;">
+            <h4 class="record-head" id="recordHead">We also found other matters on your driving record.</h4>
+            <p class="record-sub">Keep them checked and we&rsquo;ll address them alongside your case.</p>
+            <div class="record-list" id="recordList"></div>
+            <p class="record-note">Selecting a matter below sends it with your case reference &mdash; it does not change your payment today. Our team confirms each item before anything new is filed.</p>
+          </div>
         </div>
 
         <form id="caseForm" class="intake-form" novalidate>
           <div class="intake-step">
             <h3 class="step-title"><span class="step-no">2</span>Your details</h3>
-            <p class="step-help">Please confirm who you are so we can prepare and email the correct paperwork.</p>
+            <p class="step-help">Confirm what we read from your upload &mdash; fix anything that's off.</p>
             <div class="row">
-              <div class="field"><label for="f_firstname">First name <i>required</i></label><input type="text" id="f_firstname" autocomplete="given-name"></div>
-              <div class="field"><label for="f_lastname">Last name <i>required</i></label><input type="text" id="f_lastname" autocomplete="family-name"></div>
+              <div class="field"><label for="f_firstname">First name</label><input type="text" id="f_firstname" autocomplete="given-name"></div>
+              <div class="field"><label for="f_lastname">Last name</label><input type="text" id="f_lastname" autocomplete="family-name"></div>
             </div>
             <div class="row">
               <div class="field"><label for="f_email">Email <i>required</i></label><input type="email" id="f_email" autocomplete="email" placeholder="you@example.com"></div>
               <div class="field"><label for="f_phone">Phone <i>optional</i></label><input type="text" id="f_phone" autocomplete="tel"></div>
             </div>
             <div class="row">
-              <div class="field"><label for="f_dob">Date of birth <i>required</i></label><input type="text" id="f_dob" placeholder="MM/DD/YYYY"></div>
-              <div class="field"><label for="f_dl">Driver's license number <i>required</i></label><input type="text" id="f_dl"></div>
+              <div class="field"><label for="f_dob">Date of birth</label><input type="text" id="f_dob" placeholder="MM/DD/YYYY"></div>
+              <div class="field"><label for="f_dl">Driver's license number</label><input type="text" id="f_dl"></div>
             </div>
             <div class="field"><label for="f_dlPhoto">Upload your driver's license <i class="highrec">highly recommended</i></label>
               <p class="field-hint">A clear photo of your license helps us verify details and prepare accurate paperwork. Encrypted and used only for your case.</p>

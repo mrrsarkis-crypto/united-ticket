@@ -54,6 +54,10 @@
   });
 
   function handleFile(file) {
+    // Clear any previously-found record matters before scanning a new document.
+    var recordPanelEl = document.getElementById('recordPanel');
+    if (recordPanelEl) recordPanelEl.style.display = 'none';
+    window.__matters = [];
     // Accept images (JPG/PNG/HEIC) and PDFs; reject others early with a clear message.
     var name = (file && file.name || '').toLowerCase();
     var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || file.type === 'application/pdf' || /\.(png|jpe?g|heic|pdf)$/i.test(name);
@@ -157,6 +161,62 @@
     statusEl.className = 'status ok';
     refreshScore();
     syncTicketSection();
+    renderRecordMatters(ext);
+  }
+
+  // Official DMV driving records list EVERY entry on the driver's record — not
+  // just the ticket they uploaded. Any FTA/FTP/conviction we can read is offered
+  // back as an optional add-on, checked by default, so the client hears about
+  // (and can resolve) other matters that would otherwise trip them up later.
+  function renderRecordMatters(ext) {
+    var panel = document.getElementById('recordPanel');
+    var list = document.getElementById('recordList');
+    var head = document.getElementById('recordHead');
+    window.__matters = [];
+    if (!panel || !list) return;
+    var items = (ext && ext.drivingRecord && Array.isArray(ext.drivingRecord.items))
+      ? ext.drivingRecord.items.filter(function (it) { return it && typeof it === 'object'; })
+      : [];
+    if (!items.length) { panel.style.display = 'none'; return; }
+
+    window.__matters = items;
+    list.innerHTML = '';
+    items.forEach(function (it, i) {
+      var row = document.createElement('label');
+      row.className = 'record-item';
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.defaultChecked = true;
+      box.setAttribute('data-matter', JSON.stringify(it));
+      box.addEventListener('change', function () { window.__matters = collectMatters(); });
+      row.appendChild(box);
+      row.appendChild(document.createTextNode(matterLabel(it, i)));
+      list.appendChild(row);
+    });
+    if (head) head.textContent = 'Your record also shows ' + items.length + ' other matter' + (items.length === 1 ? '' : 's') + ' we can help resolve:';
+    panel.style.display = 'block';
+  }
+
+  function matterLabel(it, i) {
+    var t = String(it.type || 'other').toUpperCase();
+    var code = it.code ? ' ' + it.code : '';
+    var date = it.date ? ' (' + it.date + ')' : '';
+    var desc = it.description
+      ? ' &mdash; ' + String(it.description).slice(0, 160)
+      : '';
+    var court = it.court ? ' &middot; ' + it.court : '';
+    return '#' + (i + 1) + ' ' + t + code + court + date + desc;
+  }
+
+  function collectMatters() {
+    var list = document.getElementById('recordList');
+    var out = [];
+    if (list) {
+      list.querySelectorAll('input[type=checkbox]:checked').forEach(function (box) {
+        try { out.push(JSON.parse(box.getAttribute('data-matter') || '{}')); } catch (e) { /* skip */ }
+      });
+    }
+    return out;
   }
 
   function collapseTicket(collapse) {
@@ -365,24 +425,15 @@
       name: (get('f_firstname') + ' ' + get('f_lastname')).trim(),
       email: get('f_email'), address: get('f_address'), phone: get('f_phone'),
       dob: get('f_dob'), dl: get('f_dl'), notes: get('f_notes'), service: get('f_service'),
-      dlPhoto: currentDlDataUrl || ''
+      dlPhoto: currentDlDataUrl || '',
+      matters: collectMatters()
     };
 
-    // First and last name are both required; then only DL and DOB are strictly
-    // required. Citation + court are required only when no ticket photo was
-    // provided (no OCR scan to fall back on).
-    if (!get('f_firstname') || !get('f_lastname')) {
-      statusEl.textContent = 'Please fill in your first and last name.';
-      statusEl.className = 'status';
-      return;
-    }
+    // Only a valid email is strictly required to continue. Everything else is
+    // confirmed from the uploaded document (name, DOB, DL) or left for our team
+    // to follow up — so someone who uploads a document never retypes it.
     if (!f.email) {
       statusEl.textContent = 'Please fill in your email.';
-      statusEl.className = 'status';
-      return;
-    }
-    if (!f.dob || !f.dl) {
-      statusEl.textContent = 'Driver\'s license number and date of birth are required.';
       statusEl.className = 'status';
       return;
     }

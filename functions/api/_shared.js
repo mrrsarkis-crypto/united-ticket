@@ -92,19 +92,23 @@ export function anthropicText(data) {
     .join('');
 }
 
-// === AI provider selection: Anthropic -> Groq -> Gemini =====================
+// === AI provider selection: Anthropic -> DashScope -> Groq -> Gemini =========
 // The /api/assistant/* routes prefer Anthropic when a paid ANTHROPIC_API_KEY is
-// set, otherwise Groq (OpenAI-compatible, free tier, great tool calling), and
-// finally the Google Gemini free tier (also the only provider with vision for
-// /api/assistant/extract — Groq keys here expose no vision model). Everything
-// the assistant needs is routed through assistantChat / assistantExtract below
-// so the route handlers do not care which provider answered.
+// set, otherwise DashScope (Alibaba Cloud, OpenAI-compatible), otherwise Groq
+// (OpenAI-compatible, free tier, great tool calling), and finally the Google
+// Gemini free tier (also the only provider with vision for
+// /api/assistant/extract — Groq/DashScope keys here expose no vision model).
+// Everything the assistant needs is routed through assistantChat /
+// assistantExtract below so the route handlers do not care which provider
+// answered.
 
 export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
 export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-120b';
+export const DASHSCOPE_DEFAULT_MODEL = 'qwen-plus';
 
 export function pickAiProvider(env) {
   if (env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (env.DASHSCOPE_API_KEY) return 'dashscope';
   if (env.GROQ_API_KEY) return 'groq';
   if (env.GEMINI_API_KEY) return 'gemini';
   return null;
@@ -240,6 +244,55 @@ export function geminiReplyParts(data) {
     }
   }
   return { text, toolUses };
+}
+
+// POST to the DashScope OpenAI-compatible chat completions endpoint with the
+// same retry-with-backoff strategy used for Groq/Gemini. DashScope reuses the
+// OpenAI message/tool/response shapes (see groqMessages/groqTools/groqReply).
+export async function dashscopeFetch(env, messages, opts = {}) {
+  const key = env.DASHSCOPE_API_KEY;
+  if (!key) throw new Error('DashScope API key not configured');
+  const model = opts.model || env.DASHSCOPE_MODEL || DASHSCOPE_DEFAULT_MODEL;
+  const body = { model, messages, stream: false };
+  if (opts.tools && opts.tools.length) {
+    body.tools = opts.tools;
+    body.tool_choice = 'auto';
+  }
+  if (opts.temperature != null) body.temperature = opts.temperature;
+  if (opts.max_tokens) body.max_tokens = opts.max_tokens;
+
+  const maxAttempts = 4;
+  const delays = [800, 1600, 3200, 6400];
+  let attempt = 1;
+  for (;;) {
+    let res;
+    try {
+      res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      console.error('DashScope request error (attempt ' + attempt + ')', e);
+      if (attempt >= maxAttempts) throw e;
+      await sleep(delays[attempt - 1]);
+      attempt++;
+      continue;
+    }
+    if (res.ok) return res.json();
+    if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
+      const text = await res.text().catch(() => '');
+      let waitMs = delays[attempt - 1];
+      const m = /retry after[:\s]+(\d+)s?/i.exec(text) || /(?:again|retry) in (\d+)/i.exec(text);
+      if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 45000));
+      console.warn('DashScope ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
+      await sleep(waitMs);
+      attempt++;
+      continue;
+    }
+    const text = await res.text().catch(() => '');
+    throw new Error('DashScope HTTP ' + res.status + ': ' + text.slice(0, 500));
+  }
 }
 
 // POST to the Groq OpenAI-compatible chat completions endpoint with the same
@@ -430,18 +483,39 @@ export async function assistantChat(env, { system, messages, tools, resolveTool 
     }
   }
 
-  throw new Error('No AI provider configured (set ANTHROPIC_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)');
+  if (provider === 'dashscope') {
+    let data = await dashscopeFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
+    let turns = 0;
+    for (;;) {
+      const reply = groqReply(data);
+      const assistantBlocks = [];
+      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
+      for (const tu of reply.toolUses) {
+        assistantBlocks.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
+      }
+      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
+      if (!reply.toolUses.length) return { text: reply.text, history: messages };
+      if (turns >= 4) return { text: reply.text, history: messages };
+      turns++;
+      for (const tu of reply.toolUses) {
+        messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) }] });
+      }
+      data = await dashscopeFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
+    }
+  }
+
+  throw new Error('No AI provider configured (set ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)');
 }
 
 // Provider-agnostic single-shot vision extractor. Returns the raw model text
 // (the route parses the JSON contract itself). Only Anthropic and Gemini have
 // vision -- a Groq provider selection is clamped to Gemini.
 export async function assistantExtract(env, { system, base64, mediaType, prompt }) {
-  const provider = pickAiProvider(env) === 'groq' ? 'gemini' : pickAiProvider(env);
+  const provider = (pickAiProvider(env) === 'groq' || pickAiProvider(env) === 'dashscope') ? 'gemini' : pickAiProvider(env);
   if (provider === 'anthropic') {
     const data = await anthropic(env, {
       system,
-      max_tokens: 1500,
+      max_tokens: 4096,
       temperature: 0,
       messages: [
         {
@@ -461,7 +535,7 @@ export async function assistantExtract(env, { system, base64, mediaType, prompt 
       { role: 'user', parts: [{ inlineData: { mimeType: mediaType, data: base64 } }, { text: prompt }] },
     ], {
       system,
-      generationConfig: { maxOutputTokens: 1500, temperature: 0 },
+      generationConfig: { maxOutputTokens: 4096, temperature: 0 },
     });
     return geminiReplyParts(data).text;
   }
