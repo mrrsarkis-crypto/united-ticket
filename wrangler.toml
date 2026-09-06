@@ -1,24 +1,22 @@
-# Cloudflare Pages deployment via wrangler.
+# Cloudflare Pages deployment via Wrangler.
 # The static site lives in /public and Functions live in /functions.
 #
-# Bindings below mirror the live project config (verified against the Cloudflare
-# dashboard on 2026-09-04). They must be declared here so `wrangler pages deploy`
-# in CI (GitHub Actions) resolves them and so local `wrangler pages dev` works.
-#   KV Namespace "CASES" -> namespace ticket-fighter-cases
-#   R2 Bucket     "R2"    -> bucket united-cases
-#
+# Bindings below mirror the live project config and are required by the GitHub
+# Actions deployment path so Pages Functions receive CASES and R2 bindings.
 # Runtime secrets are NOT stored in this file. Configure them in the Cloudflare
-# dashboard (Workers & Pages > ticket-fighter > Settings > Bindings) under
-# Environment Variables / Secrets or, for local dev, a `wrangler.toml` is not used
-# for secrets. Required secrets include:
+# dashboard (Workers & Pages > ticket-fighter > Settings > Environment Variables).
+#
+# Required runtime secrets/variables include:
 #   STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999, STRIPE_WEBHOOK_SECRET,
 #   STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL, (optional) SEND_EMAIL_URL, SEND_EMAIL_AUTH
-#   ANTHROPIC_API_KEY (required for /api/assistant/*), (optional) ANTHROPIC_MODEL
-#   (default claude-3-5-sonnet-20241022)
+#   ANTHROPIC_API_KEY, (optional) ANTHROPIC_MODEL
+#
+# Keep this compatibility date aligned with the currently supported Pages
+# runtime. The live project was verified with this date on 2026-09-04.
 name = "ticket-fighter"
 pages_build_output_dir = "public"
 
-compatibility_date = "2026-08-29"
+compatibility_date = "2025-07-18"
 
 [[kv_namespaces]]
 binding = "CASES"
