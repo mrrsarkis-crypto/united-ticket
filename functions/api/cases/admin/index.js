@@ -27,7 +27,15 @@ export async function onRequestGet(context) {
     return csv(records);
   }
 
-  return json({ count: records.length, cases: records }, 200);
+  // This endpoint contains sensitive customer information. Never allow browsers,
+  // proxies, or shared caches to retain an admin response.
+  return new Response(JSON.stringify({ count: records.length, cases: records }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store, private',
+    },
+  });
 }
 
 function csv(records) {
@@ -43,6 +51,10 @@ function csv(records) {
   ];
   return new Response('\uFEFF' + rows.join('\n'), {
     status: 200,
-    headers: { 'Content-Type': 'text/csv; charset=utf-8' },
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="cases.csv"',
+      'Cache-Control': 'no-store, private',
+    },
   });
 }
