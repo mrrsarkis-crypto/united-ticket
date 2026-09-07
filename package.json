@@ -14,7 +14,7 @@
   ],
   "author": "United Traffic Tickets",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "wrangler": "^3.114.17"
   },
