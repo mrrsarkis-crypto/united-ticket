@@ -129,7 +129,7 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
       'Time: ' + new Date().toISOString() + '\n\n' +
       '— SUBMITTED ONLINE INFO —\n' +
       info + '\n\n' +
-      'Dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || '') + '\n' +
+      'Dashboard: https://unitedtraffictickets.com/admin-cases\n' +
       'R2 file: ' + (filename ? 'stored as ' + (base.paid_at ? new Date(base.paid_at).toISOString().slice(0, 10).replace(/-/g, '') + '/' : '') + filename : 'n/a'),
     attachments: atts,
   });
