@@ -24,7 +24,6 @@ const CLARITY_SNIPPET =
 export async function onRequest(context) {
   let response = await context.next();
 
-  // Security headers
   const newHeaders = new Headers(response.headers);
   newHeaders.set('X-Content-Type-Options', 'nosniff');
   newHeaders.set('X-Frame-Options', 'DENY');
@@ -32,10 +31,9 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const isAmp = url.pathname.startsWith('/amp/') || url.pathname.startsWith('/amp');
   const isHtml = !isAmp && newHeaders.get('content-type') && newHeaders.get('content-type').includes('text/html');
+  const isPrivateAdminApi = url.pathname === '/api/cases/admin' || url.pathname.startsWith('/api/cases/admin.');
+
   if (isHtml) {
-    // Strict-ish CSP but broad enough for AdSense. Google does not guarantee a
-    // restrictive per-domain allowlist stays working (ad domains rotate), so we
-    // allow-list the full known ad-serving surface rather than a narrow subset.
     const csp = [
       "default-src 'self'",
       "object-src 'none'",
@@ -47,15 +45,23 @@ export async function onRequest(context) {
       `frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://s0.2mdn.net https://securepubads.g.doubleclick.net`,
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
-    // AdSense Privacy Sandbox / auction APIs.
     newHeaders.set(
       'Permissions-Policy',
       'attribution-reporting=(self), run-ad-auction=(self), join-ad-interest-group=(self), join-ads-conversion-measurement=(self)'
     );
   }
-  newHeaders.set('Access-Control-Allow-Origin', '*');
-  newHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  newHeaders.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+
+  // Public APIs may be consumed cross-origin. The admin case API contains
+  // sensitive customer data, so do not advertise it to arbitrary origins.
+  if (!isPrivateAdminApi) {
+    newHeaders.set('Access-Control-Allow-Origin', '*');
+    newHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    newHeaders.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  } else {
+    newHeaders.delete('Access-Control-Allow-Origin');
+    newHeaders.delete('Access-Control-Allow-Methods');
+    newHeaders.delete('Access-Control-Allow-Headers');
+  }
 
   if (context.request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: newHeaders });
@@ -63,7 +69,6 @@ export async function onRequest(context) {
 
   let body = response.body;
   if (isHtml) {
-    // Inject Microsoft Clarity into every HTML page (once, before </head>).
     try {
       const html = await response.text();
       body =
