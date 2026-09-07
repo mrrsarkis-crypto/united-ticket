@@ -1,8 +1,12 @@
 // Shared helpers for /api routes
-export function json(data, status = 200) {
+export function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store, private',
+      ...extraHeaders,
+    },
   });
 }
 
@@ -11,7 +15,7 @@ export function unauthorizedIfNotAdmin(request, env) {
   const provided = (new URL(request.url).searchParams.get('code') || '').trim();
   const allowed = (env.ADMIN_CODE || '').trim();
   if (!allowed || provided !== allowed) {
-    return json({ error: 'Unauthorized' }, 401);
+    return json({ error: 'Unauthorized' }, 401, { 'WWW-Authenticate': 'Bearer realm="admin"' });
   }
   return null;
 }
@@ -338,205 +342,4 @@ export function groqTools(tools) {
     type: 'function',
     function: { name: t.name, description: t.description, parameters: t.input_schema || { type: 'object', properties: {} } },
   }));
-}
-
-// Pull assistant text and pending function calls out of a Groq response.
-export function groqReply(data) {
-  const msg = (data && data.choices && data.choices[0] && data.choices[0].message) || {};
-  const text = msg.content || '';
-  const toolUses = (msg.tool_calls || [])
-    .filter((tc) => tc && tc.type === 'function' && tc.function)
-    .map((tc) => {
-      let input = {};
-      try {
-        input = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
-      } catch (e) {
-        input = {};
-      }
-      return { id: tc.id, name: tc.function.name, input };
-    });
-  return { text, toolUses };
-}
-// and returns { text, history } in Anthropic shape so routes can store the
-// conversation in KV exactly as before.
-export async function assistantChat(env, { system, messages, tools, resolveTool }) {
-  const provider = pickAiProvider(env);
-  if (provider === 'anthropic') {
-    let data = await anthropic(env, { system, messages, max_tokens: 1024, tools });
-    let turns = 0;
-    while (data && data.stop_reason === 'tool_use' && turns < 4) {
-      turns++;
-      messages.push({ role: 'assistant', content: data.content });
-      const toolUses = (data.content || []).filter((c) => c.type === 'tool_use');
-      for (const tu of toolUses) {
-        messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) }] });
-      }
-      data = await anthropic(env, { system, messages, max_tokens: 1024, tools });
-    }
-    return { text: anthropicText(data), history: messages };
-  }
-
-  if (provider === 'gemini') {
-    let data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, geminiContents(messages), {
-      system,
-      tools: geminiTools(tools),
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
-    });
-    let turns = 0;
-    for (;;) {
-      const reply = geminiReplyParts(data);
-      const assistantBlocks = [];
-      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
-      for (const tu of reply.toolUses) {
-        const block = { type: 'tool_use', id: tu.id, name: tu.name, input: tu.input };
-        if (tu.thoughtSignature) block.thoughtSignature = tu.thoughtSignature;
-        assistantBlocks.push(block);
-      }
-      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
-      if (!reply.toolUses.length) return { text: reply.text, history: messages };
-      if (turns >= 4) return { text: reply.text, history: messages };
-      turns++;
-      const userBlocks = [];
-      for (const tu of reply.toolUses) {
-        userBlocks.push({ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) });
-      }
-      messages.push({ role: 'user', content: userBlocks });
-      data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, geminiContents(messages), {
-        system,
-        tools: geminiTools(tools),
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
-      });
-    }
-  }
-
-  if (provider === 'groq') {
-    let data = await groqFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
-    let turns = 0;
-    for (;;) {
-      const reply = groqReply(data);
-      const assistantBlocks = [];
-      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
-      for (const tu of reply.toolUses) {
-        assistantBlocks.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
-      }
-      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
-      if (!reply.toolUses.length) return { text: reply.text, history: messages };
-      if (turns >= 4) return { text: reply.text, history: messages };
-      turns++;
-      for (const tu of reply.toolUses) {
-        messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: tu.id, content: await resolveTool(tu.name, tu.input) }] });
-      }
-      data = await groqFetch(env, groqMessages(messages), { temperature: 0.2, max_tokens: 1024, tools: groqTools(tools) });
-    }
-  }
-
-  throw new Error('No AI provider configured (set ANTHROPIC_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)');
-}
-
-// Provider-agnostic single-shot vision extractor. Returns the raw model text
-// (the route parses the JSON contract itself). Only Anthropic and Gemini have
-// vision -- a Groq provider selection is clamped to Gemini.
-export async function assistantExtract(env, { system, base64, mediaType, prompt }) {
-  const provider = pickAiProvider(env) === 'groq' ? 'gemini' : pickAiProvider(env);
-  if (provider === 'anthropic') {
-    const data = await anthropic(env, {
-      system,
-      max_tokens: 1500,
-      temperature: 0,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: prompt },
-          ],
-        },
-      ],
-    });
-    return anthropicText(data);
-  }
-
-  if (provider === 'gemini') {
-    const data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, [
-      { role: 'user', parts: [{ inlineData: { mimeType: mediaType, data: base64 } }, { text: prompt }] },
-    ], {
-      system,
-      generationConfig: { maxOutputTokens: 1500, temperature: 0 },
-    });
-    return geminiReplyParts(data).text;
-  }
-
-  throw new Error('No vision provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY)');
-}
-
-// POST to Resend with retry-with-backoff on rate limits (429) and server errors (5xx).
-// Resend's default sending limit is 10 requests/second; on a hit it returns 429.
-// Optional attachments: [{ filename, bytes, type }]
-export async function resendSend(env, { from, to, subject, text, html, attachments }) {
-  if (!env.RESEND_API_KEY) return;
-  const form = new FormData();
-  form.append('from', from || env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>');
-  form.append('to', to);
-  form.append('subject', subject);
-  if (text) form.append('text', text);
-  if (html) form.append('html', html);
-  if (attachments) {
-    for (const a of attachments) {
-      if (a && a.bytes && a.filename) {
-        form.append('attachments', new File([a.bytes], a.filename, { type: a.type || 'application/octet-stream' }));
-      }
-    }
-  }
-  const maxAttempts = 4;
-  let attempt = 1;
-  while (attempt <= maxAttempts) {
-    let res;
-    try {
-      res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
-        body: form,
-      });
-    } catch (e) {
-      console.error('Resend request error (attempt ' + attempt + ')', e);
-      if (attempt === maxAttempts) return false;
-      await sleep(600 * attempt);
-      attempt++;
-      continue;
-    }
-    if (res.ok) return true;
-    // Retry on 429 (rate limit) and 5xx (transient server error).
-    if (res.status === 429 || res.status >= 500) {
-      console.warn('Resend ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + ')');
-      if (attempt === maxAttempts) return false;
-      const retryAfter = Number(res.headers.get('retry-after') || 0);
-      await sleep((retryAfter || 600) * attempt);
-      attempt++;
-      continue;
-    }
-    // 4xx (other) errors are permanent — parsing/validation etc. Do not retry.
-    console.error('Resend permanent error ' + res.status, await res.text().catch(() => ''));
-    return false;
-  }
-  return false;
-}
-
-// Send an email to the business owner (env.ADMIN_EMAIL) via Resend.
-// Used to notify on new form submissions and other events. Non-fatal on failure.
-// Optional attachments: [{ filename, bytes, type }]
-export async function sendBusinessNotification(env, { subject, text, html, attachments }) {
-  if (!env.RESEND_API_KEY) return;
-  const to = env.ADMIN_EMAIL || env.RESEND_FROM_TO || '';
-  if (!to) return;
-  try {
-    await resendSend(env, {
-      to,
-      subject,
-      text,
-      html,
-      attachments,
-    });
-  } catch (e) {
-    console.error('Business notification email failed', e);
-  }
 }
