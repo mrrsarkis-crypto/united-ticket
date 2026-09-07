@@ -11,12 +11,17 @@ export async function onRequestGet(context) {
 
   let records = [];
   try {
-    const list = await env.CASES.list({ prefix: 'case:' });
-    records = [];
-    for (const item of list.keys) {
-      const r = await env.CASES.get(item.name, 'json');
-      if (r) records.push(r);
-    }
+    // KV list() is paginated. Keep following cursors so the admin dashboard
+    // cannot silently omit cases after the first page of results.
+    let cursor;
+    do {
+      const list = await env.CASES.list({ prefix: 'case:', ...(cursor ? { cursor } : {}) });
+      for (const item of list.keys) {
+        const r = await env.CASES.get(item.name, 'json');
+        if (r) records.push(r);
+      }
+      cursor = list.list_complete ? undefined : list.cursor;
+    } while (cursor);
   } catch (e) {
     return json({ error: 'Failed to read cases: ' + String(e && e.message) }, 500);
   }
