@@ -1,8 +1,7 @@
 # Cloudflare Pages deployment via Wrangler.
 # The static site lives in /public and Functions live in /functions.
-#
-# Bindings below mirror the live project config and are required by the GitHub
-# Actions deployment path so Pages Functions receive CASES and R2 bindings.
+# Bindings below mirror the intended live project configuration so Pages
+# Functions receive CASES and R2 bindings.
 # Runtime secrets are NOT stored in this file. Configure them in the Cloudflare
 # dashboard (Workers & Pages > ticket-fighter > Settings > Environment Variables).
 #
@@ -11,8 +10,8 @@
 #   STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL, (optional) SEND_EMAIL_URL, SEND_EMAIL_AUTH
 #   ANTHROPIC_API_KEY, (optional) ANTHROPIC_MODEL
 #
-# Keep this compatibility date aligned with the currently supported Pages
-# runtime. The live project was verified with this date on 2026-09-04.
+# Keep the compatibility date pinned deliberately. Update it only after the
+# Pages runtime has been tested against the application.
 name = "ticket-fighter"
 pages_build_output_dir = "public"
 
