@@ -1,27 +1,7 @@
 # Deploy static site + Pages Functions to Cloudflare Pages via the Pages
-# deployment API (direct upload) on every push to main.
+# deployment API on every push to main.
 #
-# NOTE: This uses a long-lived Cloudflare API token (Pages: Edit) stored as a
-# GitHub Actions secret. Cloudflare does not yet offer official OIDC-only
-# ("trusted publishing") deploys for Pages, so an API token is the supported
-# path today. The token never has to be pasted in chat — it lives only as a
-# GitHub repository secret.
-#
-# One-time setup (Cloudflare dashboard):
-#   My Profile > API Tokens > Create Token > "Cloudflare Pages: Edit" (account
-#   scoped to this account only). Copy the token.
-#
-# One-time setup (GitHub repo):
-#   Settings > Secrets and variables > Actions:
-#     - Secret  CLOUDFLARE_API_TOKEN   = the Pages:Edit token above
-#     - Secret  CLOUDFLARE_ACCOUNT_ID  = dc59db902477a26c1031d860bb1b0954
-#
-# IMPORTANT: moving to GitHub Actions deploys means the site is deployed via the
-# Pages deployment API instead of Cloudflare's built-in GitHub integration.
-# Disconnect the old GitHub integration in Pages > Settings > Builds &
-# deployments (or keep it but be aware you'll have two deploy triggers).
-# wrangler.toml declares the KV (CASES) and R2 (united-cases) bindings; runtime
-# secrets stay in the dashboard and are read from env at runtime.
+# Cloudflare credentials are stored only as GitHub Actions secrets.
 
 name: Deploy to Cloudflare Pages
 
@@ -44,12 +24,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build --if-present
+      - name: Validate JavaScript
+        run: npm test
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
