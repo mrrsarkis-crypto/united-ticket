@@ -1,15 +1,20 @@
 {
   "name": "ticket-fighter",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "United Traffic Tickets defense website and Cloudflare Pages Functions",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js",
+    "check": "npm test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "traffic-tickets",
+    "cloudflare-pages",
+    "stripe"
+  ],
+  "author": "United Traffic Tickets",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "wrangler": "^3.114.17"
   },
