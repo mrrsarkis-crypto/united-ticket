@@ -22,6 +22,23 @@ export async function onRequestPost(context) {
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
 
+  // "Step 2" quick-scan flow: when started via /api/intake/claim, the client
+  // re-sends its trackingCode + claimToken so we UPDATE that existing record
+  // rather than creating a duplicate. If no code is provided, fall back to the
+  // original single-step behavior (create a fresh case).
+  const claimedCode = String(body.trackingCode || '').trim();
+  const claimToken = String(body.claimToken || '').trim();
+  let priorRecord = null;
+  if (claimedCode) {
+    if (env.CASES) {
+      try { priorRecord = await env.CASES.get('case:' + claimedCode, 'json'); } catch (e) { console.error('claim lookup failed', e); }
+    }
+    if (!priorRecord) return json({ error: 'This case could not be found. Please start over.' }, 404);
+    if (!priorRecord.claim_token || priorRecord.claim_token !== claimToken) {
+      return json({ error: 'This case no longer matches your session. Please start over.' }, 403);
+    }
+  }
+
   if (!fullName || !email) return json({ error: 'name and email are required' }, 400);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'A valid email is required' }, 400);
   if (!dob || !dl) return json({ error: 'Driver\'s license number and date of birth are required' }, 400);
@@ -31,7 +48,8 @@ export async function onRequestPost(context) {
   if (!priceKey) return json({ error: 'Unknown service type' }, 400);
   if (!env[priceKey]) return json({ error: 'Payment for this service is not configured yet. Contact the site owner.' + (debug ? ' Missing env ' + priceKey : '') }, 500);
 
-  const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
+  const trackingCode = claimedCode || ('TF-' + Date.now().toString(36).toUpperCase() + rand(3));
+  const isClaimed = !!claimedCode;
   const dlPhoto = (body.dlPhoto || '').trim();
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
   const notes = JSON.stringify({
@@ -43,14 +61,17 @@ export async function onRequestPost(context) {
   let stored = false;
   if (env.CASES) {
     try {
+      const now = new Date().toISOString();
       const record = {
+        ...(priorRecord || {}),
         tracking_code: trackingCode,
         name: fullName, email, court, citation, service,
         dob, dl,
         status: 'payment_pending',
         notes: JSON.parse(notes),
         session_id: sessionId || undefined,
-        created_at: new Date().toISOString(),
+        created_at: (priorRecord && priorRecord.created_at) || now,
+        updated_at: now,
       };
       await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
       if (sessionId) {
@@ -74,13 +95,13 @@ export async function onRequestPost(context) {
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
         'Assist. session: ' + (record.session_id || '—') + '\n' +
         'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
+      const header = isClaimed
+        ? 'Existing quick-scan claim completed with full details (awaiting payment).\n\n— CLAIM —\nTracking code: ' + trackingCode + '\nClaimed at: ' + record.created_at + '\n\n'
+        : 'New "Fight My Ticket" submission received (awaiting payment — Checkout URL sent to customer).\n\n— CASE —\nTracking code: ' + trackingCode + '\nStatus: payment_pending\nTime: ' + record.created_at + '\n\n';
       await sendBusinessNotification(env, {
         subject: 'New ticket case: ' + trackingCode,
-        text: 'New "Fight My Ticket" submission received (awaiting payment — Checkout URL sent to customer).\n\n' +
-          '— CASE —\n' +
-          'Tracking code: ' + trackingCode + '\n' +
-          'Status: payment_pending\n' +
-          'Time: ' + record.created_at + '\n\n' +
+        text:
+          header +
           '— SUBMITTED ONLINE INFO —\n' +
           info + '\n\n' +
           'View in dashboard: https://unitedtraffictickets.com/admin-cases\n' +

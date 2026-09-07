@@ -10,6 +10,8 @@
   var currentImageDataUrl = null;
   var currentCaseId = null;
   var currentDlDataUrl = null;
+  var currentTrackingCode = null;
+  var currentClaimToken = null;
   var dlPhotoInput = document.getElementById('f_dlPhoto');
   var dlPhotoNameEl = document.getElementById('dlPhotoName');
   if (dlPhotoInput && dlPhotoNameEl) {
@@ -69,7 +71,7 @@
       preview.style.display = 'block';
       statusEl.textContent = 'Scanning your document...';
       statusEl.className = 'status';
-      caseForm.style.display = 'block';
+      setIntakeStep(1, 'Scanning your document...');
       var progress = document.getElementById('progress');
       var progressBar = document.getElementById('progressBar');
       if (progress && progressBar) { progress.style.display = 'block'; progressBar.style.width = '8%'; }
@@ -123,9 +125,11 @@
   function applyServerExtract(ext) {
     var progress = document.getElementById('progress');
     hideProgress(progress, document.getElementById('progressBar'));
+    window.__lastExtracted = ext || null;
     if (!ext) {
       window.__lastOcrText = '';
       refreshScore();
+      showClaimCta();
       return;
     }
     var name = (ext.defendantName && ext.defendantName.value || '').trim();
@@ -156,6 +160,7 @@
     statusEl.textContent = 'Scan complete (readability: ' + leg + '). Review and correct the fields below.';
     statusEl.className = 'status ok';
     refreshScore();
+    showClaimCta();
     syncTicketSection();
   }
 
@@ -204,6 +209,7 @@
         statusEl.className = 'status ok';
         window.__lastOcrText = result.data.text;
         refreshScore();
+        showClaimCta();
         syncTicketSection();
       }, 250);
     }).catch(function (err) {
@@ -327,6 +333,84 @@
     if (el) el.addEventListener('input', refreshScore);
   });
 
+  // ---- Quick-scan intake: step 1 (scan) -> step 2 (claim) -> step 3 (details) ----
+  var intakeProgress = document.getElementById('intakeProgress');
+  var intakeStepLabel = document.getElementById('intakeStepLabel');
+  var intakeStepNote = document.getElementById('intakeStepNote');
+  var intakeProgressBar = document.getElementById('intakeProgressBar');
+  var claimStep = document.getElementById('claimStep');
+  var claimCtaWrap = document.getElementById('claimCtaWrap');
+
+  function setIntakeStep(step, note) {
+    var labels = ['Step 1 of 3', 'Step 2 of 3', 'Step 3 of 3'];
+    if (step >= 1 && step <= 3 && intakeStepLabel) intakeStepLabel.textContent = labels[step - 1];
+    if (intakeStepNote) intakeStepNote.textContent = note || '';
+    if (intakeProgressBar) intakeProgressBar.style.width = Math.round((step / 3) * 100) + '%';
+    if (intakeProgress) intakeProgress.style.display = 'block';
+  }
+
+  function showClaimCta() {
+    setIntakeStep(1, 'Scan complete — see your guidance score above.');
+    if (claimCtaWrap) claimCtaWrap.style.display = 'block';
+  }
+
+  function showClaim() {
+    if (claimStep) claimStep.style.display = 'block';
+    if (claimCtaWrap) claimCtaWrap.style.display = 'none';
+    setIntakeStep(2, 'Just your name and email — nothing is charged yet.');
+    if (claimStep) claimStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var first = document.getElementById('c_firstname');
+    if (first) first.focus();
+  }
+
+  var claimCta = document.getElementById('claimCta');
+  var claimManual = document.getElementById('claimManual');
+  if (claimCta) claimCta.addEventListener('click', showClaim);
+  if (claimManual) claimManual.addEventListener('click', showClaim);
+
+  var claimBtn = document.getElementById('claimBtn');
+  var claimStatus = document.getElementById('claimStatus');
+  if (claimBtn) claimBtn.addEventListener('click', async function () {
+    var firstNameEl = document.getElementById('c_firstname');
+    var emailEl = document.getElementById('c_email');
+    var firstName = (firstNameEl && firstNameEl.value || '').trim();
+    var email = (emailEl && emailEl.value || '').trim();
+    var missing = [];
+    if (!firstName) missing.push('a first name');
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) missing.push('a valid email');
+    if (missing.length) {
+      if (claimStatus) { claimStatus.textContent = 'Please enter ' + missing.join(' and ') + '.'; claimStatus.className = 'status'; }
+      return;
+    }
+    if (claimStatus) { claimStatus.textContent = 'Saving your results...'; claimStatus.className = 'status'; }
+    claimBtn.disabled = true;
+    try {
+      var res = await fetch('/api/intake/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: firstName,
+          email: email,
+          scan: { extracted: window.__lastExtracted || null, ocrText: window.__lastOcrText || '' }
+        })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save your results');
+      currentTrackingCode = data.trackingCode;
+      currentClaimToken = data.claimToken;
+      setField('f_firstname', firstName);
+      setField('f_email', email);
+      if (claimStep) claimStep.style.display = 'none';
+      caseForm.style.display = 'block';
+      setIntakeStep(3, data.reused ? 'Good news — we saved your scan and picked up where you left off.' : 'Almost done — check your details, then choose a service.');
+      caseForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      if (claimStatus) { claimStatus.textContent = 'Error: ' + err.message; claimStatus.className = 'status'; }
+    } finally {
+      claimBtn.disabled = false;
+    }
+  });
+
   function buildDeclarationDraft(f) {
     var crid = (f.citation || '(citation not detected)').toUpperCase().replace(/\s+/g, ' ');
     return 'TRIAL BY WRITTEN DECLARATION (IN PRO PER — DRAFT FOR YOUR REVIEW)\n' +
@@ -397,10 +481,15 @@
     submitBtn.textContent = 'Contacting secure payment...';
 
     try {
+      var payload = Object.assign({}, f);
+      if (currentTrackingCode) {
+        payload.trackingCode = currentTrackingCode;
+        payload.claimToken = currentClaimToken;
+      }
       var res = await fetch('/api/cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(f)
+        body: JSON.stringify(payload)
       });
       var data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');

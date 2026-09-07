@@ -36,6 +36,7 @@ export function rand(n) {
 
 export function statusSummary(status, notes = {}) {
   switch (status) {
+    case 'claimed': return 'Your results are saved. Finish the remaining details to continue.';
     case 'payment_pending': return 'Payment not yet completed. Your case is queued and will be drafted once payment clears.';
     case 'payment_complete': return 'Payment received. Your declaration paperwork is being prepared.';
     case 'submitted': return 'Your paperwork has been prepared and is ready for review/submission.';
@@ -47,6 +48,7 @@ export function statusSummary(status, notes = {}) {
 
 export function statusHistory(status) {
   const map = {
+    claimed: ['Claimed'],
     payment_pending: ['Payment', 'Pending'],
     payment_complete: ['Payment', 'Drafting'],
     submitted: ['Payment', 'Drafting', 'Submitted'],

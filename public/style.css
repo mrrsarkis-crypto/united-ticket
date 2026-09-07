@@ -177,6 +177,19 @@ img.preview{max-width:100%;max-height:300px;border-radius:10px;margin-top:14px;d
 .score-list{margin:10px 0 0;padding-left:18px;}
 .score-list li{color:rgba(255,255,255,.85);font-size:13px;margin:4px 0;line-height:1.5;}
 
+/* ---- Intake progress / quick-scan claim ---- */
+.intake-progress{padding:14px 28px 0;}
+.intake-progress-label{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.intake-progress-note{font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:600;}
+.intake-progress-track{height:8px;background:#E1E7F4;border-radius:999px;overflow:hidden;margin-top:8px;}
+.intake-progress-track span{display:block;height:100%;width:33%;background:var(--amber);border-radius:999px;transition:width .3s ease;}
+.claim-cta-wrap{margin:6px 0 18px;text-align:center;}
+.claim-cta{max-width:360px;margin-left:auto;margin-right:auto;}
+.claim-manual{display:inline-block;margin-top:10px;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer;font-family:inherit;}
+.claim-manual:hover{color:var(--navy);}
+.claim-step{border-top:1px solid var(--line);margin-top:26px;}
+.claim-actions{margin-top:18px;}
+
 /* ---- Track ---- */
 .track{max-width:620px;margin:0 auto;}
 .track label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}

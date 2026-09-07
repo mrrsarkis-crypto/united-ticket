@@ -253,7 +253,7 @@
   <section id="build" class="section section-light section-form">
     <div class="wrap">
       <h2 class="section-title">Start a Case</h2>
-      <p class="section-sub">Upload your ticket, driver's license, or any court or DMV notice &mdash; we pull your details from it, and you review before payment.</p>
+      <p class="section-sub">Scan your ticket for free, save your results, then finish your details &mdash; three quick steps, and nothing is charged until you're done.</p>
 
       <div class="card intake intake-card">
         <div class="intake-trust" aria-label="Trust and credentials">
@@ -267,11 +267,16 @@
           </div>
         </div>
 
+        <div class="intake-progress" id="intakeProgress" role="status" aria-live="polite">
+          <div class="intake-progress-label"><span id="intakeStepLabel">Step 1 of 3: Quick scan</span><span class="intake-progress-note" id="intakeStepNote">Upload a ticket, license, or court/DMV notice &mdash; your scan is always free.</span></div>
+          <div class="intake-progress-track" aria-hidden="true"><span id="intakeProgressBar"></span></div>
+        </div>
+
         <div class="intake-step">
-          <h3 class="step-title"><span class="step-no">1</span>Your ticket or document</h3>
+          <h3 class="step-title"><span class="step-no">1</span>Quick scan &mdash; your ticket or document</h3>
           <div class="photo-note" role="note">
             <p class="photo-note-main"><span class="photo-note-icon" aria-hidden="true">&#128247;</span><strong>No typing needed &mdash; just snap a photo.</strong> Upload your ticket, driver's license, or any notice from the court or DMV and the details below fill in automatically.</p>
-            <p class="photo-note-sub">No document handy? No problem &mdash; type them below; only your date of birth and driver's license number are required.</p>
+            <p class="photo-note-sub">No document handy? No problem &mdash; use the "skip the scan" link below and type the details in step 3; only your date of birth and driver's license number are required later.</p>
           </div>
 
           <div class="drop" id="drop">
@@ -291,12 +296,31 @@
             <p class="score-tag">Dismissible defects identified on your citation. This is a guidance score to help you decide whether it's worth pursuing &mdash; not a promise of any court outcome.</p>
             <ul class="score-list" id="scoreList"></ul>
           </div>
+
+          <div class="claim-cta-wrap" id="claimCtaWrap" style="display:none;">
+            <button type="button" class="btn btn-amber btn-block claim-cta" id="claimCta">Save your results and start your case &rarr;</button>
+            <button type="button" class="claim-manual" id="claimManual">Skip the scan &mdash; enter details manually</button>
+          </div>
         </div>
 
-        <form id="caseForm" class="intake-form" novalidate>
+        <div class="intake-step claim-step" id="claimStep" style="display:none;">
+          <h3 class="step-title"><span class="step-no">2</span>Save your results</h3>
+          <p class="step-help">Just two fields to save your scan and start your case. Nothing is charged yet &mdash; you finish the details next.</p>
+          <div class="row">
+            <div class="field"><label for="c_firstname">First name <i>required</i></label><input type="text" id="c_firstname" autocomplete="given-name"></div>
+            <div class="field"><label for="c_email">Email <i>required</i></label><input type="email" id="c_email" autocomplete="email" placeholder="you@example.com"></div>
+          </div>
+          <div class="claim-actions">
+            <button type="button" class="btn btn-amber" id="claimBtn">Continue &rarr;</button>
+          </div>
+          <p class="form-legal" style="text-align:left;margin:16px 0 0;">We use this only to save your results and to follow up about your case. Your scan, date of birth, and driver's license details are treated as sensitive per our <a href="/privacy">privacy policy</a> &mdash; we never sell your data.</p>
+          <div class="status" id="claimStatus"></div>
+        </div>
+
+        <form id="caseForm" class="intake-form" style="display:none;" novalidate>
           <div class="intake-step">
-            <h3 class="step-title"><span class="step-no">2</span>Your details</h3>
-            <p class="step-help">Please confirm who you are so we can prepare and email the correct paperwork.</p>
+            <h3 class="step-title"><span class="step-no">3</span>Almost done &mdash; your details</h3>
+            <p class="step-help">Almost there! Confirm your details so we can prepare and email the correct paperwork.</p>
             <div class="row">
               <div class="field"><label for="f_firstname">First name <i>required</i></label><input type="text" id="f_firstname" autocomplete="given-name"></div>
               <div class="field"><label for="f_lastname">Last name <i>required</i></label><input type="text" id="f_lastname" autocomplete="family-name"></div>
@@ -318,7 +342,7 @@
           </div>
 
           <div class="intake-step" id="ticketSection">
-            <h3 class="step-title"><span class="step-no">3</span>Your ticket details</h3>
+            <h3 class="step-title">Your ticket details</h3>
             <p class="step-help" id="ticketHelp">Only needed if you didn't upload a document. Citations aren't filed until a licensed professional on our team reviews the details.</p>
             <button type="button" class="ticket-toggle" id="ticketToggle" aria-expanded="true">Hide ticket details</button>
             <div id="ticketFields">
@@ -344,7 +368,7 @@
           </div>
 
           <div class="intake-step intake-review">
-            <h3 class="step-title"><span class="step-no">4</span>Service &amp; review</h3>
+            <h3 class="step-title">Service &amp; review</h3>
             <p class="step-help">Choose a service, then review before payment. A licensed member of our team reviews your case before anything is filed; nothing is charged until your details are complete.</p>
 
             <div class="field"><label for="f_service">Service</label>
