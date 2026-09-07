@@ -1,5 +1,5 @@
 # Deploy static site + Pages Functions to Cloudflare Pages via the Pages
-deployment API on every push to main.
+# deployment API on every push to main.
 #
 # Cloudflare credentials are stored only as GitHub Actions secrets.
 
