@@ -33,8 +33,6 @@ export async function onRequestPost(context) {
 
   const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
   const dlPhoto = (body.dlPhoto || '').trim();
-  // Optional assistant session id (already validated by the assistant endpoints,
-  // but sanitize again here as defense-in-depth).
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
@@ -55,8 +53,6 @@ export async function onRequestPost(context) {
         created_at: new Date().toISOString(),
       };
       await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
-      // Reverse index: session -> case, so a case can be found from an assistant
-      // session id. TTL matches the assistant session expiry (14 days).
       if (sessionId) {
         await env.CASES.put('sessioncase:' + sessionId, trackingCode, { expirationTtl: 60 * 60 * 24 * 14 });
       }
@@ -87,7 +83,7 @@ export async function onRequestPost(context) {
           'Time: ' + record.created_at + '\n\n' +
           '— SUBMITTED ONLINE INFO —\n' +
           info + '\n\n' +
-          'View in dashboard: https://unitedtraffictickets.com/admin-cases?code=' + (env.ADMIN_CODE || '') + '\n' +
+          'View in dashboard: https://unitedtraffictickets.com/admin-cases\n' +
           'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')\n\n' +
           '(The prefilled TBD / TR-205 will be emailed here once payment clears.)',
       });
