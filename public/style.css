@@ -94,7 +94,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .price h3{color:#fff;margin:0 0 10px;font-size:17px;}
 .price .amount{font-size:42px;font-weight:800;color:var(--amber);margin:0 0 10px;}
 .price p{color:rgba(255,255,255,.72);font-size:14px;margin:0;line-height:1.55;}
-.price stripe-buy-button{display:block;margin-top:18px;}
+.price>a.btn{display:block;width:100%;margin-top:18px;box-sizing:border-box;text-align:center;}
 .price .price-note{display:block;color:rgba(255,255,255,.5);font-size:12px;margin-top:10px;}
 .price.hot{border-color:var(--amber);box-shadow:0 8px 30px rgba(0,0,0,.35);transform:scale(1.02);}
 

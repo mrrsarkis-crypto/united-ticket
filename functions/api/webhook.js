@@ -22,9 +22,8 @@ export async function onRequestPost(context) {
     payload.type === 'checkout.session.completed' ||
     payload.type === 'checkout.session.async_payment_succeeded';
 
-  if (isFulfillment) {
+  if (isFulfillment && payload.data && payload.data.object) {
     const session = payload.data.object;
-    const trackingCode = session.client_reference_id;
 
     // Only fulfill when the payment actually cleared (async methods arrive unpaid).
     const paid =
@@ -32,14 +31,90 @@ export async function onRequestPost(context) {
       session.payment_status !== 'requires_payment_method' &&
       session.payment_status !== 'no_payment_required';
 
-    if (trackingCode && paid) {
-      await updateCasePaid(env, trackingCode);
-      const caseData = await loadCase(env, trackingCode);
-      await fulfillCase(env, session, trackingCode, caseData);
+    if (paid) {
+      const eventId = payload.id;
+      if (await alreadyProcessed(env, eventId)) {
+        return json({ received: true, duplicate: true });
+      }
+
+      const trackingCode = session.client_reference_id;
+      const caseData = (trackingCode && (await loadCase(env, trackingCode))) || null;
+
+      if (trackingCode && caseData && caseData.tracking_code) {
+        await updateCasePaid(env, trackingCode);
+        const refreshed = await loadCase(env, trackingCode);
+        await fulfillCase(env, session, trackingCode, refreshed);
+      } else {
+        // Paid event with no case in our system (e.g. a direct Stripe Buy
+        // Button / Payment Link purchase, or a case that was never created).
+        // Never drop cleared money silently: record it and alert the business.
+        await handleOrphanPayment(env, session);
+      }
+      await markProcessed(env, eventId);
     }
   }
 
   return json({ received: true });
+}
+
+// Idempotency: Stripe may redeliver the same event (same evt_ ID). We store a
+// KV marker so a duplicate delivery is acknowledged but never re-fulfilled.
+async function alreadyProcessed(env, eventId) {
+  if (!env.CASES || !eventId) return false;
+  try { return !!(await env.CASES.get('evt:' + eventId)); } catch { return false; }
+}
+
+async function markProcessed(env, eventId) {
+  if (!env.CASES || !eventId) return;
+  try { await env.CASES.put('evt:' + eventId, '1', { expirationTtl: 7 * 24 * 60 * 60 }); } catch { /* non-fatal */ }
+}
+
+// A cleared payment we cannot attach to a case. Persist an orphan record and
+// notify the business so the money is never silently lost. The customer can
+// then be contacted to complete the intake details.
+async function handleOrphanPayment(env, session) {
+  try {
+    const cust = session.customer_details || {};
+    const name = cust.name || '';
+    const email = session.customer_email || cust.email || '';
+    const amount = session.amount_total ? '$' + (session.amount_total / 100).toFixed(2) : '?';
+    const code = 'TF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
+
+    const record = {
+      tracking_code: code,
+      name: name,
+      email: email,
+      status: 'payment_complete',
+      needs_intake: true,
+      payment_meta: {
+        checkout_session: session.id || '',
+        payment_link: session.payment_link || '',
+        amount_total: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        payment_intent: session.payment_intent || '',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (env.CASES) {
+      try { await env.CASES.put('case:' + code, JSON.stringify(record)); } catch (e) { console.error('orphan record failed', e); }
+    }
+
+    await sendBusinessNotification(env, {
+      subject: 'PAYMENT RECEIVED — NO CASE INFO: ' + code + ' (' + amount + ')',
+      text:
+        'A Stripe payment cleared that is NOT attached to an intake case (likely a direct Buy Button / Payment Link purchase).\n\n' +
+        '— PAYMENT —\n' +
+        'Tracking code: ' + code + '\n' +
+        'Amount: ' + amount + '\n' +
+        'Customer: ' + (name || '—') + ' <' + (email || '—') + '>\n' +
+        'Checkout session: ' + (session.id || '—') + '\n' +
+        'Payment link: ' + (session.payment_link || '—') + '\n\n' +
+        'ACTION REQUIRED: Contact the customer to collect the ticket details so the case can be completed and drafted.\n' +
+        'Dashboard: https://unitedtraffictickets.com/admin-cases',
+    });
+  } catch (e) { console.error('orphan handling failed', e); }
 }
 
 function json(data, status) {

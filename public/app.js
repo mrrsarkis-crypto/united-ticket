@@ -12,6 +12,13 @@
   var currentDlDataUrl = null;
   var currentTrackingCode = null;
   var currentClaimToken = null;
+  document.querySelectorAll('[data-utt-service]').forEach(function (c) {
+    c.addEventListener('click', function () {
+      var s = c.getAttribute('data-utt-service');
+      var sel = document.getElementById('f_service');
+      if (sel && s) sel.value = s;
+    });
+  });
   var dlPhotoInput = document.getElementById('f_dlPhoto');
   var dlPhotoNameEl = document.getElementById('dlPhotoName');
   if (dlPhotoInput && dlPhotoNameEl) {
