@@ -43,6 +43,7 @@ export async function onRequestPost(context) {
   let trackingCode = null;
   let existing = null;
   let reused = false;
+  let claimToken = null;
 
   if (env.CASES) {
     try {
@@ -61,7 +62,7 @@ export async function onRequestPost(context) {
 
       const now = new Date().toISOString();
       if (!trackingCode) trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
-      const claimToken = crypto.randomUUID();
+      claimToken = crypto.randomUUID();
 
       const record = {
         ...(existing || {}),
