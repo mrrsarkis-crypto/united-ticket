@@ -85,6 +85,15 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .section-sub{text-align:center;color:var(--muted);font-size:16px;margin:0 auto 34px;max-width:620px;}
 .section-dark .section-sub{color:rgba(255,255,255,.7);}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+  .vs-card{border-top:4px solid var(--amber);}
+  .vs-card h3{font-size:20px;margin:0 0 14px;}
+  .vs-list{margin:0;padding:0;list-style:none;}
+  .vs-list li{padding:9px 0 9px 30px;position:relative;border-bottom:1px solid var(--line);font-size:15px;line-height:1.45;color:var(--ink);}
+  .vs-list li:last-child{border-bottom:none;}
+  .vs-list li.pro::before{content:"\002B";position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:#E8F7EE;color:#1B7A3D;font-weight:800;line-height:22px;text-align:center;font-size:15px;}
+  .vs-list li.con::before{content:"\2212";position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:#FDECEC;color:#B42318;font-weight:800;line-height:22px;text-align:center;font-size:15px;}
+  .vs-note{margin:16px 0 0;font-size:14px;color:var(--muted);line-height:1.5;}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
 .svc h3{margin:0 0 8px;font-size:16px;color:var(--navy);}
 .svc p{margin:0;color:var(--muted);font-size:14px;line-height:1.55;}
@@ -252,7 +261,7 @@ h3{font-size:16px;font-weight:700;}
   .hero-inner{grid-template-columns:1fr;text-align:center;}
   .hero-sub{margin-left:auto;margin-right:auto;}
   .hero-actions,.hero-badges{justify-content:center;}
-  .grid-3,.pricing{grid-template-columns:1fr;}
+  .grid-3,.grid-2,.pricing{grid-template-columns:1fr;}
   .footer-inner{grid-template-columns:1fr;gap:28px;}
   .nav-toggle{display:block;}
   .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:var(--navy);flex-direction:column;padding:10px 16px 18px;box-shadow:0 14px 30px rgba(0,0,0,.3);}
