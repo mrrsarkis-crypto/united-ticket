@@ -28,13 +28,15 @@ export async function onRequestGet(context) {
 
   records.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
+  const orphans = records.filter((r) => r.needs_intake === true);
+
   if (url.pathname.endsWith('.csv')) {
     return csv(records);
   }
 
   // This endpoint contains sensitive customer information. Never allow browsers,
   // proxies, or shared caches to retain an admin response.
-  return new Response(JSON.stringify({ count: records.length, cases: records }), {
+  return new Response(JSON.stringify({ count: records.length, cases: records, orphan_count: orphans.length, orphans }), {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
