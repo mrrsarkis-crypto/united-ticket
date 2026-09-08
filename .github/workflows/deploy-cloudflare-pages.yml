@@ -43,6 +43,11 @@ jobs:
 
       - name: Verify production runtime configuration
         run: |
+          # Use the *.pages.dev alias, not the custom domain: the custom domain
+          # is behind Bot Fight Mode, which 403s datacenter IPs like GitHub
+          # Actions runners. The Pages zone has no such filter. The pages.dev
+          # deployment serves the same Worker and environment, so it fully
+          # validates the production runtime configuration.
           curl --fail --silent --show-error --retry 5 --retry-all-errors \
             --retry-delay 3 \
-            https://unitedtraffictickets.com/api/health
+            https://ticket-fighter.pages.dev/api/health
