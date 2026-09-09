@@ -360,13 +360,10 @@ body{background:#FAFBFE;color:#102A5B}
 .consent-btn-ok{background:linear-gradient(135deg,var(--arm-orange-bright),var(--arm-orange));color:var(--arm-blue-dark);}
 /* Armenian tricolor hierarchy */
 :root{--arm-red:#D90012;--arm-red-dark:#A9000E;--arm-blue:#0033A0;--arm-blue-dark:#00266F;--arm-blue-mid:#174CB8;--arm-orange:#F2A800;--arm-orange-fire:#FF6A00;--arm-orange-hot:#FF3D00;}
-.site-header{border-top:5px solid var(--arm-red);}
-.sub-hero{border-top:5px solid var(--arm-blue);}
-.page-cta,.section-cta,.site-footer{border-top:5px solid var(--arm-orange);}
 .nav-links a.cta,.consent-btn-ok{background:linear-gradient(135deg,var(--arm-orange),var(--arm-orange-fire) 62%,var(--arm-orange-hot));}
 .nav-links a.cta:hover,.consent-btn-ok:hover{background:linear-gradient(135deg,var(--arm-orange-fire),var(--arm-orange-hot));}
 .sub-hero .eyebrow{color:var(--arm-orange);}
-body::before{content:"";display:block;height:4px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);}
+
 /* Refined Armenian palette: remove decorative red strips */
 .site-header,.sub-hero,.page-cta,.section-cta,.site-footer{border-top:0 !important}
 body::before{display:none !important}
