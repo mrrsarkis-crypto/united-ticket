@@ -671,6 +671,15 @@ body{background:var(--cream);color:var(--ink);}
 .nav-links li.drop > a:focus-visible + ul{
   display:block !important;
 }
+.nav-links li.drop,
+.nav-links li.drop:hover{
+  background:transparent !important;
+  border:0 !important;
+  padding:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
 .nav-links li.drop > ul a{
   background:transparent !important;
   color:rgba(255,250,241,.86) !important;
