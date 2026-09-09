@@ -17,7 +17,15 @@
   var copy = document.getElementById('copyCode');
   var remember = document.getElementById('rememberCase');
   var forget = document.getElementById('forgetCase');
+  var documentUpload = document.getElementById('documentUpload');
+  var documentInput = document.getElementById('caseDocument');
+  var uploadDocument = document.getElementById('uploadDocument');
+  var documentStatus = document.getElementById('documentStatus');
+  var documentList = document.getElementById('documentList');
+  var documentHelp = document.getElementById('documentHelp');
   var rememberedKey = 'utt_case_code';
+  var accessToken = '';
+  var currentCode = '';
 
   var stages = {
     claimed: ['Saved', 'Your scan is saved. Complete the remaining details to move forward.', 18, 'Finish case details', 'Confirm your details and choose a service.', '/'],
@@ -50,7 +58,36 @@
     return String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); });
   }
 
+  function renderDocuments(docs) {
+    if (!documentList) return;
+    documentList.innerHTML = '';
+    if (!docs || !docs.length) {
+      documentList.innerHTML = '<p class="document-empty">No documents yet. Your case files will appear here as they are added.</p>';
+      return;
+    }
+    docs.forEach(function (doc) {
+      var row = document.createElement('div');
+      row.className = 'document-row';
+      var size = doc.size ? Math.max(1, Math.round(doc.size / 1024)) + ' KB' : '';
+      row.innerHTML = '<div><strong>' + esc(doc.name || 'Case document') + '</strong><small>' + esc(size) + ' · ' + esc(doc.source === 'customer' ? 'Uploaded by you' : 'Added to case') + '</small></div><a class="document-download" href="' + esc(doc.downloadPath) + '&token=' + encodeURIComponent(accessToken) + '">Download</a>';
+      documentList.appendChild(row);
+    });
+  }
+
+  async function loadDocuments() {
+    if (!accessToken || !currentCode || !documentList) return;
+    try {
+      var res = await fetch('/api/case-documents?code=' + encodeURIComponent(currentCode) + '&token=' + encodeURIComponent(accessToken), { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data && data.error || 'Could not load documents');
+      renderDocuments(data.documents || []);
+    } catch (err) {
+      documentList.innerHTML = '<p class="document-empty">Document center is unavailable right now. Your case status is still available above.</p>';
+    }
+  }
+
   async function load(code) {
+    currentCode = code;
     status.textContent = 'Loading your case…';
     status.className = 'case-status loading';
     try {
@@ -77,7 +114,12 @@
       } else {
         try { localStorage.removeItem(rememberedKey); } catch (_) {}
       }
-      try { history.replaceState(null, '', '/case?code=' + encodeURIComponent(code)); } catch (_) {}
+      if (documentUpload) documentUpload.hidden = !accessToken;
+      if (!accessToken && documentHelp) documentHelp.textContent = 'Use the secure Case Center link from your confirmation email to access your private document area.';
+      loadDocuments();
+      try {
+        history.replaceState(null, '', '/case?code=' + encodeURIComponent(code));
+      } catch (_) {}
     } catch (err) {
       content.hidden = true;
       status.textContent = err.message || 'We could not load that case.';
@@ -91,17 +133,60 @@
     if (!value || value === '—') return;
     try { await navigator.clipboard.writeText(value); copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy code'; }, 1400); } catch (_) { copy.textContent = value; }
   });
+
+  if (uploadDocument) uploadDocument.addEventListener('click', async function () {
+    if (!accessToken || !currentCode || !documentInput || !documentInput.files.length) {
+      if (documentStatus) documentStatus.textContent = 'Choose a PDF, JPG, PNG, or WEBP file first.';
+      return;
+    }
+    var file = documentInput.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      documentStatus.textContent = 'Files must be 10 MB or smaller.';
+      return;
+    }
+    documentStatus.textContent = 'Uploading securely…';
+    uploadDocument.disabled = true;
+    try {
+      var formData = new FormData();
+      formData.append('file', file);
+      var res = await fetch('/api/case-documents?code=' + encodeURIComponent(currentCode) + '&token=' + encodeURIComponent(accessToken), { method: 'POST', body: formData });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data && data.error || 'Upload failed');
+      documentInput.value = '';
+      documentStatus.textContent = 'Document uploaded securely.';
+      await loadDocuments();
+    } catch (err) {
+      documentStatus.textContent = err.message || 'Upload failed. Please try again.';
+    } finally {
+      uploadDocument.disabled = false;
+    }
+  });
   if (forget) forget.addEventListener('click', function () {
-    try { localStorage.removeItem(rememberedKey); } catch (_) {}
+    try {
+      localStorage.removeItem(rememberedKey);
+      if (currentCode) sessionStorage.removeItem('utt_case_token:' + currentCode.toUpperCase());
+    } catch (_) {}
+    accessToken = '';
     if (remember) remember.checked = false;
+    if (documentUpload) documentUpload.hidden = true;
     status.textContent = 'This browser will no longer remember the case code.';
     status.className = 'case-status ok';
   });
 
   var params = new URLSearchParams(location.search);
+  var urlToken = (params.get('token') || '').trim();
   var initial = (params.get('code') || '').trim();
+  if (urlToken) {
+    accessToken = urlToken;
+    try { sessionStorage.setItem('utt_case_token:' + initial.toUpperCase(), accessToken); } catch (_) {}
+  } else if (initial) {
+    try { accessToken = sessionStorage.getItem('utt_case_token:' + initial.toUpperCase()) || ''; } catch (_) {}
+  }
   if (!initial) {
     try { initial = (localStorage.getItem(rememberedKey) || '').trim(); if (initial && remember) remember.checked = true; } catch (_) {}
+    if (initial && !accessToken) {
+      try { accessToken = sessionStorage.getItem('utt_case_token:' + initial.toUpperCase()) || ''; } catch (_) {}
+    }
   }
   if (initial) { input.value = initial; load(initial.toUpperCase()); }
 })();

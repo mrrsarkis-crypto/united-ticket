@@ -1,5 +1,5 @@
 // /api/cases — create a case (POST) and return a Stripe Checkout URL
-import { json, priceFor, rand, sendBusinessNotification } from '../_shared.js';
+import { caseAccessToken, json, priceFor, rand, sendBusinessNotification } from '../_shared.js';
 
 // JSON env bindings expected: STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999
 // D1 binding: CASES
@@ -115,9 +115,11 @@ export async function onRequestPost(context) {
 
   const priceId = env[priceKey];
   const dollars = { '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00';
+  const accessToken = await caseAccessToken(env, trackingCode);
   let sessionUrl;
   try {
     const origin = new URL(request.url).origin;
+    const caseUrl = origin + '/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '');
     const integrationId = 'tf-' + Math.random().toString(36).slice(2, 10);
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
@@ -127,7 +129,7 @@ export async function onRequestPost(context) {
       },
       body: new URLSearchParams({
         mode: 'payment',
-        success_url: env.STRIPE_SUCCESS_URL || (origin + '/#/success?case=' + trackingCode),
+        success_url: env.STRIPE_SUCCESS_URL || (caseUrl + '&payment=success'),
         cancel_url: env.STRIPE_CANCEL_URL || (origin + '/#/cancel'),
         customer_email: email,
         client_reference_id: trackingCode,
@@ -167,5 +169,5 @@ export async function onRequestPost(context) {
     return json({ error: 'Could not create payment session. Please try again.' }, 503);
   }
 
-  return json({ trackingCode, url: sessionUrl, amountLabel: '$' + dollars, stored }, 200);
+  return json({ trackingCode, url: sessionUrl, amountLabel: '$' + dollars, stored, accessToken: accessToken || null, caseUrl: '/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '') }, 200);
 }

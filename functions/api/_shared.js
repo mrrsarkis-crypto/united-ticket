@@ -58,6 +58,27 @@ export function statusHistory(status) {
   return map[status] || [status];
 }
 
+// Derive a stable bearer token from a server-only secret. The raw token never
+// needs to be stored in the case record, and access stays scoped to one case.
+export async function caseAccessToken(env, trackingCode) {
+  const secret = env.CASE_ACCESS_SECRET || env.STRIPE_SECRET_KEY || '';
+  if (!secret || !trackingCode) return '';
+  const data = new TextEncoder().encode(String(trackingCode) + ':' + secret);
+  const mac = await crypto.subtle.digest('SHA-256', data);
+  let binary = '';
+  for (const b of new Uint8Array(mac)) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+export async function hasCaseAccess(request, env, trackingCode) {
+  const expected = await caseAccessToken(env, trackingCode);
+  if (!expected) return false;
+  const url = new URL(request.url);
+  const provided = url.searchParams.get('token') ||
+    (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  return provided === expected;
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Anthropic Messages API helper (direct fetch, no SDK dependency — matches the

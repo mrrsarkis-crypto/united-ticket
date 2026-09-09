@@ -1,7 +1,7 @@
 // POST /api/webhook — Stripe webhook endpoint
 // Expects STRIPE_WEBHOOK_SECRET and a KV CASES binding.
 import { buildTR205, buildRetainer, buildReceipt } from './_tr205.js';
-import { sendBusinessNotification, resendSend } from './_shared.js';
+import { caseAccessToken, sendBusinessNotification, resendSend } from './_shared.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -278,6 +278,8 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
   const fee = (docs && docs.fee) || '';
   if (env.RESEND_API_KEY) {
     const attachments = [];
+    const accessToken = await caseAccessToken(env, trackingCode);
+    const caseUrl = 'https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '');
     if (retainerBytes) {
       attachments.push({ filename: 'Retainer_Agreement_' + trackingCode + '.pdf', bytes: retainerBytes, type: 'application/pdf' });
     }
@@ -290,7 +292,7 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
         subject: 'Your United Traffic Tickets Defense receipt & retainer',
         text: 'Thank you for your payment of $' + fee + ' (case ' + trackingCode + ').\n\n' +
           'Please review and sign the attached Retainer Agreement and keep the attached Receipt for your records.\n' +
-          'You can track your case progress here: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode) + '.\n\n' +
+          'Open your private Case Center here: ' + caseUrl + '.\n\n' +
           'If you have any questions, call (818) 205-8271.',
         attachments,
       });
