@@ -186,7 +186,7 @@
         </div>
       </div>
       <div class="hero-visual">
-        <picture><source srcset="/assets/cartoon-hero.webp" type="image/webp"><img src="/assets/cartoon-hero.webp" alt="United Traffic Tickets Defense" class="hero-img" width="960" height="960" fetchpriority="high" decoding="async"></picture>
+        <picture><source type="image/webp" srcset="/assets/cartoon-hero-480.webp 480w, /assets/cartoon-hero-768.webp 768w, /assets/cartoon-hero-960.webp 960w" sizes="(max-width: 700px) 88vw, 480px"><img src="/assets/cartoon-hero-768.webp" srcset="/assets/cartoon-hero-480.webp 480w, /assets/cartoon-hero-768.webp 768w, /assets/cartoon-hero-960.webp 960w" sizes="(max-width: 700px) 88vw, 480px" alt="United Traffic Tickets Defense" class="hero-img" width="960" height="960" fetchpriority="high" decoding="async"></picture>
       </div>
     </div>
   </section>
@@ -580,5 +580,10 @@ if ('serviceWorker' in navigator) {
 </div>
 <script src="/nav.js" defer></script>
 <script src="/consent.js" defer></script>
+<!-- Vercel Speed Insights -->
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

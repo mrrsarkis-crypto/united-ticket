@@ -24,7 +24,7 @@
   <nav class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="/">
-        <img src="/assets/logo-defense.webp" alt="United Traffic Tickets Defense" class="brand-logo">
+        <img src="/assets/logo-defense.webp" alt="United Traffic Tickets Defense" class="brand-logo" width="640" height="640" decoding="async">
       </a>
       <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
         <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
@@ -125,7 +125,7 @@
 <footer class="site-footer">
   <div class="wrap footer-inner">
     <div>
-      <img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo">
+      <img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo" width="640" height="640" loading="lazy" decoding="async">
       <p>Document preparation and case tracking software. Not a law firm. Outcomes not guaranteed.</p>
     </div>
     <div class="footer-links">
@@ -189,5 +189,10 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ 
 </div>
 <script src="/nav.js" defer></script>
 <script src="/consent.js" defer></script>
+<!-- Vercel Speed Insights -->
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

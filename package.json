@@ -19,6 +19,7 @@
     "wrangler": "^3.114.17"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "cloudflare": "^7.1.0"
   }
 }
