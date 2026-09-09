@@ -759,3 +759,59 @@ body{background:#FAFBFE;color:var(--ink)}
 
 /* A restrained tricolor rule used as a visual signature, not a literal flag everywhere. */
 .tricolor-rule{height:4px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);border-radius:999px;}
+/* Armenian tricolor hierarchy: red -> blue -> fire-orange */
+:root{
+  --arm-red:#D90012;
+  --arm-red-dark:#A9000E;
+  --arm-red-deep:#7F000A;
+  --arm-blue:#0033A0;
+  --arm-blue-dark:#00266F;
+  --arm-blue-mid:#174CB8;
+  --arm-orange:#F2A800;
+  --arm-orange-fire:#FF6A00;
+  --arm-orange-hot:#FF3D00;
+  --arm-orange-dark:#D28F00;
+  --arm-ink:#102A5B;
+  --navy:var(--arm-blue);
+  --navy-dark:var(--arm-blue-dark);
+  --navy-mid:var(--arm-blue-mid);
+  --amber:var(--arm-orange);
+  --amber-dark:var(--arm-orange-dark);
+  --amber-ink:#8B5A00;
+  --ink:var(--arm-ink);
+  --cloud:#F4F7FC;
+  --line:#D7E1F1;
+  --muted:#5D6E8D;
+}
+
+/* Strong top-to-bottom flag order */
+.site-header{border-top:5px solid var(--arm-red);}
+.hero{border-top:5px solid var(--arm-blue);}
+.section-cta,.footer{border-top:5px solid var(--arm-orange);}
+
+/* Red: deep, blood-like crimson accents */
+.topbar,.site-header .topbar{border-bottom:3px solid var(--arm-red-dark);}
+.badge-red,.status-red,.alert-red{background:var(--arm-red);}
+
+/* Blue: official Armenian flag blue remains the structural foundation */
+.hero,.section-dark{background:var(--arm-blue);}
+.nav-links a.active,.nav-links a:hover{color:var(--arm-blue);}
+
+/* Orange: hotter, flame-like treatment for action and energy */
+.btn-amber,.nav-links a.cta,.topbar-link{background:linear-gradient(135deg,var(--arm-orange) 0%,var(--arm-orange-fire) 62%,var(--arm-orange-hot) 100%);}
+.btn-amber:hover,.nav-links a.cta:hover,.topbar-link:hover{background:linear-gradient(135deg,var(--arm-orange-fire) 0%,var(--arm-orange-hot) 100%);}
+.eyebrow,.hero h1 .amber,.topbar-phone{color:var(--arm-orange);}
+.price.hot,.vs-card{border-color:var(--arm-orange);}
+.step-num,.trust-badge-mark{background:linear-gradient(145deg,var(--arm-orange),var(--arm-orange-fire));}
+.progress span,.intake-progress-track span{background:linear-gradient(90deg,var(--arm-orange),var(--arm-orange-fire),var(--arm-orange-hot));}
+.drop:hover,.drop.drag{border-color:var(--arm-orange-fire);background:#FFF4E6;}
+
+/* Flame glow, kept restrained so this remains a legal-services site */
+.hero::after{content:"";position:absolute;right:-12%;bottom:-55%;width:60%;height:80%;background:radial-gradient(ellipse at center,rgba(255,106,0,.30) 0%,rgba(255,61,0,.14) 35%,transparent 72%);pointer-events:none;filter:blur(10px);}
+.hero-inner{position:relative;z-index:2;}
+
+/* A clean tricolor hairline ties the whole page together */
+body::before{content:"";display:block;height:4px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);}
+
+/* Orange fire rule near the primary conversion area */
+.claim-cta,.primary-cta{box-shadow:0 8px 28px rgba(255,106,0,.22),0 0 0 2px rgba(242,168,0,.16);}
