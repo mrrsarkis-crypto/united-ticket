@@ -969,3 +969,38 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
   html{scroll-behavior:auto;}
   *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;scroll-behavior:auto !important;}
 }
+
+/* PLATFORM STORY — flagship product narrative */
+.section-platform{background:#fff;position:relative;overflow:hidden;}
+.section-platform::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 8% 20%,rgba(217,0,18,.06),transparent 24%),radial-gradient(circle at 92% 80%,rgba(242,168,0,.07),transparent 25%);pointer-events:none;}
+.platform-intro,.platform-grid{position:relative;z-index:1;}
+.platform-intro{max-width:760px;margin:0 auto 34px;text-align:center;}
+.platform-kicker{display:inline-block;margin-bottom:12px;font-size:11px;font-weight:900;letter-spacing:.16em;color:#D90012;}
+.platform-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.platform-card{position:relative;min-height:220px;padding:26px 22px 24px;border:1px solid #DCE5F0;border-radius:20px;background:#fff;box-shadow:0 10px 30px rgba(4,28,77,.06);overflow:hidden;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;}
+.platform-card:hover{transform:translateY(-5px);box-shadow:0 20px 48px rgba(4,28,77,.12);border-color:#C5D3E4;}
+.platform-card::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;}
+.platform-red::before{background:#D90012;}.platform-blue::before{background:#0033A0;}.platform-orange::before{background:linear-gradient(90deg,#F2A800,#FF5A1F);}.platform-dark::before{background:#041C4D;}
+.platform-icon{display:grid;place-items:center;width:42px;height:42px;margin-bottom:20px;border-radius:12px;background:#F3F6FC;color:#0033A0;font-size:11px;font-weight:900;letter-spacing:.04em;}
+.platform-red .platform-icon{color:#D90012;background:#FBEAEC}.platform-orange .platform-icon{color:#A65C00;background:#FFF1D8}.platform-dark .platform-icon{color:#fff;background:#041C4D;}
+.platform-card h3{margin:0 0 9px;font-size:20px;letter-spacing:-.02em;color:#10233F;}
+.platform-card p{margin:0;color:#62718A;font-size:14px;line-height:1.65;}
+
+/* Persistent mobile conversion rail */
+.mobile-convert{display:none;}
+@media(max-width:860px){
+  .platform-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:560px){
+  .platform-grid{grid-template-columns:1fr;}
+  .platform-card{min-height:0;display:grid;grid-template-columns:46px 1fr;column-gap:15px;align-items:start;padding:22px 18px;}
+  .platform-icon{grid-row:1 / span 2;margin:0;}
+  .platform-card h3{align-self:end;margin-bottom:5px;}
+  .platform-card p{grid-column:2;}
+  .mobile-convert{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9998;gap:8px;padding:8px;background:rgba(4,28,77,.96);border:1px solid rgba(255,255,255,.12);border-radius:17px;box-shadow:0 18px 50px rgba(0,0,0,.25);backdrop-filter:blur(14px);}
+  .mobile-convert a{flex:1;min-height:46px;display:flex;align-items:center;justify-content:center;border-radius:11px;text-decoration:none;font-size:12px;font-weight:900;letter-spacing:.02em;}
+  .mobile-convert .mobile-primary{background:linear-gradient(135deg,#F2A800,#FF5A1F);color:#10233F;}
+  .mobile-convert .mobile-phone{border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.05);}
+  body{padding-bottom:78px;}
+}
+@media(prefers-reduced-motion:reduce){.platform-card{transition:none}.platform-card:hover{transform:none;}}
