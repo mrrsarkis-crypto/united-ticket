@@ -1,172 +1,46 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Case Dashboard — United Traffic Tickets Defense</title>
+<title>UTTD Case Operations</title>
+<link rel="icon" type="image/png" href="/favicon.png">
 <style>
-  :root { --navy:#0033A0; --amber:#F2A800; --ink:#1a2332; --muted:#5a6b83; --line:#e2e8f0; }
-  * { box-sizing:border-box; font-family:'Inter',system-ui,-apple-system,sans-serif; }
-  body { margin:0; background:#f4f6fa; color:var(--ink); }
-  header { background:var(--navy); color:#fff; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  header h1 { margin:0; font-size:18px; font-weight:700; }
-  header .meta { font-size:13px; color:#cdd8ec; }
-  .wrap { max-width:1200px; margin:0 auto; padding:24px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:18px; }
-  .tools { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  input[type=text]{ padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; min-width:260px; }
-  button { padding:10px 14px; border:0; border-radius:8px; background:var(--navy); color:#fff; font-weight:600; font-size:14px; cursor:pointer; }
-  button:hover { background:#174CB8; }
-  button.link { background:transparent; color:var(--navy); border:1px solid var(--navy); }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { background:#f8fafc; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
-  tr:hover td { background:#fafcff; }
-  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
-  .st-pending { background:#fef3c7; color:#92400e; }
-  .st-complete { background:#dcfce7; color:#166534; }
-  .st-other { background:#e2e8f0; color:#334155; }
-  .muted { color:var(--muted); }
-  .empty { padding:40px; text-align:center; color:var(--muted); }
-  .error { background:#fee2e2; color:#991b1b; padding:12px 14px; border-radius:8px; margin-bottom:14px; }
-  .count { font-weight:700; color:var(--navy); }
-  .hide { display:none; }
+:root{--navy:#0033A0;--red:#B00020;--orange:#F2A800;--ink:#172033;--muted:#62718a;--line:#dfe6ef;--bg:#f3f6fa;--good:#166534;--goodbg:#dcfce7;--warn:#92400e;--warnbg:#fef3c7;--bad:#991b1b;--badbg:#fee2e2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,select,textarea{font:inherit}header{background:linear-gradient(120deg,#071a49,#0033A0);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}header h1{margin:0;font-size:20px}header p{margin:4px 0 0;color:#d7e2f4;font-size:13px}.wrap{max-width:1400px;margin:0 auto;padding:22px}.toolbar,.stats,.panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px rgba(15,35,70,.05)}.toolbar{padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}.toolbar input{min-width:280px}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--navy);color:#fff}.btn.secondary{background:#fff;color:var(--navy);border:1px solid #98add5}.btn.danger{background:#fff;color:var(--bad);border:1px solid #efb2b2}.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:16px 0}.stat{padding:16px;border-right:1px solid var(--line)}.stat:last-child{border-right:0}.stat .n{font-size:25px;font-weight:800}.stat .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}.panel{overflow:hidden}.panelhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.panelhead strong{font-size:16px}.muted{color:var(--muted)}.error{margin:14px 0;padding:12px 14px;border-radius:10px;background:var(--badbg);color:var(--bad)}.hide{display:none}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1050px}th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f8fafc;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}tr:hover td{background:#fbfdff}.pill{display:inline-flex;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}.claimed,.payment_error{background:var(--badbg);color:var(--bad)}.payment_pending{background:var(--warnbg);color:var(--warn)}.payment_complete,.submitted,.awaiting_court{background:#e5eefc;color:#163b88}.decided{background:var(--goodbg);color:var(--good)}.rowactions{display:flex;gap:6px}.small{padding:7px 9px;font-size:12px}.empty{padding:44px;text-align:center;color:var(--muted)}dialog{border:0;border-radius:16px;padding:0;max-width:700px;width:calc(100% - 30px);box-shadow:0 25px 80px rgba(15,25,50,.28)}dialog::backdrop{background:rgba(3,15,40,.5)}.modal{padding:20px}.modal h2{margin:0 0 6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin:10px 0}.field label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:5px}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:9px}.field textarea{min-height:90px;resize:vertical}.modalfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.timeline{margin:14px 0 0;padding:0;list-style:none}.timeline li{padding:8px 0;border-bottom:1px solid var(--line)}@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:0}.stat:nth-child(n+3){border-top:1px solid var(--line)}}@media(max-width:620px){.wrap{padding:12px}.toolbar input{min-width:0;width:100%}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
 </style>
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <!-- Vercel Speed Insights -->
-  <script>
-    window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-  </script>
-  <script defer src="/_vercel/speed-insights/script.js"></script>
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png"></head>
+</head>
 <body>
-<header>
-  <h1>Case Dashboard</h1>
-  <div class="meta" id="meta">Private submissions list</div>
-</header>
-
-<div class="wrap">
-  <div class="card tools">
-    <input type="text" id="code" placeholder="Enter dashboard code" autocomplete="off">
-    <button id="loadBtn">Load cases</button>
-    <button id="csvBtn" class="link hide">Export CSV</button>
-  </div>
+<header><div><h1>UTTD Case Operations</h1><p>Private staff queue, status control, customer update workflow.</p></div><div id="lastLoaded">Not loaded</div></header>
+<main class="wrap">
+  <section class="toolbar">
+    <input id="code" type="password" autocomplete="current-password" placeholder="Admin code">
+    <button class="btn primary" id="loadBtn">Load cases</button>
+    <select id="filter"><option value="all">All statuses</option><option value="claimed">Claimed</option><option value="payment_pending">Payment pending</option><option value="payment_complete">Payment complete</option><option value="submitted">Submitted</option><option value="awaiting_court">Awaiting court</option><option value="decided">Decided</option><option value="payment_error">Payment error</option></select>
+    <input id="search" placeholder="Search tracking, name, email, citation">
+    <button class="btn secondary" id="csvBtn" disabled>Export CSV</button>
+  </section>
   <div id="error" class="error hide"></div>
-  <div id="empty" class="empty hide">No cases found yet.</div>
-  <div id="tableWrap" class="hide">
-    <div class="card">
-      <div class="meta"><span class="count" id="count"></span> submission(s)</div>
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th>Tracking</th><th>Created</th><th>Status</th><th>Name</th><th>Email</th>
-            <th>Court</th><th>Citation</th><th>Service</th><th>DL photo</th><th>Notes</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
+  <section class="stats"><div class="stat"><div class="n" id="allCount">0</div><div class="l">Total</div></div><div class="stat"><div class="n" id="needsCount">0</div><div class="l">Needs attention</div></div><div class="stat"><div class="n" id="paidCount">0</div><div class="l">Paid</div></div><div class="stat"><div class="n" id="courtCount">0</div><div class="l">Awaiting court</div></div><div class="stat"><div class="n" id="decidedCount">0</div><div class="l">Decided</div></div></section>
+  <section class="panel"><div class="panelhead"><strong>Case queue</strong><span class="muted" id="shown">0 shown</span></div><div class="tablewrap"><table><thead><tr><th>Tracking</th><th>Updated</th><th>Status</th><th>Customer</th><th>Court</th><th>Citation</th><th>Service</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty hide">No cases match the current filters.</div></div></section>
+</main>
+<dialog id="dlg"><form method="dialog" class="modal" id="caseForm"><h2 id="dlgTitle">Update case</h2><div class="muted" id="dlgMeta"></div><div class="grid"><div class="field"><label>Status</label><select id="newStatus"><option value="claimed">Claimed</option><option value="payment_pending">Payment pending</option><option value="payment_complete">Payment complete</option><option value="submitted">Submitted</option><option value="awaiting_court">Awaiting court</option><option value="decided">Decided</option><option value="payment_error">Payment error</option></select></div><div class="field"><label>Customer email</label><input id="custEmail" disabled></div></div><div class="field"><label>Internal/customer-facing note</label><textarea id="note" maxlength="500" placeholder="Optional update note"></textarea></div><div><strong>Recent timeline</strong><ul class="timeline" id="timeline"></ul></div><div class="modalfoot"><button class="btn secondary" value="cancel">Cancel</button><button class="btn primary" id="saveBtn" value="default">Save status</button></div></form></dialog>
 <script>
-(function () {
-  'use strict';
-  var codeEl = document.getElementById('code');
-  var loadBtn = document.getElementById('loadBtn');
-  var csvBtn = document.getElementById('csvBtn');
-  var errEl = document.getElementById('error');
-  var emptyEl = document.getElementById('empty');
-  var tableWrap = document.getElementById('tableWrap');
-  var rowsEl = document.getElementById('rows');
-  var countEl = document.getElementById('count');
-
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-    });
-  }
-  function pill(status) {
-    var p = String(status || '');
-    var cls = 'st-other';
-    if (p.indexOf('payment_pending') === 0) cls = 'st-pending';
-    else if (p.indexOf('payment_complete') === 0) cls = 'st-complete';
-    return '<span class="pill ' + cls + '">' + esc(p) + '</span>';
-  }
-  function render(cases) {
-    rowsEl.innerHTML = '';
-    cases.forEach(function (c) {
-      var n = c.notes || {};
-      var dlPhoto = n.dlPhoto || '';
-      var dlCell = dlPhoto
-        ? '<a href="' + dlPhoto + '" target="_blank" rel="noopener">view</a>'
-        : '<span class="muted">no</span>';
-      var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><b>' + esc(c.tracking_code) + '</b></td>' +
-        '<td>' + esc((c.created_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
-        '<td>' + pill(c.status) + '</td>' +
-        '<td>' + esc(c.name) + '</td>' +
-        '<td>' + esc(c.email) + '</td>' +
-        '<td>' + esc(c.court) + '</td>' +
-        '<td>' + esc(c.citation) + '</td>' +
-        '<td>$' + esc(c.service) + '</td>' +
-        '<td>' + dlCell + '</td>' +
-        '<td>' + esc(n.notes || '') + '</td>';
-      rowsEl.appendChild(tr);
-    });
-  }
-
-  function showError(msg) {
-    errEl.textContent = msg;
-    errEl.classList.remove('hide');
-    tableWrap.classList.add('hide');
-    emptyEl.classList.add('hide');
-  }
-
-  async function load() {
-    var code = codeEl.value.trim();
-    if (!code) { showError('Enter the dashboard code to continue.'); return; }
-    try {
-      var res = await fetch('/api/cases/admin?code=' + encodeURIComponent(code));
-      var data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-      errEl.classList.add('hide');
-      csvBtn.classList.remove('hide');
-      var list = data.cases;
-      if (!list.length) {
-        emptyEl.classList.remove('hide');
-        tableWrap.classList.add('hide');
-        countEl.textContent = '0';
-      } else {
-        emptyEl.classList.add('hide');
-        tableWrap.classList.remove('hide');
-        countEl.textContent = list.length;
-        render(list);
-      }
-      csvBtn.dataset.code = code;
-    } catch (e) {
-      showError('Error: ' + e.message);
-    }
-  }
-
-  loadBtn.addEventListener('click', load);
-  codeEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(); });
-  csvBtn.addEventListener('click', function () {
-    var code = csvBtn.dataset.code || '';
-    window.location.href = '/api/cases/admin.csv?code=' + encodeURIComponent(code);
-  });
-
-  var qp = new URLSearchParams(location.search);
-  var initial = qp.get('code');
-  if (initial) { codeEl.value = initial; load(); }
+(function(){'use strict';var cases=[],selected=null,codeEl=document.getElementById('code');
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function cls(s){return String(s||'').replace(/[^a-z_]/g,'_')}
+function label(s){var m={claimed:'Claimed',payment_pending:'Payment pending',payment_complete:'Payment complete',submitted:'Submitted',awaiting_court:'Awaiting court',decided:'Decided',payment_error:'Payment error'};return m[s]||s||'Unknown'}
+function showError(m){var e=document.getElementById('error');e.textContent=m;e.classList.remove('hide')}
+function clearError(){document.getElementById('error').classList.add('hide')}
+function filtered(){var f=document.getElementById('filter').value,q=document.getElementById('search').value.trim().toLowerCase();return cases.filter(function(c){if(f!=='all'&&c.status!==f)return false;if(!q)return true;return [c.tracking_code,c.name,c.email,c.citation,c.court].some(function(v){return String(v||'').toLowerCase().indexOf(q)>=0})})}
+function render(){var list=filtered(),rows=document.getElementById('rows');rows.innerHTML='';document.getElementById('shown').textContent=list.length+' shown';document.getElementById('empty').classList.toggle('hide',!!list.length);list.forEach(function(c){var tr=document.createElement('tr');tr.innerHTML='<td><strong>'+esc(c.tracking_code)+'</strong></td><td>'+esc(formatDate(c.updated_at||c.created_at))+'</td><td><span class="pill '+cls(c.status)+'">'+esc(label(c.status))+'</span></td><td>'+esc(c.name||'')+'<br><span class="muted">'+esc(c.email||'')+'</span></td><td>'+esc(c.court||'')+'</td><td>'+esc(c.citation||'')+'</td><td>$'+esc(c.service||'')+'</td><td><button class="btn secondary small" data-code="'+esc(c.tracking_code)+'">Open</button></td>';tr.querySelector('button').addEventListener('click',function(){openCase(c.tracking_code)});rows.appendChild(tr)})}
+function formatDate(v){if(!v)return '';var d=new Date(v);return isNaN(d)?String(v):d.toLocaleString()}
+function metrics(){document.getElementById('allCount').textContent=cases.length;document.getElementById('paidCount').textContent=cases.filter(function(c){return c.status==='payment_complete'||c.paid_at}).length;document.getElementById('courtCount').textContent=cases.filter(function(c){return c.status==='awaiting_court'}).length;document.getElementById('decidedCount').textContent=cases.filter(function(c){return c.status==='decided'}).length;document.getElementById('needsCount').textContent=cases.filter(function(c){return ['payment_pending','payment_error','claimed'].indexOf(c.status)>=0}).length}
+async function load(){var code=codeEl.value.trim();if(!code){showError('Enter the admin code.');return}clearError();try{var r=await fetch('/api/cases/admin?code='+encodeURIComponent(code));var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));cases=Array.isArray(d.cases)?d.cases:[];document.getElementById('csvBtn').disabled=false;document.getElementById('lastLoaded').textContent='Loaded '+new Date().toLocaleTimeString();metrics();render()}catch(e){showError('Unable to load cases: '+e.message)}}
+function openCase(code){selected=cases.find(function(c){return c.tracking_code===code});if(!selected)return;document.getElementById('dlgTitle').textContent='Update '+code;document.getElementById('dlgMeta').textContent=(selected.name||'')+' • '+formatDate(selected.updated_at||selected.created_at);document.getElementById('newStatus').value=selected.status||'claimed';document.getElementById('custEmail').value=selected.email||'';document.getElementById('note').value='';var list=Array.isArray(selected.status_history)?selected.status_history:[];document.getElementById('timeline').innerHTML=(list.length?list.slice(-8):['No timeline events yet']).map(function(x){return '<li>'+esc(x)+'</li>'}).join('');document.getElementById('dlg').showModal()}
+async function save(){if(!selected)return;var btn=document.getElementById('saveBtn');btn.disabled=true;try{var payload={trackingCode:selected.tracking_code,status:document.getElementById('newStatus').value,note:document.getElementById('note').value.trim()};var r=await fetch('/api/cases/admin/status?code='+encodeURIComponent(codeEl.value.trim()),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));var i=cases.findIndex(function(c){return c.tracking_code===selected.tracking_code});if(i>=0)cases[i]=d.case;document.getElementById('dlg').close();metrics();render();var n=d.notification==='sent'?' Customer email sent.':d.notification==='failed'?' Status saved, but customer email failed.':'';alert('Case updated.'+n)}catch(e){alert('Could not update case: '+e.message)}finally{btn.disabled=false}}
+document.getElementById('loadBtn').addEventListener('click',load);codeEl.addEventListener('keydown',function(e){if(e.key==='Enter')load()});document.getElementById('filter').addEventListener('change',render);document.getElementById('search').addEventListener('input',render);document.getElementById('saveBtn').addEventListener('click',function(e){e.preventDefault();save()});document.getElementById('csvBtn').addEventListener('click',function(){window.location.href='/api/cases/admin.csv?code='+encodeURIComponent(codeEl.value.trim())});
 })();
 </script>
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
-</body>
-</html>
+</body></html>
