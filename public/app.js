@@ -199,8 +199,23 @@
     if (fields) collapseTicket(!fields.classList.contains('collapsed'));
   });
 
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (window.__tesseractPromise) return window.__tesseractPromise;
+    window.__tesseractPromise = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+      script.async = true;
+      script.onload = function () { resolve(window.Tesseract); };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return window.__tesseractPromise;
+  }
+
   function localOcr(dataUrl, progress, progressBar) {
-    Tesseract.recognize(dataUrl, 'eng', {
+    loadTesseract().then(function (Tesseract) {
+      return Tesseract.recognize(dataUrl, 'eng', {
       logger: function (m) {
         if (progress && progressBar && m && typeof m.progress === 'number') {
           var pct = Math.round(m.progress * 100);
@@ -208,7 +223,7 @@
           progress.setAttribute('aria-valuenow', pct);
         }
       }
-    }).then(function (result) {
+      }).then(function (result) {
       setTimeout(function () {
         hideProgress(progress, progressBar);
         populateFields(result.data.text);
@@ -219,13 +234,14 @@
         showClaimCta();
         syncTicketSection();
       }, 250);
-    }).catch(function (err) {
+      }).catch(function (err) {
       if (document.getElementById('f_citation')) document.getElementById('f_citation').value = '';
       hideProgress(progress, progressBar);
       statusEl.textContent = 'Scan failed: ' + (err && err.message || 'unknown') + '. Fill fields manually below.';
       statusEl.className = 'status';
       window.__lastOcrText = '';
       refreshScore();
+      });
     });
   }
 
