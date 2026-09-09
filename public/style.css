@@ -732,3 +732,30 @@ body{background:#FAFBFE;color:var(--ink)}
 .footer-legal{border-top:1px solid rgba(217,0,18,.28)}
 .faq-item summary::after{color:var(--arm-orange)}
 .section-yelp{background:#F3F6FC;border-top-color:#D8E1F0;border-bottom-color:#D8E1F0}
+
+/* Armenian character pass: warmer orange, stronger tricolor rhythm, subtle Yerevan warmth */
+:root{
+  --arm-orange:#F2A800;
+  --arm-orange-bright:#FFB81C;
+  --arm-orange-deep:#D88A00;
+  --arm-red:#D90012;
+  --arm-blue:#0033A0;
+}
+.site-header{border-bottom:3px solid var(--arm-orange);}
+.site-header::after{content:"";display:block;height:3px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);opacity:.95;}
+.nav-links a.cta,.btn-amber{background:linear-gradient(135deg,var(--arm-orange-bright),var(--arm-orange));color:#17213b;box-shadow:0 8px 22px rgba(242,168,0,.28);font-weight:800;}
+.nav-links a.cta:hover,.btn-amber:hover{background:linear-gradient(135deg,#FFC43D,var(--arm-orange-deep));box-shadow:0 10px 26px rgba(242,168,0,.38);}
+.hero{background:radial-gradient(circle at 88% 12%,rgba(242,168,0,.28),transparent 32%),radial-gradient(circle at 5% 90%,rgba(217,0,18,.18),transparent 28%),var(--arm-blue-dark);}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);}
+.hero h1 .amber{color:var(--arm-orange-bright);text-shadow:0 0 28px rgba(242,168,0,.18);}
+.hero .eyebrow{color:var(--arm-orange-bright);font-weight:800;letter-spacing:.14em;}
+.hero-actions .btn-amber{min-width:190px;}
+.strip-guarantee{background:linear-gradient(90deg,var(--arm-orange-deep),var(--arm-orange),var(--arm-orange-deep));color:#18233b;}
+.price.hot,.vs-card{border-color:var(--arm-orange);box-shadow:0 14px 36px rgba(242,168,0,.12);}
+.step-num,.trust-badge-mark{background:var(--arm-orange);box-shadow:0 5px 16px rgba(242,168,0,.28);}
+.section-cta{background:radial-gradient(circle at 50% -20%,rgba(242,168,0,.28),transparent 46%),var(--arm-blue-dark);border-top:5px solid var(--arm-orange);}
+.footer-links a:hover,.footer-addr a{color:var(--arm-orange-bright);}
+.notice,.photo-note,.flag{background:#FFF6E0;border-color:rgba(242,168,0,.55);}
+
+/* A restrained tricolor rule used as a visual signature, not a literal flag everywhere. */
+.tricolor-rule{height:4px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);border-radius:999px;}

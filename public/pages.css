@@ -351,3 +351,10 @@ body{background:#FAFBFE;color:#102A5B}
 .page-cta{background:linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
 .consent-bar{background:var(--arm-blue-dark)}
 .consent-text a{color:var(--arm-orange)}
+
+/* Armenian warmth pass */
+:root{--arm-orange:#F2A800;--arm-orange-bright:#FFB81C;--arm-orange-deep:#D88A00;}
+.sub-hero{border-top:4px solid var(--arm-orange);background:radial-gradient(circle at 90% 10%,rgba(242,168,0,.20),transparent 32%),var(--arm-blue-dark);}
+.sub-hero .eyebrow{color:var(--arm-orange-bright);font-weight:800;}
+.related-links a:hover{border-color:var(--arm-orange);background:#FFF6E0;}
+.consent-btn-ok{background:linear-gradient(135deg,var(--arm-orange-bright),var(--arm-orange));color:var(--arm-blue-dark);}
