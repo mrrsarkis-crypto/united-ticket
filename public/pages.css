@@ -218,3 +218,87 @@ body{background:var(--page-cream);color:var(--page-ink);}
   .ticket-card,.article-card{padding:21px;}
   .page-cta h2{font-size:29px;}
 }
+
+/* ============================================================
+   WARM TRUST FAMILY - shared subpage visual language
+   ============================================================ */
+:root{
+  --navy:#173b3a;
+  --navy-dark:#102c2b;
+  --amber:#c98a3a;
+  --amber-dark:#a96c25;
+  --ink:#24312f;
+  --muted:#68726f;
+  --line:#ddd6ca;
+  --lightcolor:#f1ede5;
+}
+body{background:#f7f2e9;color:#24312f;}
+.nav{background:#173b3a;}
+.nav-links a{color:rgba(255,250,241,.82);}
+.nav-links a:hover{background:rgba(255,250,241,.08);color:#fffaf1;}
+.nav-links a.cta{background:#ead7b9;color:#173b3a;box-shadow:0 9px 24px rgba(0,0,0,.16);}
+
+.sub-hero{background:
+  radial-gradient(circle at 82% 18%,rgba(231,199,143,.14),transparent 31%),
+  radial-gradient(circle at 12% 85%,rgba(111,148,139,.10),transparent 34%),
+  linear-gradient(135deg,#173b3a 0%,#28504d 100%);}
+.sub-hero h1{letter-spacing:-.025em;}
+.sub-hero p.sub{color:#d9e3dd;}
+.breadcrumb{color:#b9c9c4;}
+.breadcrumb a{color:#d8e3df;}
+
+.pg-section{padding:58px 0;}
+.pg-section.alt{background:#fffdf9;}
+.pg-section.tint{background:#f1ede5;}
+.pg-section h2{color:#173b3a;letter-spacing:-.02em;}
+.pg-section .sub{color:#68726f;}
+.prose p,.prose ul,.prose ol{color:#495753;}
+.prose h3{color:#173b3a;}
+.prose a{color:#32625c;}
+
+.ticket-grid{gap:22px;}
+.ticket-card{background:#fffdf9;border-color:#e0d9ce;border-radius:18px;box-shadow:0 8px 25px rgba(36,49,47,.065);transition:transform .2s,box-shadow .2s;}
+.ticket-card:hover{transform:translateY(-3px);box-shadow:0 18px 44px rgba(36,49,47,.10);}
+.ticket-card h3{color:#173b3a;}
+.ticket-card p{color:#68726f;}
+.ticket-card a{color:#32625c;}
+
+.related-links a{background:#fffaf1;border-color:#ded6c9;color:#24403c;}
+.related-links a:hover{border-color:#c98a3a;background:#f6ead7;}
+.page-cta{background:#173b3a;}
+.page-cta p{color:#d7e1dd;}
+
+.ch-grid{gap:18px;}
+.ch-tile{background:#fffdf9;border-color:#e0d9ce;border-radius:16px;box-shadow:0 8px 25px rgba(36,49,47,.065);}
+.ch-tile:hover{box-shadow:0 18px 44px rgba(36,49,47,.10);}
+.ch-title{color:#173b3a;}
+.ch-meta{color:#68726f;}
+.ch-tile a{color:#32625c;}
+.ch-feature{background:linear-gradient(135deg,#f4ead9,#fffdf9);border-color:#dfceb0;}
+.info-box{background:#f4ead9;border-color:#dfceb0;color:#68552f;}
+
+.article-list{gap:22px;}
+.article-card{background:#fffdf9;border-color:#e0d9ce;border-radius:18px;box-shadow:0 8px 25px rgba(36,49,47,.065);}
+.article-card:hover{transform:translateY(-3px);box-shadow:0 18px 44px rgba(36,49,47,.10);}
+.article-card h2 a{color:#173b3a;}
+.article-card h2 a:hover{color:#32625c;}
+.article-card p{color:#68726f;}
+.article-card .article-meta{color:#7a827f;}
+.article-card .article-meta .read{color:#32625c;}
+.byline .badge{background:#f4ead9;border-color:#dfceb0;color:#68552f;}
+.byline strong{color:#173b3a;}
+.sources,.toc{background:#f4ead9;border-color:#dfceb0;}
+.sources h4,.toc h4{color:#173b3a;}
+.sources ul,.toc li{color:#495753;}
+.toc a{color:#32625c;}
+
+.consent-bar{background:#102c2b;}
+.consent-text{color:#d7e1dd;}
+.consent-text a{color:#e7c78f;}
+.consent-btn-ok{background:#c98a3a;color:#fffaf1;}
+.consent-btn-ok:hover{background:#a96c25;}
+
+@media(max-width:860px){
+  .nav-links a{color:rgba(255,250,241,.86);}
+  .nav-links .drop>ul a{color:rgba(255,250,241,.82);}
+}

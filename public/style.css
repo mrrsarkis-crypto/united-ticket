@@ -493,3 +493,153 @@ a{transition:color .2s ease,background .2s ease,border-color .2s ease,transform 
   .section-cta{padding:60px 0;}
   .cta-inner h2{font-size:30px;}
 }
+
+/* ============================================================
+   WARM TRUST REFRESH - human, local, reassuring brand layer
+   Cosmetic only. Keeps existing page structure and behavior.
+   ============================================================ */
+:root{
+  --ink:#24312f;
+  --navy:#173b3a;
+  --navy-dark:#102c2b;
+  --navy-mid:#28504d;
+  --amber:#c98a3a;
+  --amber-dark:#a96c25;
+  --amber-soft:#ead7b9;
+  --cream:#f7f2e9;
+  --surface:#fffdf9;
+  --surface-2:#f0ece4;
+  --line:#ddd6ca;
+  --muted:#68726f;
+  --muted-2:#8b918e;
+  --sage:#dfe8df;
+  --warm-white:#fffaf1;
+  --shadow-sm:0 8px 25px rgba(36,49,47,.065);
+  --shadow-md:0 18px 44px rgba(36,49,47,.10);
+  --shadow-lg:0 30px 80px rgba(16,44,43,.17);
+}
+body{background:var(--cream);color:var(--ink);}
+.wrap{max-width:1160px;}
+
+/* Header: neighborhood-business warmth instead of corporate-template navy */
+.topbar{background:#102c2b;border-bottom:1px solid rgba(255,255,255,.08);}
+.topbar-tag{color:rgba(255,250,241,.68);}
+.topbar-link{background:#ead7b9;color:#173b3a;border-color:#ead7b9;}
+.topbar-phone{color:#e9c98f;}
+.lang-switch{color:rgba(255,250,241,.82);border-color:rgba(255,250,241,.22);}
+.nav{background:#173b3a;}
+.nav-inner{height:80px;}
+.nav-links a{color:rgba(255,250,241,.82);}
+.nav-links a:hover{background:rgba(255,250,241,.08);color:#fffaf1;}
+.nav-links a.cta{background:#ead7b9;color:#173b3a;box-shadow:0 9px 24px rgba(0,0,0,.16);}
+.nav-links li.drop ul{background:#173b3a;border-color:rgba(255,250,241,.10);}
+
+/* Buttons: less "software dashboard", more dependable local service */
+.btn-amber{background:#c98a3a;color:#fffaf1;border-color:#c98a3a;box-shadow:0 10px 22px rgba(169,108,37,.16);}
+.btn-amber:hover{background:#a96c25;border-color:#a96c25;}
+.btn-ghost{border-color:rgba(255,250,241,.34);background:rgba(255,250,241,.035);color:#fffaf1;}
+
+/* Hero: warm atmosphere, deep green-blue, softer contrast */
+.hero{background:
+  radial-gradient(circle at 82% 20%,rgba(213,184,133,.14),transparent 30%),
+  radial-gradient(circle at 18% 88%,rgba(111,148,139,.10),transparent 34%),
+  linear-gradient(135deg,#173b3a 0%,#214846 58%,#163735 100%);}
+.hero::before{background:linear-gradient(120deg,transparent 0 58%,rgba(234,215,185,.045) 75%,transparent 100%);}
+.hero h1 .amber{color:#e7c78f;}
+.eyebrow{color:#e7c78f;}
+.hero-sub{color:rgba(255,250,241,.78);}
+.hero-img{box-shadow:0 26px 60px rgba(7,28,27,.28);border:1px solid rgba(255,255,255,.08);}
+
+/* Replace bright amber strip with warm parchment trust band */
+.strip-guarantee{background:#eadfcb;border-top:1px solid #dacdb7;border-bottom:1px solid #dacdb7;}
+.guarantee-icon{background:#173b3a;color:#e7c78f;}
+.guarantee-inner p{color:#635b4d;}
+.guarantee-inner a{color:#173b3a;}
+
+/* Section rhythm */
+.section-light{background:#f1ede5;}
+.section-dark{background:#173b3a;}
+.section-title{color:#24312f;}
+.section-dark .section-title{color:#fffaf1;}
+.section-sub{color:#6b7471;}
+.section-dark .section-sub{color:rgba(255,250,241,.70);}
+
+/* Cards use cream/sage surfaces instead of identical white boxes */
+.card{background:var(--surface);border-color:#e0d9ce;box-shadow:var(--shadow-sm);}
+.card:nth-child(3n+2){background:#fffaf1;}
+.svc{min-height:175px;}
+.svc::after{background:rgba(201,138,58,.11);}
+.svc:hover,.step:hover,.ticket-card:hover,.article-card:hover,.ch-tile:hover{box-shadow:var(--shadow-md);}
+.svc h3{color:#173b3a;}
+.svc p{color:#69726f;}
+
+/* More human service storytelling colors */
+.vs-card{border-top-color:#c98a3a;}
+.vs-list li{border-bottom-color:#e5dfd5;color:#32403e;}
+.vs-list li.pro::before{background:#e4eee5;color:#376344;}
+.vs-list li.con::before{background:#f3e5df;color:#9a4f36;}
+.vs-note{color:#727a77;}
+
+/* Pricing: trusted advisor, not sales landing page */
+.price{background:linear-gradient(180deg,#264e4a 0%,#173b3a 100%);border-color:rgba(255,250,241,.10);}
+.price.hot{border-color:#d9b16f;box-shadow:0 22px 50px rgba(12,38,37,.32);}
+.price h3{color:#fffaf1;}
+.price .amount{color:#e7c78f;}
+.price p{color:rgba(255,250,241,.72);}
+
+/* Steps */
+.steps .step{background:#fffdf9;border-color:#e0d9ce;}
+.step-num{background:#c98a3a;color:#fffaf1;box-shadow:0 7px 18px rgba(169,108,37,.17);}
+.step h3{color:#173b3a;}
+.step p{color:#69726f;}
+
+/* Intake becomes the visual heart of the site */
+.section-form{background:linear-gradient(180deg,#f1ede5 0%,#e9e4db 100%);}
+.intake-card{background:#fffdf9;box-shadow:0 28px 75px rgba(23,59,58,.13);border-color:#ded6c9;}
+.intake-trust{background:#173b3a;}
+.trust-badge-mark{background:#e7c78f;color:#173b3a;}
+.intake-progress-track{background:#ded9d0;}
+.intake-progress-track span{background:#c98a3a;}
+.photo-note{background:#f4ead9;border-color:#dfceb0;border-left-color:#c98a3a;}
+.photo-note-main strong{color:#24403c;}
+.drop{background:#fcfaf5;border-color:#cfc7b9;}
+.drop:hover,.drop.drag{border-color:#c98a3a;background:#fffaf1;box-shadow:0 12px 30px rgba(23,59,58,.08);}
+.drop p{color:#64706d;}
+.drop strong{color:#173b3a;}
+.intake-card input[type=text],.intake-card input[type=email],.intake-card input[type=number],.intake-card select,.intake-card textarea,.track input{background:#fffdf9;border-color:#d4ccc0;color:#283633;}
+.intake-card input:focus,.intake-card select:focus,.intake-card textarea:focus,.track input:focus{border-color:#c98a3a;box-shadow:0 0 0 4px rgba(201,138,58,.13);}
+.notice{background:#f4ead9;border-color:#dfceb0;color:#68552f;}
+.pay-item{color:#44514e;}
+.pay-item span{color:#4b7658;}
+
+/* Footer and trust areas */
+.section-yelp{background:#e9e5dc;border-top-color:#d9d1c4;border-bottom-color:#d9d1c4;}
+.section-cta{background:
+  radial-gradient(circle at 50% -20%,rgba(77,119,111,.35),transparent 52%),
+  #102c2b;}
+.site-footer{background:#102c2b;}
+.footer-legal{background:#0c2423;border-top-color:rgba(255,250,241,.09);}
+.footer-links a:hover{color:#e7c78f;}
+
+/* Subpages should belong to the same family */
+.sub-hero{background:
+  radial-gradient(circle at 80% 20%,rgba(231,199,143,.13),transparent 30%),
+  linear-gradient(135deg,#173b3a 0%,#28504d 100%);}
+.pg-section.tint{background:#f1ede5;}
+.pg-section.alt{background:#fffdf9;}
+.pg-section h2,.prose h3,.ticket-card h3,.article-card h2 a,.ch-title{color:#173b3a;}
+.prose p,.prose ul,.prose ol,.ticket-card p,.article-card p{color:#495753;}
+.prose a,.ticket-card a,.article-card .article-meta .read,.toc a,.ch-tile a{color:#32625c;}
+.ticket-card,.article-card,.ch-tile{border-color:#e0d9ce;box-shadow:var(--shadow-sm);background:#fffdf9;}
+.related-links a{background:#fffaf1;border-color:#ded6c9;color:#24403c;}
+.related-links a:hover{border-color:#c98a3a;background:#f6ead7;}
+.ch-feature,.info-box,.toc,.sources{background:#f4ead9;border-color:#dfceb0;}
+.page-cta{background:#173b3a;}
+
+/* Mobile warmth and touch comfort */
+@media(max-width:560px){
+  .hero{padding-top:46px;padding-bottom:54px;}
+  .hero-img{box-shadow:0 20px 42px rgba(7,28,27,.22);}
+  .card{box-shadow:0 6px 20px rgba(36,49,47,.055);}
+  .intake-card{box-shadow:0 20px 50px rgba(23,59,58,.10);}
+}
