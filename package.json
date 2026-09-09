@@ -4,6 +4,7 @@
   "private": true,
   "description": "United Traffic Tickets defense website and Cloudflare Pages Functions",
   "scripts": {
+    "build:analytics": "esbuild src/analytics-init.js --bundle --format=iife --outfile=public/vercel-analytics.js --minify",
     "test": "node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js",
     "check": "npm test"
   },
@@ -16,9 +17,11 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "esbuild": "^0.24.2",
     "wrangler": "^3.114.17"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "cloudflare": "^7.1.0"
   }
 }
