@@ -1,4 +1,4 @@
-﻿import { json, unauthorizedIfNotAdmin, resendSend } from '../../../_shared.js';
+﻿import { json, unauthorizedIfNotAdmin, resendSend } from '../../_shared.js';
 
 const ALLOWED = ['claimed', 'payment_pending', 'payment_complete', 'submitted', 'awaiting_court', 'decided', 'payment_error'];
 const LABELS = {
@@ -62,3 +62,4 @@ export async function onRequestPatch(context) {
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 }
+
