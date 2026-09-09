@@ -92,7 +92,7 @@ export async function onRequestPost(context) {
             'Email: ' + email + '\n\n' +
             'Scan present: ' + (scan.ocr_text ? 'yes' : 'no') + '\n' +
             'Follow up with them if Step 3 is not completed within a day or two.\n' +
-            'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')',
+            'Case Center: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode),
         });
       }
     } catch (e) {

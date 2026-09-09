@@ -105,7 +105,7 @@ export async function onRequestPost(context) {
           '— SUBMITTED ONLINE INFO —\n' +
           info + '\n\n' +
           'View in dashboard: https://unitedtraffictickets.com/admin-cases\n' +
-          'Track: https://unitedtraffictickets.com/#track (code ' + trackingCode + ')\n\n' +
+          'Case Center: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode) + '\n\n' +
           '(The prefilled TBD / TR-205 will be emailed here once payment clears.)',
       });
     } catch (e) {

@@ -17,7 +17,10 @@ export async function onRequestGet(context) {
     status: record.status,
     paidAt: record.paid_at || null,
     createdAt: record.created_at,
+    updatedAt: record.updated_at || null,
     summary: statusSummary(record.status, notes),
-    statusHistory: statusHistory(record.status),
+    statusHistory: Array.isArray(record.status_history) && record.status_history.length
+      ? record.status_history
+      : statusHistory(record.status),
   }, 200);
 }

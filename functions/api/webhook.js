@@ -166,9 +166,11 @@ async function updateCasePaid(env, trackingCode) {
     const existing = await env.CASES.get(key, 'json');
     const now = new Date().toISOString();
     const reminderAt = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString();
+    const history = Array.isArray(existing?.status_history) ? existing.status_history.slice() : [];
+    if (!history.length || history[history.length - 1] !== 'Payment received') history.push('Payment received');
     const record = existing && existing.tracking_code
-      ? { ...existing, status: 'payment_complete', paid_at: now, reminder_at: reminderAt }
-      : { tracking_code: trackingCode, status: 'payment_complete', paid_at: now, reminder_at: reminderAt, notes: {} };
+      ? { ...existing, status: 'payment_complete', paid_at: now, reminder_at: reminderAt, updated_at: now, status_history: history }
+      : { tracking_code: trackingCode, status: 'payment_complete', paid_at: now, reminder_at: reminderAt, notes: {}, created_at: now, updated_at: now, status_history: history };
     await env.CASES.put(key, JSON.stringify(record));
   } catch { /* non-fatal */ }
 }
@@ -288,7 +290,7 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
         subject: 'Your United Traffic Tickets Defense receipt & retainer',
         text: 'Thank you for your payment of $' + fee + ' (case ' + trackingCode + ').\n\n' +
           'Please review and sign the attached Retainer Agreement and keep the attached Receipt for your records.\n' +
-          'You can track your case progress here: https://unitedtraffictickets.com/#track (code ' + trackingCode + ').\n\n' +
+          'You can track your case progress here: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode) + '.\n\n' +
           'If you have any questions, call (818) 205-8271.',
         attachments,
       });
