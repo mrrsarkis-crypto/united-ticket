@@ -703,3 +703,32 @@ body{background:var(--cream);color:var(--ink);}
   }
   .nav-links li.drop > ul a{white-space:normal !important;}
 }
+
+
+/* ARMENIAN TRICOLOR BRAND THEME */
+:root{--arm-red:#D90012;--arm-blue:#0033A0;--arm-blue-dark:#00266F;--arm-blue-mid:#174CB8;--arm-orange:#F2A800;--arm-orange-dark:#D28F00;--navy:var(--arm-blue);--navy-dark:var(--arm-blue-dark);--navy-mid:var(--arm-blue-mid);--amber:var(--arm-orange);--amber-dark:var(--arm-orange-dark);--amber-ink:#9A6900;--ink:#102A5B;--cloud:#F3F6FC;--line:#D8E1F0;--muted:#5D6E8D}
+body{background:#FAFBFE;color:var(--ink)}
+.site-header{border-top:4px solid var(--arm-red)}
+.topbar{background:var(--arm-blue-dark)}
+.topbar-link,.btn-amber,.nav-links a.cta{background:var(--arm-orange);border-color:var(--arm-orange);color:#10234A}
+.topbar-link:hover,.btn-amber:hover{background:#FFC044;border-color:#FFC044}
+.topbar-phone,.eyebrow,.hero h1 .amber{color:var(--arm-orange)}
+.nav{background:linear-gradient(90deg,var(--arm-blue-dark),var(--arm-blue))}
+.hero{background:radial-gradient(circle at 78% 15%,rgba(242,168,0,.16),transparent 32%),linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
+.hero::before{background:linear-gradient(115deg,transparent 0 52%,rgba(217,0,18,.12) 68%,rgba(242,168,0,.09) 82%,transparent 100%)}
+.strip-guarantee{background:linear-gradient(90deg,#FBE9EC 0%,#FFF4D9 50%,#EEF3FF 100%);border-top:1px solid rgba(217,0,18,.18);border-bottom:1px solid rgba(0,51,160,.14)}
+.guarantee-icon{background:var(--arm-red);color:#fff}
+.section-dark{background:var(--arm-blue-dark)}
+.section-cta{background:radial-gradient(circle at 50% -20%,rgba(242,168,0,.20),transparent 52%),linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
+.price.hot,.vs-card{border-color:var(--arm-orange)}
+.step-num,.trust-badge-mark{background:var(--arm-orange);color:#10234A}
+.intake-progress-track span,.progress span{background:var(--arm-orange)}
+.drop:hover,.drop.drag{border-color:var(--arm-orange)}
+.intake-card input:focus,.intake-card select:focus,.intake-card textarea:focus,.track input:focus{border-color:var(--arm-orange);box-shadow:0 0 0 4px rgba(242,168,0,.15)}
+.photo-note,.notice,.flag{background:#FFF5DE;border-color:#E9D29A;border-left-color:var(--arm-orange)}
+.pill.active{background:var(--arm-blue)}
+.site-footer{background:var(--arm-blue-dark)}
+.footer-links a:hover,.footer-addr a{color:var(--arm-orange)}
+.footer-legal{border-top:1px solid rgba(217,0,18,.28)}
+.faq-item summary::after{color:var(--arm-orange)}
+.section-yelp{background:#F3F6FC;border-top-color:#D8E1F0;border-bottom-color:#D8E1F0}

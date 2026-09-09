@@ -332,3 +332,22 @@ body{background:#f7f2e9;color:#24312f;}
 @media(max-width:860px){
   .nav-links li.drop > ul{position:static !important;min-width:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
 }
+
+
+/* ARMENIAN TRICOLOR THEME */
+:root{--arm-red:#D90012;--arm-blue:#0033A0;--arm-blue-dark:#00266F;--arm-orange:#F2A800;--arm-orange-dark:#D28F00;--navy:var(--arm-blue);--navy-dark:var(--arm-blue-dark);--amber:var(--arm-orange);--amber-dark:var(--arm-orange-dark);--ink:#102A5B;--muted:#5D6E8D;--line:#D8E1F0;--lightcolor:#F3F6FC}
+body{background:#FAFBFE;color:#102A5B}
+.site-header{border-top:4px solid var(--arm-red)}
+.nav{background:linear-gradient(90deg,var(--arm-blue-dark),var(--arm-blue))}
+.topbar{background:var(--arm-blue-dark)}
+.nav-links a.cta,.consent-btn-ok{background:var(--arm-orange);color:#10234A}
+.sub-hero{background:radial-gradient(circle at 82% 18%,rgba(242,168,0,.16),transparent 31%),linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
+.sub-hero .eyebrow{color:var(--arm-orange)}
+.pg-section.tint{background:#F3F6FC}
+.pg-section h2,.prose h3,.ticket-card h3,.ch-title,.article-card h2 a,.sources h4,.toc h4{color:var(--arm-blue)}
+.prose a,.ticket-card a,.ch-tile a,.article-card .article-meta .read,.toc a{color:var(--arm-blue)}
+.ticket-card:hover,.ch-tile:hover,.article-card:hover{border-color:rgba(242,168,0,.55)}
+.ch-feature,.info-box,.byline .badge,.sources,.toc{background:#FFF5DE;border-color:#E9D29A}
+.page-cta{background:linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
+.consent-bar{background:var(--arm-blue-dark)}
+.consent-text a{color:var(--arm-orange)}

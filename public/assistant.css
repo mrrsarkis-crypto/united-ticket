@@ -83,3 +83,10 @@
 
 /* Empty-field placeholder input styling */
 .ast-fieldrow input[value=""]::placeholder { color: #b6c0cf; }
+
+/* Armenian tricolor theme */
+.ast-card h2,.ast-fieldrow label,.ast-status,.ast-contact h3,.ast-nextsteps h3,.ast-step strong{color:#0033A0;}
+.ast-drop.drag,.ast-drop:hover{border-color:#F2A800;background:#FFF9EA;}
+.ast-fieldrow input:focus,.ast-chatinput input:focus{border-color:#F2A800;}
+.ast-msg.user .bubble,.ast-chatbtn{background:#0033A0;}
+.ast-nextsteps{background:#FFF5DE;border-color:#E9D29A;}
