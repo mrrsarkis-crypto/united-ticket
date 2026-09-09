@@ -90,3 +90,48 @@
 .ast-fieldrow input:focus,.ast-chatinput input:focus{border-color:#F2A800;}
 .ast-msg.user .bubble,.ast-chatbtn{background:#0033A0;}
 .ast-nextsteps{background:#FFF5DE;border-color:#E9D29A;}
+
+/* ============================================================
+   FLAGSHIP APP LAYER — turn the assistant into a polished product
+   ============================================================ */
+.ast-wrap{max-width:980px;}
+.ast-card{background:rgba(255,255,255,.96);border:1px solid #DCE5F0;border-radius:24px;padding:32px;box-shadow:0 20px 70px rgba(4,28,77,.10);margin-bottom:22px;}
+.ast-card h2{font-size:27px;letter-spacing:-.025em;color:#062B72;}
+.ast-card>.muted,.ast-contact>.muted{font-size:14.5px;line-height:1.7;color:#63718A;}
+.ast-drop{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #B9C8DB;border-radius:18px;background:#FBFDFF;padding:32px 20px;transition:.2s ease;}
+.ast-drop:hover,.ast-drop.drag{border-color:#FF6A00;background:#FFFDF8;box-shadow:0 14px 35px rgba(255,90,31,.10);transform:translateY(-2px);}
+.ast-drop strong{color:#003B8F;}
+.ast-preview{max-width:360px;max-height:360px;border-radius:14px;box-shadow:0 14px 38px rgba(4,28,77,.16);}
+.ast-check{padding:14px;border:1px solid #E0E7F1;border-radius:14px;background:#F7F9FC;line-height:1.55;}
+.ast-check input{accent-color:#0033A0;}
+.ast-btn{min-height:52px;border-radius:13px;background:linear-gradient(135deg,#F2A800,#FF6A00);box-shadow:0 12px 30px rgba(255,90,31,.20);font-weight:850;}
+.ast-btn:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(255,90,31,.27);}
+.ast-fields{gap:16px 20px;}
+.ast-fieldrow label{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:#4E6280;}
+.ast-fieldrow input{min-height:48px;border:1px solid #CAD6E4;border-radius:11px;background:#fff;}
+.ast-fieldrow input:focus{border-color:#FF7419;box-shadow:0 0 0 4px rgba(255,116,25,.12);}
+.ast-legibility{border:1px solid #E2E8F0;background:#F5F7FA;padding:12px 14px;border-radius:12px;}
+
+.ast-nextsteps{background:#FFF7E8;border:1px solid #EAD4A8;border-radius:16px;padding:18px 20px;}
+.ast-nextsteps h3,.ast-step strong{color:#0B337C;}
+.ast-chat{height:360px;background:#F5F8FC;border:1px solid #D8E2EE;border-radius:18px;padding:16px;gap:12px;}
+.ast-msg .bubble{padding:12px 15px;border-radius:15px;box-shadow:0 5px 18px rgba(4,28,77,.05);}
+.ast-msg.user .bubble{background:#003B8F;border-top-right-radius:5px;}
+.ast-msg.assistant .bubble{background:#fff;border-top-left-radius:5px;}
+.ast-chatinput{gap:10px;}
+.ast-chatinput input{min-height:50px;border:1px solid #C9D5E3;border-radius:12px;padding:12px 14px;font-size:15px;}
+.ast-chatbtn{background:#062B72;border-radius:12px;min-width:88px;}
+.ast-approve{border-top:1px solid #DDE5EF;padding-top:22px;}
+.ast-contact{margin-top:28px;padding:22px;background:#F7F9FC;border:1px solid #E0E7F1;border-radius:18px;}
+.ast-contact h3{font-size:18px;color:#062B72;}
+
+@media(max-width:640px){
+  .ast-card{padding:22px;border-radius:19px;}
+  .ast-card h2{font-size:23px;}
+  .ast-drop{min-height:190px;padding:26px 14px;}
+  .ast-chat{height:300px;}
+  .ast-chatinput{flex-direction:column;}
+  .ast-chatbtn{min-height:48px;width:100%;}
+  .ast-check{font-size:13px;}
+}
+@media(prefers-reduced-motion:reduce){.ast-drop,.ast-btn{transition:none;}}
