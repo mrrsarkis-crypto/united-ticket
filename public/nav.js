@@ -37,3 +37,18 @@
     }
   });
 })();
+
+
+// Sitewide quick-contact launcher: persistent AI + phone actions.
+// Hidden on small screens where the dedicated mobile conversion rail is used.
+(function () {
+  'use strict';
+  if (document.getElementById('uttQuickContact')) return;
+  var root = document.createElement('div');
+  root.id = 'uttQuickContact';
+  root.className = 'utt-quick-contact';
+  root.setAttribute('aria-label', 'Quick contact');
+  root.innerHTML = '<a class="utt-ai-launch" href="/assistant" aria-label="Try the UTTD AI ticket assistant"><span class="utt-ai-mark" aria-hidden="true">✦</span><span><strong>Try UTTD AI</strong><small>Scan your ticket</small></span></a>' +
+    '<a class="utt-call-launch" href="tel:+18182058271" aria-label="Call United Traffic Tickets Defense"><span aria-hidden="true">☎</span><span>Call</span></a>';
+  document.body.appendChild(root);
+})();

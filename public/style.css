@@ -1050,3 +1050,19 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 
 /* final photo-free hero mobile spacing */
 @media(max-width:560px){.hero-visual{margin-top:4px;}}
+
+
+/* PERSISTENT QUICK CONTACT — desktop AI + call launcher */
+.utt-quick-contact{position:fixed;right:22px;bottom:22px;z-index:9997;display:flex;align-items:stretch;gap:8px;padding:8px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(4,28,77,.96);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(14px);}
+.utt-ai-launch,.utt-call-launch{display:flex;align-items:center;text-decoration:none;border-radius:12px;transition:transform .2s,box-shadow .2s,background .2s;min-height:52px;}
+.utt-ai-launch{gap:10px;padding:9px 14px;background:linear-gradient(135deg,#F2A800 0%,#FF6A00 62%,#FF3D00 100%);color:#10233F;box-shadow:0 10px 26px rgba(255,90,31,.22);}
+.utt-ai-launch:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(255,90,31,.34);}
+.utt-ai-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.75);font-size:17px;font-weight:900;}
+.utt-ai-launch strong,.utt-ai-launch small{display:block;line-height:1.1;}
+.utt-ai-launch strong{font-size:12px;font-weight:900;letter-spacing:.02em;}
+.utt-ai-launch small{font-size:10px;font-weight:700;opacity:.72;margin-top:3px;}
+.utt-call-launch{justify-content:center;gap:7px;padding:0 14px;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:900;}
+.utt-call-launch:hover{transform:translateY(-2px);background:rgba(255,255,255,.12);}
+.utt-ai-launch:focus-visible,.utt-call-launch:focus-visible{outline:3px solid #FFC247;outline-offset:3px;}
+@media(max-width:560px){.utt-quick-contact{display:none;}}
+@media(prefers-reduced-motion:reduce){.utt-ai-launch,.utt-call-launch{transition:none}.utt-ai-launch:hover,.utt-call-launch:hover{transform:none;}}
