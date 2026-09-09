@@ -367,3 +367,6 @@ body{background:#FAFBFE;color:#102A5B}
 .nav-links a.cta:hover,.consent-btn-ok:hover{background:linear-gradient(135deg,var(--arm-orange-fire),var(--arm-orange-hot));}
 .sub-hero .eyebrow{color:var(--arm-orange);}
 body::before{content:"";display:block;height:4px;background:linear-gradient(90deg,var(--arm-red) 0 33.333%,var(--arm-blue) 33.333% 66.666%,var(--arm-orange) 66.666% 100%);}
+/* Refined Armenian palette: remove decorative red strips */
+.site-header,.sub-hero,.page-cta,.section-cta,.site-footer{border-top:0 !important}
+body::before{display:none !important}

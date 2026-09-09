@@ -815,3 +815,9 @@ body::before{content:"";display:block;height:4px;background:linear-gradient(90de
 
 /* Orange fire rule near the primary conversion area */
 .claim-cta,.primary-cta{box-shadow:0 8px 28px rgba(255,106,0,.22),0 0 0 2px rgba(242,168,0,.16);}
+/* Refined Armenian palette: remove decorative red strips */
+.site-header{border-top:0 !important}
+.topbar,.site-header .topbar{border-bottom:0 !important}
+.hero{border-top:0 !important}
+.section-cta,.footer{border-top:0 !important}
+body::before{display:none !important}
