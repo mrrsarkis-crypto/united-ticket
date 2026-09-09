@@ -281,8 +281,8 @@
       defects.push({ s: 'No citation number captured — may be illegible or missing.', w: 18 });
     }
     // Missing court date
-    if (!d.date && !text) {
-      defects.push({ s: 'Missing violation / court date — an incomplete date field is a common procedural defect.', w: 14 });
+    if (!d.date) {
+      defects.push({ s: 'Violation or court date was not captured. Verify the date before proceeding.', w: 14 });
     }
     // Courthouse / city
     if (!d.court || !d.court.trim()) {
@@ -290,31 +290,31 @@
     }
     // Radar/calibration: look for calibration or certification language on the slip
     if (text && !/(CALIBRAT|CERTIF|TEST DATE|RADAR|LASER|UNIT)/.test(text)) {
-      defects.push({ s: 'No radar/laser unit or calibration info visible — unsupported speed evidence is a frequent dismissal trigger.', w: 16 });
+      defects.push({ s: 'No obvious radar, laser, unit, or calibration language was captured. A professional review may be useful.', w: 16 });
     }
     // Officer ID / badge / traffic unit
     if (text && !/(BADGE|ID|OFFICER|UNIT|EMPLOYEE #|SIGNATURE)/.test(text)) {
-      defects.push({ s: 'Officer identification or signature block appears blank.', w: 12 });
+      defects.push({ s: 'Officer identification or signature information was not clearly captured. Verify the citation image.', w: 12 });
     }
     // Fine / bail vs. posted amount: flag if bail suspiciously low (common "clearance requested" error)
     var bailNum = parseFloat(String(d.bail || '').replace(/[^0-9.]/g, ''));
     if (!isNaN(bailNum) && bailNum > 0 && bailNum < 50) {
-      defects.push({ s: 'Bail/fine amount looks unusually low — may be an undercharged or incorrect penalty.', w: 10 });
+      defects.push({ s: 'The fine/bail amount looks unusual. Verify it against the court notice before relying on it.', w: 10 });
     }
     // VC code section present?
     if (d.code && !/^\s*[0-9]/.test(d.code)) {
       defects.push({ s: 'Violation code section looks incomplete or non-numeric — check for a typo.', w: 8 });
     }
 
-    // Compute defect score: start at 100, subtract weights, floor at 5.
-    var score = 100;
-    defects.forEach(function (df) { score -= df.w; });
-    if (score < 5) score = 5;
+    // Review-signal score only. This is not a probability, prediction, or legal assessment.
+    var score = 0;
+    defects.forEach(function (df) { score += df.w; });
+    if (score > 100) score = 100;
 
     var rank;
-    if (score >= 75) rank = { label: 'High', cls: 'rank-high' };
-    else if (score >= 45) rank = { label: 'Medium', cls: 'rank-med' };
-    else rank = { label: 'Low', cls: 'rank-low' };
+    if (score >= 45) rank = { label: 'More review signals', cls: 'rank-high' };
+    else if (score >= 20) rank = { label: 'Some review signals', cls: 'rank-med' };
+    else rank = { label: 'Few review signals', cls: 'rank-low' };
 
     return { score: score, rank: rank, defects: defects };
   }
@@ -323,11 +323,11 @@
     var rankEl = document.getElementById('scoreRank');
     var numEl = document.getElementById('scoreNum');
     var listEl = document.getElementById('scoreList');
-    rankEl.textContent = result.rank.label + ' defense potential';
+    rankEl.textContent = result.rank.label;
     rankEl.className = 'score-rank ' + result.rank.cls;
     numEl.textContent = result.score + '/100';
     listEl.innerHTML = '';
-    var items = result.defects.length ? result.defects : [{ s: 'No clear dismissible defects auto-detected — your case may still have options worth a professional review.', w: 0 }];
+    var items = result.defects.length ? result.defects : [{ s: 'No obvious review signals were captured from the available document data. A professional review may still identify issues the scan cannot assess.', w: 0 }];
     items.forEach(function (df) {
       var li = document.createElement('li');
       li.textContent = df.s;
