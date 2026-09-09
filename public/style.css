@@ -136,7 +136,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .ticket-toggle{margin:-8px 0 16px;padding:6px 12px;border:1px solid var(--line);border-radius:9px;background:#FBFCFE;color:var(--navy);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;}
 .ticket-toggle:hover{background:#fff;border-color:var(--amber);}
 #ticketFields.collapsed{display:none;}
-.photo-note{margin:0 0 18px;padding:14px 16px 12px;background:#FFF7E8;border:1px solid #F2D9A4;border-left:5px solid var(--amber);border-radius:12px;max-width:640px;}
+.photo-note{margin:0 0 18px;padding:14px 16px 12px;background:#FFF9EA;border:1px solid #F1D58A;border-left:5px solid var(--amber);border-radius:12px;max-width:640px;}
 .photo-note-main{margin:0;color:var(--ink);font-size:15px;line-height:1.55;font-weight:500;}
 .photo-note-main strong{color:var(--navy);}
 .photo-note-icon{margin-right:6px;}
