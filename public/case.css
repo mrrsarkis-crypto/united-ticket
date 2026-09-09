@@ -20,3 +20,9 @@
 .case-lookup input:focus-visible,.copy-code:focus-visible,.case-lookup button:focus-visible,.case-help a:focus-visible{outline:3px solid #FFC247;outline-offset:3px}
 @media(max-width:760px){.case-grid{grid-template-columns:1fr}.case-next,.case-help{align-items:stretch;flex-direction:column}.case-next .btn,.case-help-actions .btn{width:100%;text-align:center}.case-lookup-row{flex-direction:column}.case-hero{padding:54px 0 40px}.case-card{padding:22px}.case-content{padding-top:26px}}
 @media(prefers-reduced-motion:reduce){.case-progress span{transition:none}}
+
+.case-remember{display:flex;align-items:center;gap:9px;margin:12px 0 0;font-size:13px;color:#53657f;cursor:pointer}
+.case-remember input{width:18px;height:18px;accent-color:#0033A0}
+.case-remember:focus-within{outline:3px solid #FFC247;outline-offset:4px;border-radius:8px}
+@media(max-width:560px){.case-lookup-row{grid-template-columns:1fr}.case-lookup-row .btn{width:100%}.case-remember{font-size:12px}}
+.case-privacy{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:18px}.case-privacy h2{margin:4px 0 8px}.case-privacy p{margin:0;max-width:760px;color:#61718a;line-height:1.6}.case-privacy .btn{white-space:nowrap}@media(max-width:760px){.case-privacy{display:grid;grid-template-columns:1fr}.case-privacy .btn{width:100%}}

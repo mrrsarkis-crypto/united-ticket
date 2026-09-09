@@ -38,6 +38,7 @@
       <label for="caseCode">Case tracking code</label>
       <div class="case-lookup-row"><input id="caseCode" name="code" type="text" inputmode="text" autocomplete="off" placeholder="TF-ABC123" aria-describedby="caseLookupHint"><button class="btn btn-amber" type="submit">Open my case</button></div>
       <p id="caseLookupHint" class="tiny">Use the code from your confirmation or email. Example: TF-ABC123.</p>
+      <label class="case-remember"><input type="checkbox" id="rememberCase"> Remember this case on this device</label>
       <div id="caseStatus" class="case-status" role="status" aria-live="polite"></div>
     </form>
   </div></section>
@@ -56,6 +57,7 @@
       <section class="case-card"><div class="case-card-head simple"><div><p class="case-kicker">DOCUMENT CENTER</p><h2>Your case files</h2></div></div><div class="document-vault"><div class="vault-icon">▣</div><h3>Documents will appear here</h3><p>As your case moves forward, this area is designed to hold prepared documents, court notices, receipts, and other case files.</p><a class="vault-link" href="/contact">Need help with a document? Contact us →</a></div></section>
     </div>
     <section class="case-card case-help"><div><p class="case-kicker">NEED HELP?</p><h2>Keep the same case code</h2><p>Use this tracking code whenever you contact us so our team can find the right case quickly.</p></div><div class="case-help-actions"><a class="btn btn-amber" href="tel:+18182058271">Call UTTD</a><a class="btn btn-ghost" href="/assistant">Open AI assistant</a></div></section>
+    <section class="case-card case-privacy"><div><p class="case-kicker">PRIVACY</p><h2>Your code stays yours</h2><p>This dashboard uses your tracking code to retrieve the case record. If you use “Remember this case,” only the tracking code is saved in this browser. Do not enable it on a shared or public device.</p></div><button type="button" class="btn btn-ghost" id="forgetCase">Forget this case</button></section>
     <p class="case-disclaimer">United Traffic Tickets Defense provides document preparation and case-tracking services. This dashboard is informational and does not provide legal advice or guarantee a court outcome.</p>
   </section>
 </main>

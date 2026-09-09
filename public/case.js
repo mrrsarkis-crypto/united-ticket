@@ -15,20 +15,26 @@
   var created = document.getElementById('caseCreated');
   var timeline = document.getElementById('caseTimeline');
   var copy = document.getElementById('copyCode');
+  var remember = document.getElementById('rememberCase');
+  var forget = document.getElementById('forgetCase');
+  var rememberedKey = 'utt_case_code';
 
   var stages = {
-    claimed: ['Saved', 'Your scan is saved. Complete the details to move forward.', 18, 'Finish case details', 'Confirm your details and choose a service.', '/'],
-    payment_pending: ['Checkout ready', 'Your case is waiting for secure payment to begin the paid preparation workflow.', 42, 'Complete checkout', 'Finish secure payment to move your case into review.', '/'],
-    paid: ['Payment received', 'Payment is recorded and your case is moving into the preparation and review workflow.', 60, 'Review case', 'Keep your phone and email available for case communications.', '/contact'],
-    in_progress: ['In preparation', 'Your case is in the document-preparation workflow and is being reviewed.', 76, 'Contact your team', 'Use your case code whenever you contact us.', '/contact'],
-    filed: ['Filed / submitted', 'Your prepared documents have been marked as filed or submitted in the case workflow.', 92, 'Keep your records', 'Watch for court communications and keep your case documents together.', '/contact'],
-    completed: ['Completed', 'The workflow for this case is marked complete. Keep your records for reference.', 100, 'View documents', 'Your document center is the place for case files as they become available.', '/contact'],
-    payment_error: ['Payment needs attention', 'We could not complete payment for this case yet.', 42, 'Try checkout again', 'Return to the secure checkout flow or contact us for help.', '/assistant'],
+    claimed: ['Saved', 'Your scan is saved. Complete the remaining details to move forward.', 18, 'Finish case details', 'Confirm your details and choose a service.', '/'],
+    payment_pending: ['Checkout ready', 'Your case is queued and waiting for secure payment before paid preparation begins.', 42, 'Complete checkout', 'Finish secure payment to move your case into review.', '/'],
+    payment_complete: ['Payment received', 'Payment is recorded and your case is moving through preparation and professional review.', 60, 'Review your case', 'Keep your phone and email available for case communications.', '/contact'],
+    submitted: ['Prepared / submitted', 'Your paperwork has been prepared and marked submitted in the case workflow.', 82, 'Keep your records', 'Watch your email and keep the case documents together.', '/contact'],
+    awaiting_court: ['Awaiting court', 'Your paperwork is in the court-response stage. Keep your case reference for any follow-up.', 92, 'Track updates', 'Check this Case Center for the latest status and watch for court communications.', '/contact'],
+    decided: ['Decision recorded', 'A court decision has been recorded for this case. Check your case communications for details.', 100, 'Get help', 'Keep your records and contact the team if you need help understanding the next administrative step.', '/contact'],
+    payment_error: ['Payment needs attention', 'We could not complete payment for this case yet.', 42, 'Try again', 'Return to secure checkout or contact us for help.', '/assistant'],
   };
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function getCode() { return String(input.value || '').trim().toUpperCase(); }
-  function stageFor(raw) { return stages[String(raw || '').toLowerCase()] || ['In progress', 'Your case is active. The latest available status is shown below.', 68, 'Need help?', 'Contact our team with your tracking code for the clearest next step.', '/contact']; }
+  function stageFor(raw) {
+    var key = String(raw || '').toLowerCase();
+    return stages[key] || ['In progress', 'Your case is active. The latest available status is shown below.', 68, 'Need help?', 'Contact our team with your tracking code for the clearest next step.', '/contact'];
+  }
 
   function renderTimeline(items, current) {
     timeline.innerHTML = '';
@@ -66,6 +72,11 @@
       content.hidden = false;
       status.textContent = 'Case loaded securely.';
       status.className = 'case-status ok';
+      if (remember && remember.checked) {
+        try { localStorage.setItem(rememberedKey, code); } catch (_) {}
+      } else {
+        try { localStorage.removeItem(rememberedKey); } catch (_) {}
+      }
       try { history.replaceState(null, '', '/case?code=' + encodeURIComponent(code)); } catch (_) {}
     } catch (err) {
       content.hidden = true;
@@ -80,8 +91,17 @@
     if (!value || value === '—') return;
     try { await navigator.clipboard.writeText(value); copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy code'; }, 1400); } catch (_) { copy.textContent = value; }
   });
+  if (forget) forget.addEventListener('click', function () {
+    try { localStorage.removeItem(rememberedKey); } catch (_) {}
+    if (remember) remember.checked = false;
+    status.textContent = 'This browser will no longer remember the case code.';
+    status.className = 'case-status ok';
+  });
 
   var params = new URLSearchParams(location.search);
   var initial = (params.get('code') || '').trim();
+  if (!initial) {
+    try { initial = (localStorage.getItem(rememberedKey) || '').trim(); if (initial && remember) remember.checked = true; } catch (_) {}
+  }
   if (initial) { input.value = initial; load(initial.toUpperCase()); }
 })();
