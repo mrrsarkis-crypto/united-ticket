@@ -1,7 +1,7 @@
 {
   "name": "United Traffic Tickets Defense",
   "short_name": "UTTD",
-  "description": "Scan your traffic ticket, get a free AI defect score, and prepare your Trial by Written Declaration.",
+  "description": "United Traffic Tickets Defense: scan your traffic ticket, understand potential issues, and track your case.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

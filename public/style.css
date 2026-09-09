@@ -1004,3 +1004,49 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
   body{padding-bottom:78px;}
 }
 @media(prefers-reduced-motion:reduce){.platform-card{transition:none}.platform-card:hover{transform:none;}}
+
+/* ============================================================
+   HERO PRODUCT REPLACEMENT — photo-free flagship variant
+   ============================================================ */
+.hero-visual{align-self:stretch;display:flex;align-items:center;justify-content:center;}
+.hero-product{position:relative;width:min(100%,560px);padding:28px;border:1px solid rgba(255,255,255,.14);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.035));box-shadow:0 32px 90px rgba(1,18,55,.42),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden;}
+.hero-product::before{content:"";position:absolute;inset:-30% -20% auto auto;width:280px;height:280px;background:radial-gradient(circle,rgba(242,168,0,.24),transparent 68%);pointer-events:none;}
+.hero-product::after{content:"";position:absolute;left:-18%;bottom:-32%;width:260px;height:220px;background:radial-gradient(circle,rgba(217,0,18,.18),transparent 70%);pointer-events:none;}
+.hero-product-top,.hero-product-live,.hero-product-foot{display:flex;align-items:center;}
+.hero-product-top{position:relative;z-index:1;justify-content:space-between;gap:12px;color:rgba(255,255,255,.7);font-size:10px;font-weight:900;letter-spacing:.12em;}
+.hero-product-badge{padding:7px 10px;border-radius:999px;background:rgba(242,168,0,.12);border:1px solid rgba(242,168,0,.24);color:#FFC247;}
+.hero-product-live{gap:7px;letter-spacing:.08em;}
+.hero-product-live i{width:7px;height:7px;border-radius:50%;background:#5EDB86;box-shadow:0 0 0 4px rgba(94,219,134,.12);}
+.hero-product-title{position:relative;z-index:1;color:#fff;margin:32px 0 22px;font-size:32px;line-height:1.04;letter-spacing:-.035em;max-width:440px;}
+.hero-product-title strong{color:#FFC247;}
+.hero-ticket{position:relative;z-index:1;background:#F7F9FC;border-radius:18px;padding:19px;color:#10233F;box-shadow:0 20px 44px rgba(0,0,0,.20);}
+.hero-ticket-head{display:flex;justify-content:space-between;gap:12px;font-size:10px;letter-spacing:.09em;color:#68758A;font-weight:900;}
+.hero-ticket-head b{color:#D90012;}
+.hero-ticket-lines{display:grid;gap:7px;margin:16px 0;}
+.hero-ticket-lines span{display:block;width:86%;height:7px;background:#DCE4EF;border-radius:99px;}
+.hero-ticket-lines span:nth-child(2){width:66%;}
+.hero-ticket-lines span.short{width:42%;}
+.hero-ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;border-top:1px solid #E0E6EF;padding-top:14px;}
+.hero-ticket-grid div{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.hero-ticket-grid small{font-size:8px;color:#7B879A;font-weight:900;letter-spacing:.08em;}
+.hero-ticket-grid strong{font-size:12px;overflow-wrap:anywhere;}
+.hero-ticket-grid .status-potential{color:#C05A00;}
+.hero-product-metrics{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0;}
+.hero-product-metrics div{padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.045);}
+.hero-product-metrics span{display:block;color:#FFC247;font-size:9px;font-weight:900;letter-spacing:.08em;}
+.hero-product-metrics strong{display:block;color:#fff;font-size:12px;margin-top:5px;}
+.hero-product-metrics small{display:block;color:rgba(255,255,255,.52);font-size:9.5px;margin-top:2px;}
+.hero-product-foot{position:relative;z-index:1;gap:10px;margin-top:15px;color:#fff;}
+.product-check{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#EAF7EF;color:#227840;font-weight:900;flex-shrink:0;}
+.hero-product-foot strong{display:block;font-size:12px;}
+.hero-product-foot small{display:block;color:rgba(255,255,255,.52);font-size:10px;margin-top:2px;}
+@media(max-width:860px){.hero-product{max-width:620px;text-align:left;}.hero-product-title{font-size:30px;}}
+@media(max-width:560px){.hero-product{padding:18px;border-radius:22px;}.hero-product-title{margin:22px 0 16px;font-size:25px;}.hero-ticket{padding:15px;border-radius:14px;}.hero-product-metrics{gap:7px;}.hero-product-metrics div{padding:9px;}.hero-product-metrics strong{font-size:11px;}.hero-product-metrics small{font-size:8.5px;}.hero-ticket-grid{gap:10px;}}
+
+/* Photo-free hero polish */
+@media(max-width:560px){
+  .hero-visual{margin-top:4px;}
+}
+
+/* final photo-free hero mobile spacing */
+@media(max-width:560px){.hero-visual{margin-top:4px;}}

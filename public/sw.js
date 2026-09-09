@@ -1,5 +1,5 @@
 // Service worker for United Traffic Tickets Defense (PWA)
-const CACHE = 'utt-cache-v3';
+const CACHE = 'utt-cache-v4';
 const CORE = [
   '/',
   '/index.html',
@@ -59,3 +59,5 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// photo-free hero variant cache marker
