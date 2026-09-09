@@ -545,7 +545,8 @@
       }).join('') || '<span class="pill">' + escapeHtml(data.status) + '</span>';
       out.innerHTML = '<div class="statusline">' + pills + '</div>' +
         '<p class="caseid">' + escapeHtml(data.trackingCode) + ' — ' + escapeHtml(data.status) + '</p>' +
-        '<div class="doc">' + escapeHtml(data.summary || 'No summary yet.') + '</div>';
+        '<div class="doc">' + escapeHtml(data.summary || 'No summary yet.') + '</div>' +
+        '<p class="case-center-link"><a href="/case?code=' + encodeURIComponent(data.trackingCode) + '">Open your full Case Center →</a></p>';
     } catch (err) {
       out.innerHTML = '<p class="status">' + escapeHtml(err.message) + '</p>';
     }
