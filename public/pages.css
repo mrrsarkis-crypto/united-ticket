@@ -302,3 +302,33 @@ body{background:#f7f2e9;color:#24312f;}
   .nav-links a{color:rgba(255,250,241,.86);}
   .nav-links .drop>ul a{color:rgba(255,250,241,.82);}
 }
+
+/* FINAL NAV CLEANUP - keep shared dropdowns from appearing as white blocks */
+.nav-links li.drop > a,
+.nav-links li.drop > a:hover,
+.nav-links li.drop > a:focus-visible{
+  background:transparent !important;
+  color:rgba(255,250,241,.88) !important;
+  box-shadow:none !important;
+}
+.nav-links li.drop > ul{
+  display:none !important;
+  top:calc(100% + 8px) !important;
+  min-width:238px !important;
+  margin:0 !important;
+  background:#173b3a !important;
+  border:1px solid rgba(255,250,241,.14) !important;
+  border-radius:14px !important;
+  box-shadow:0 18px 40px rgba(8,27,26,.28) !important;
+}
+@media(hover:hover){
+  .nav-links li.drop:hover > ul{display:block !important;}
+}
+.nav-links li.drop.open > ul,
+.nav-links li.drop > a:focus-visible + ul{display:block !important;}
+.nav-links li.drop > ul a{background:transparent !important;color:rgba(255,250,241,.86) !important;}
+.nav-links li.drop > ul a:hover,
+.nav-links li.drop > ul a:focus-visible{background:rgba(255,250,241,.09) !important;color:#fffaf1 !important;}
+@media(max-width:860px){
+  .nav-links li.drop > ul{position:static !important;min-width:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
+}
