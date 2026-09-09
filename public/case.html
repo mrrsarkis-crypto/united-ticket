@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0033A0">
+<title>My Case Dashboard | United Traffic Tickets Defense</title>
+<meta name="description" content="View your United Traffic Tickets Defense case status, timeline, next steps, and document area.">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/pages.css">
+<link rel="stylesheet" href="/case.css">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+<a class="skip-link" href="#case-main">Skip to content</a>
+<header class="site-header">
+  <div class="topbar"><div class="wrap topbar-inner">
+    <span class="topbar-tag">Your case, in one place</span>
+    <a class="topbar-phone" href="tel:+18182058271">(818) 205-8271 — Free Consultation</a>
+  </div></div>
+  <nav class="nav"><div class="wrap nav-inner">
+    <a class="brand" href="/"><img src="/assets/logo-defense.webp" alt="United Traffic Tickets Defense" class="brand-logo" width="640" height="640" decoding="async"></a>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false"><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span></button>
+    <div class="nav-links" id="navLinks"><ul class="nav-list">
+      <li><a href="/">Home</a></li><li><a href="/services">We Fight</a></li><li><a href="/resources">Resources</a></li>
+      <li><a href="/courthouses">Courthouses</a></li><li><a href="/faq">FAQ</a></li><li><a href="/about">About</a></li>
+      <li><a href="/assistant">Assistant</a></li><li><a class="cta" href="/assistant">Scan My Ticket</a></li>
+    </ul></div>
+  </div></nav>
+</header>
+<main id="case-main" class="case-shell">
+  <section class="case-hero"><div class="wrap">
+    <p class="eyebrow">UTTD CASE CENTER</p>
+    <h1>Your case. Your timeline. Your next move.</h1>
+    <p class="case-lead">Enter your tracking code to see the latest status and the next action in your case. We only show case information tied to the code you provide.</p>
+    <form class="case-lookup" id="caseLookup" novalidate>
+      <label for="caseCode">Case tracking code</label>
+      <div class="case-lookup-row"><input id="caseCode" name="code" type="text" inputmode="text" autocomplete="off" placeholder="TF-ABC123" aria-describedby="caseLookupHint"><button class="btn btn-amber" type="submit">Open my case</button></div>
+      <p id="caseLookupHint" class="tiny">Use the code from your confirmation or email. Example: TF-ABC123.</p>
+      <div id="caseStatus" class="case-status" role="status" aria-live="polite"></div>
+    </form>
+  </div></section>
+  <section class="case-content wrap" id="caseContent" hidden>
+    <div class="case-grid">
+      <article class="case-card case-primary">
+        <div class="case-card-head"><div><p class="case-kicker">CASE STATUS</p><h2 id="caseStatusTitle">Loading…</h2></div><span id="casePill" class="case-pill">—</span></div>
+        <p id="caseSummary" class="case-summary"></p>
+        <div class="case-progress" aria-hidden="true"><span id="caseProgress"></span></div>
+        <div class="case-next"><div><p class="case-kicker">NEXT UP</p><h3 id="caseNextTitle">Preparing your next step</h3><p id="caseNextText"></p></div><a class="btn btn-amber" id="caseAction" href="/assistant">View assistant</a></div>
+      </article>
+      <aside class="case-card case-ref"><p class="case-kicker">CASE REFERENCE</p><strong id="caseCodeOut">—</strong><span id="caseCreated">—</span><button type="button" class="copy-code" id="copyCode">Copy code</button></aside>
+    </div>
+    <div class="case-grid case-lower">
+      <section class="case-card"><div class="case-card-head simple"><div><p class="case-kicker">TIMELINE</p><h2>Case activity</h2></div></div><ol class="case-timeline" id="caseTimeline"></ol></section>
+      <section class="case-card"><div class="case-card-head simple"><div><p class="case-kicker">DOCUMENT CENTER</p><h2>Your case files</h2></div></div><div class="document-vault"><div class="vault-icon">▣</div><h3>Documents will appear here</h3><p>As your case moves forward, this area is designed to hold prepared documents, court notices, receipts, and other case files.</p><a class="vault-link" href="/contact">Need help with a document? Contact us →</a></div></section>
+    </div>
+    <section class="case-card case-help"><div><p class="case-kicker">NEED HELP?</p><h2>Keep the same case code</h2><p>Use this tracking code whenever you contact us so our team can find the right case quickly.</p></div><div class="case-help-actions"><a class="btn btn-amber" href="tel:+18182058271">Call UTTD</a><a class="btn btn-ghost" href="/assistant">Open AI assistant</a></div></section>
+    <p class="case-disclaimer">United Traffic Tickets Defense provides document preparation and case-tracking services. This dashboard is informational and does not provide legal advice or guarantee a court outcome.</p>
+  </section>
+</main>
+<footer class="site-footer"><div class="wrap footer-inner"><div><img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo" width="640" height="640" loading="lazy" decoding="async"><p>Document preparation and case tracking software. Not a law firm. Outcomes not guaranteed.</p></div><div class="footer-links"><strong>Company</strong><a href="/about">About</a><a href="/accessibility">Accessibility</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Use</a><a href="/refund-policy">Refund Policy</a></div><div class="footer-links"><strong>Contact</strong><a href="tel:+18182058271">(818) 205-8271</a><a href="mailto:unitedtraffictickets@gmail.com">unitedtraffictickets@gmail.com</a></div></div><div class="footer-legal"><div class="wrap"><p>© <span id="year"></span> United Traffic Tickets Defense. All rights reserved.</p></div></div></footer>
+<script src="/case.js" defer></script>
+<script src="/nav.js" defer></script>
+<script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body>
+</html>

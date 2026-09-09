@@ -52,3 +52,16 @@
     '<a class="utt-call-launch" href="tel:+18182058271" aria-label="Call United Traffic Tickets Defense"><span aria-hidden="true">☎</span><span>Call</span></a>';
   document.body.appendChild(root);
 })();
+
+// Sitewide case-center entry: keeps the customer's persistent workflow one click away.
+(function () {
+  'use strict';
+  var list = document.querySelector('#navLinks .nav-list');
+  if (!list || list.querySelector('[data-case-center]')) return;
+  var li = document.createElement('li');
+  li.setAttribute('data-case-center', 'true');
+  li.innerHTML = '<a href="/case">My Case</a>';
+  var cta = list.querySelector('.cta');
+  if (cta && cta.parentElement) list.insertBefore(li, cta.parentElement);
+  else list.appendChild(li);
+})();
