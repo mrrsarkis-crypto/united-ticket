@@ -1,8 +1,8 @@
 :root{
-  --navy:#0F1F3D; --navy-dark:#0A1628; --navy-mid:#1B2A4E;
-  --amber:#F5A623; --amber-dark:#D98E0B; --amber-ink:#B06E00;
+  --navy:#0033A0; --navy-dark:#00266F; --navy-mid:#174CB8;
+  --amber:#F2A800; --amber-dark:#D28F00; --amber-ink:#9A6900;
   --white:#FFFFFF; --cloud:#F4F7FF; --line:#E1E7F4; --muted:#5C6B8F;
-  --ink:#0F1F3D; --ok:#2F6E4F; --warn:#B8860B;
+  --ink:#0033A0; --ok:#2F6E4F; --warn:#B8860B;
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -148,7 +148,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .intake-step .status.ok{color:var(--ok);}
 .intake-card label{color:#44547a;font-size:12px;margin:16px 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
 .intake-card label i{font-style:normal;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;margin-left:4px;}
-.intake-card label i.highrec{color:#c07d0a;font-weight:700;background:#fff5e0;padding:2px 7px;border-radius:999px;border:1px solid #f2d9a4;}
+.intake-card label i.highrec{color:#9A6900;font-weight:700;background:#fff5e0;padding:2px 7px;border-radius:999px;border:1px solid #F1D58A;}
 .intake-card .field-file{display:block;font-size:12.5px;color:var(--ok);font-weight:600;margin-top:4px;}
 .intake-card .field-hint{font-size:12.5px;color:var(--muted);margin:2px 0 6px;text-transform:none;letter-spacing:0;font-weight:400;}
 .intake-card input[type=text],.intake-card input[type=email],.intake-card input[type=number],.intake-card select,.intake-card textarea{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px;font-family:inherit;background:#FBFCFE;color:var(--ink);}
