@@ -1,15 +1,5 @@
 // Cloudflare Pages Functions middleware (runs on every request to /api/*)
-const ADSENSE_DOMAINS = [
-  'https://pagead2.googlesyndication.com',
-  'https://tpc.googlesyndication.com',
-  'https://googleads.g.doubleclick.net',
-  'https://adservice.google.com',
-  'https://partner.googleadservices.com',
-  'https://www.googletagservices.com',
-  'https://stats.g.doubleclick.net',
-  'https://ad.doubleclick.net',
-  'https://fundingchoicesmessages.google.com',
-];
+
 
 // Microsoft Clarity tracking snippet (injected into every HTML page).
 const CLARITY_SNIPPET =
@@ -38,16 +28,16 @@ export async function onRequest(context) {
       "default-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
-      `script-src 'self' https://cdnjs.cloudflare.com https://www.clarity.ms ${ADSENSE_DOMAINS.join(' ')} 'unsafe-inline' 'unsafe-eval'`,
-      `img-src 'self' data: ${ADSENSE_DOMAINS.join(' ')}`,
+      `script-src 'self' https://cdnjs.cloudflare.com https://www.clarity.ms 'unsafe-inline'`,
+      `img-src 'self' data:`,
       "style-src 'self' 'unsafe-inline'",
-      `connect-src 'self' https://api.stripe.com https://www.clarity.ms ${ADSENSE_DOMAINS.join(' ')}`,
-      `frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://s0.2mdn.net https://securepubads.g.doubleclick.net`,
+      `connect-src 'self' https://api.stripe.com https://www.clarity.ms`,
+      `frame-src 'self' https://checkout.stripe.com https://js.stripe.com`,
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
     newHeaders.set(
       'Permissions-Policy',
-      'attribution-reporting=(self), run-ad-auction=(self), join-ad-interest-group=(self), join-ads-conversion-measurement=(self)'
+      'attribution-reporting=(), run-ad-auction=(), join-ad-interest-group=(), join-ads-conversion-measurement=()'
     );
   }
 
