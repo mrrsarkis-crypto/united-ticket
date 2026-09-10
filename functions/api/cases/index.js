@@ -1,8 +1,21 @@
 // /api/cases — create a case (POST) and return a Stripe Checkout URL
-import { caseAccessToken, json, priceFor, rand, sendBusinessNotification } from '../_shared.js';
+import { caseAccessToken, json, listRecords, priceFor, rand, sendBusinessNotification } from '../_shared.js';
 
-// JSON env bindings expected: STRIPE_SECRET_KEY, STRIPE_PRICE_199/299/999
-// D1 binding: CASES
+// GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
+// The canonical full admin endpoint remains /api/cases/admin.
+export async function onRequestGet(context) {
+  const { request, env } = context;
+  const provided = (new URL(request.url).searchParams.get('code') || '').trim();
+  const allowed = (env.ADMIN_CODE || '').trim();
+  if (!allowed || provided !== allowed) return json({ error: 'Unauthorized' }, 401, { 'WWW-Authenticate': 'Bearer realm="admin"' });
+  if (!env.CASES) return json({ error: 'Case database not configured' }, 500);
+  try {
+    return json({ count: (await listRecords(env, 'case:')).length }, 200);
+  } catch (e) {
+    return json({ error: 'Failed to read cases: ' + String(e && e.message) }, 500);
+  }
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const contentType = request.headers.get('content-type') || '';
@@ -22,10 +35,6 @@ export async function onRequestPost(context) {
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
 
-  // "Step 2" quick-scan flow: when started via /api/intake/claim, the client
-  // re-sends its trackingCode + claimToken so we UPDATE that existing record
-  // rather than creating a duplicate. If no code is provided, fall back to the
-  // original single-step behavior (create a fresh case).
   const claimedCode = String(body.trackingCode || '').trim();
   const claimToken = String(body.claimToken || '').trim();
   let priorRecord = null;
