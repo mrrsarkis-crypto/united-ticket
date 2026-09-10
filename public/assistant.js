@@ -83,7 +83,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ consent: true, image: base64Data })
       });
-      var data = await res.json();
+      var contentType = (res.headers.get('content-type') || '').toLowerCase();
+      var data = null;
+      if (contentType.includes('application/json')) {
+        try { data = await res.json(); } catch (parseErr) { throw new Error('The scan service returned an invalid response. Please try again.'); }
+      } else {
+        await res.text();
+        throw new Error(res.ok ? 'The scan service returned an unexpected response. Please try again.' : 'The scan service is temporarily unavailable (' + res.status + '). Please try again shortly.');
+      }
       if (!res.ok) throw new Error(data.error || 'The scan failed. Please try a clearer photo.');
       extracted = data.extracted || {};
       renderVerify(extracted);
