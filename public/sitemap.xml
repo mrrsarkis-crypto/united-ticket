@@ -18,6 +18,8 @@
   <url><loc>https://unitedtraffictickets.com/cdl-ticket</loc><priority>0.7</priority></url>
   <url><loc>https://unitedtraffictickets.com/courthouses</loc><priority>0.7</priority></url>
   <url><loc>https://unitedtraffictickets.com/all-courthouses</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/bot-courthouse</loc><priority>0.8</priority></url>
+
   <url><loc>https://unitedtraffictickets.com/courthouses/stanley-mosk/</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/courthouses/chatsworth/</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/courthouses/hollywood/</loc><priority>0.6</priority></url>

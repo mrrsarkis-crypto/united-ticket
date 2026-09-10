@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#0033A0">
 <title>All 58 California County Courts — Search Your Ticket — United Traffic Tickets Defense</title>
 <link rel="amphtml" href="/amp/all-courthouses">
-<meta name="description" content="Find your court and search your traffic ticket in any California county. Directory of all 58 county Superior Courts with traffic citation & citation-lookup links by county.">
-<!-- Google AdSense -->
+<meta name="description" content="Find your court and search your traffic ticket in any California county. Directory of all 58 county Superior Courts with traffic citation lookup links and Bot Courthouse guidance by county.">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/pages.css">
+<link rel="stylesheet" href="/bot-courthouse.css">
   <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png"></head>
 <body>
@@ -22,7 +22,7 @@
   </div>
   <nav class="nav">
     <div class="wrap nav-inner">
-      <a class="brand" href="/">
+      <a class="brand" href="/assistant">
         <img src="/assets/logo-defense.webp" alt="United Traffic Tickets Defense" class="brand-logo" width="640" height="640" decoding="async">
       </a>
       <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
@@ -49,6 +49,7 @@
         <li class="drop">
           <a href="/courthouses">Courthouses</a>
           <ul>
+            <li><a href="/bot-courthouse">Bot Courthouse</a></li>
             <li><a href="/all-courthouses">All 58 CA Counties</a></li>
             <li><a href="/courthouses/stanley-mosk">Stanley Mosk (DTLA)</a></li>
             <li><a href="/courthouses/chatsworth">Chatsworth</a></li>
@@ -76,12 +77,20 @@
       <div class="breadcrumb"><a href="/">Home</a> &rsaquo; <a href="/courthouses">Courthouses</a> &rsaquo; All CA Counties</div>
       <p class="eyebrow">Search Your Ticket By County</p>
       <h1>Every California County Court — Citation Lookup</h1>
-      <p class="sub">Pick the county where you got your ticket to open its Superior Court traffic citation search. Confirm the violation, fine, and court date before deciding how to respond.</p>
+      <p class="sub">Pick the county where you got your ticket to open its Superior Court traffic citation search — or jump into Bot Courthouse for plain-language next steps.</p>
+      <p style="margin-top:22px;">
+        <a class="btn btn-amber" href="/bot-courthouse" style="display:inline-flex;align-items:center;min-height:48px;padding:14px 22px;border-radius:10px;font-weight:800;text-decoration:none;">Open Bot Courthouse</a>
+      </p>
     </div>
   </section>
 
   <section class="pg-section alt">
     <div class="wrap">
+      <div class="info-box" style="margin-bottom:22px;">
+        <strong>New:</strong> Need help deciding what to do after you find your ticket?
+        <a href="/bot-courthouse" style="font-weight:800;">Bot Courthouse</a> walks you through fight / traffic school / fix-it / can't afford options for any California county — educational guidance only; not a law firm; outcomes never guaranteed.
+      </div>
+
       <div class="info-box">Courts are independent government agencies. They handle citation lookup, court dates, and payment, but they are not affiliated with our service and do not fight tickets for you. We help you prepare the paperwork you review, sign, and file yourself.</div>
 
       <label for="countyFilter" style="font-weight:700;color:var(--navy);font-size:14px;">Filter by county:</label>
@@ -90,9 +99,9 @@
       <div id="countyGrid" class="ch-grid"></div>
       <div id="noMatch" class="empty" style="display:none;">No county matched. Try the full name or another spelling.</div>
 
-      <h2 style="margin-top:46px;">How to read & respond to a California ticket</h2>
+      <h2 style="margin-top:46px;">How to read &amp; respond to a California ticket</h2>
       <div class="prose">
-        <p>Start at <a href="https://www.courts.ca.gov/selfhelp.htm" target="_blank" rel="noopener">California Courts Self-Help</a> to understand your options. When you look up your citation, note the court, the violation code section, and your arraignment/court date. Your options are usually to <strong>pay</strong>, request <strong>traffic school</strong>, appear in court, or contest it — including by <strong>Trial by Written Declaration</strong>.</p>
+        <p>Start at <a href="https://www.courts.ca.gov/selfhelp.htm" target="_blank" rel="noopener">California Courts Self-Help</a> or our interactive <a href="/bot-courthouse">Bot Courthouse</a> to understand your options. When you look up your citation, note the court, the violation code section, and your arraignment/court date. Your options are usually to <strong>pay</strong>, request <strong>traffic school</strong>, appear in court, or contest it — including by <strong>Trial by Written Declaration</strong>.</p>
         <p>See how we help you prepare the paperwork: <a href="/services">all the ticket types we handle</a> or <a href="/speeding-ticket">speeding tickets</a>.</p>
       </div>
     </div>
@@ -100,9 +109,11 @@
 
   <section class="page-cta">
     <div class="wrap">
-      <h2>Found your ticket? Let's look at your options.</h2>
-      <p>Upload your citation for a free AI scan and a no-pressure conversation.</p>
-      <a class="btn btn-amber" href="/#build">SCAN MY TICKET — FREE</a>
+      <h2>Found your ticket? Fight by Written Declaration.</h2>
+      <p>Use Bot Courthouse for guidance, start the <strong>$199 TBD</strong> Standard Ticket package, or upload your citation for a free AI scan.</p>
+      <a class="btn btn-amber" href="/bot-courthouse?path=tbd" style="margin-right:10px;">FIGHT TBD — $199</a>
+      <a class="btn btn-amber" href="/bot-courthouse" style="margin-right:10px;">OPEN BOT COURTHOUSE</a>
+      <a class="btn btn-amber" href="/assistant?service=199&amp;intent=tbd">SCAN MY TICKET — FREE</a>
     </div>
   </section>
 </main>
@@ -128,6 +139,7 @@
       <a href="/resources">Traffic Ticket Help Guides</a>
       <a href="/faq">FAQ</a>
       <a href="/courthouses">California Courthouses</a>
+      <a href="/bot-courthouse">Bot Courthouse</a>
       <a href="/all-courthouses">All 58 CA Counties</a>
       <a href="https://www.courts.ca.gov/forms.htm" rel="noopener" target="_blank">CA Court Forms (outbound)</a>
       <a href="https://www.chp.ca.gov" rel="noopener" target="_blank">CA Highway Patrol (outbound)</a>
@@ -160,67 +172,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var v = document.getElementById('navToggle'), l = document.getElementById('navLinks');
   v.addEventListener('click', function(){ var o=l.classList.toggle('open'); v.classList.toggle('open',o); v.setAttribute('aria-expanded',o?'true':'false'); });
 
-  // All 58 CA counties. url = the official Superior Court home / citation-search entry point.
-  var counties = [
-    ['Alameda','https://www.alameda.courts.ca.gov/'],
-    ['Alpine','https://www.courts.ca.gov/find-a-court.html'],
-    ['Amador','https://www.amador.courts.ca.gov/'],
-    ['Butte','https://www.butte.courts.ca.gov/'],
-    ['Calaveras','https://www.calaveras.courts.ca.gov/'],
-    ['Colusa','https://www.colusa.courts.ca.gov/'],
-    ['Contra Costa','https://www.cc-courts.org/'],
-    ['Del Norte','https://www.delnorte.courts.ca.gov/'],
-    ['El Dorado','https://www.eldorado.courts.ca.gov/'],
-    ['Fresno','https://www.fresno.courts.ca.gov/'],
-    ['Glenn','https://www.glenn.courts.ca.gov/'],
-    ['Humboldt','https://www.humboldt.courts.ca.gov/'],
-    ['Imperial','https://www.imperial.courts.ca.gov/'],
-    ['Inyo','https://www.inyo.courts.ca.gov/'],
-    ['Kern','https://www.kern.courts.ca.gov/'],
-    ['Kings','https://www.kings.courts.ca.gov/'],
-    ['Lake','https://www.lake.courts.ca.gov/'],
-    ['Lassen','https://www.lassen.courts.ca.gov/'],
-    ['Los Angeles','https://www.lacourt.org/'],
-    ['Madera','https://www.madera.courts.ca.gov/'],
-    ['Marin','https://www.marincourt.org/'],
-    ['Mariposa','https://www.mariposa.courts.ca.gov/'],
-    ['Mendocino','https://www.mendocino.courts.ca.gov/'],
-    ['Merced','https://www.merced.courts.ca.gov/'],
-    ['Modoc','https://www.modoc.courts.ca.gov/'],
-    ['Mono','https://www.mono.courts.ca.gov/'],
-    ['Monterey','https://www.monterey.courts.ca.gov/'],
-    ['Napa','https://napafamilycourtology.napa.courts.ca.gov/'],
-    ['Nevada','https://www.nevada.courts.ca.gov/'],
-    ['Orange','https://www.occourts.org/'],
-    ['Placer','https://www.placer.courts.ca.gov/'],
-    ['Plumas','https://www.plumas.courts.ca.gov/'],
-    ['Riverside','https://www.riverside.courts.ca.gov/'],
-    ['Sacramento','https://www.saccourt.ca.gov/'],
-    ['San Benito','https://www.sanbenito.courts.ca.gov/'],
-    ['San Bernardino','https://www.sb-court.org/'],
-    ['San Diego','https://www.sdcourt.ca.gov/'],
-    ['San Francisco','https://www.sftc.org/'],
-    ['San Joaquin','https://www.sjcourts.org/'],
-    ['San Luis Obispo','https://www.slocourts.net/'],
-    ['San Mateo','https://www.sanmateocourt.org/'],
-    ['Santa Barbara','https://www.sbcourts.org/'],
-    ['Santa Clara','https://www.scscourt.org/'],
-    ['Santa Cruz','https://www.courts.ca.gov/'],
-    ['Shasta','https://www.shasta.courts.ca.gov/'],
-    ['Sierra','https://www.courts.ca.gov/find-a-court.html'],
-    ['Siskiyou','https://www.siskiyou.courts.ca.gov/'],
-    ['Solano','https://www.solanocourts.com/'],
-    ['Sonoma','https://sonomacourtopeneroutingtons.sonomacourt.ca.gov/'],
-    ['Stanislaus','https://www.stanct.org/'],
-    ['Sutter','https://www.sutter.courts.ca.gov/'],
-    ['Tehama','https://www.tehama.courts.ca.gov/'],
-    ['Trinity','https://www.trinity.courts.ca.gov/'],
-    ['Tulare','https://www.tulare.courts.ca.gov/'],
-    ['Tuolumne','https://www.tuolumne.courts.ca.gov/'],
-    ['Ventura','https://www.ventura.courts.ca.gov/'],
-    ['Yolo','https://www.yolo.courts.ca.gov/'],
-    ['Yuba','https://www.yuba.courts.ca.gov/']
-  ];
+  // All 58 CA counties from /data/ca-counties.json (name, slug, trafficUrl).
+  var counties = [["Alameda","https://www.alameda.courts.ca.gov/divisions/traffic","alameda"],["Alpine","https://www.alpine.courts.ca.gov/","alpine"],["Amador","https://www.amadorcourt.org/","amador"],["Butte","https://www.buttecourt.ca.gov/divisions/traffic/","butte"],["Calaveras","https://www.calaveras.courts.ca.gov/","calaveras"],["Colusa","https://www.colusa.courts.ca.gov/","colusa"],["Contra Costa","https://www.cc-courts.org/traffic/traffic.aspx","contra-costa"],["Del Norte","https://www.delnorte.courts.ca.gov/","del-norte"],["El Dorado","https://www.eldorado.courts.ca.gov/divisions/traffic","el-dorado"],["Fresno","https://www.fresno.courts.ca.gov/divisions/traffic","fresno"],["Glenn","https://www.glenn.courts.ca.gov/","glenn"],["Humboldt","https://www.humboldt.courts.ca.gov/divisions/traffic","humboldt"],["Imperial","https://www.imperial.courts.ca.gov/divisions/traffic","imperial"],["Inyo","https://www.inyo.courts.ca.gov/","inyo"],["Kern","https://www.kern.courts.ca.gov/divisions/traffic","kern"],["Kings","https://www.kings.courts.ca.gov/divisions/traffic","kings"],["Lake","https://www.lake.courts.ca.gov/","lake"],["Lassen","https://www.lassen.courts.ca.gov/","lassen"],["Los Angeles","https://www.lacourt.org/division/traffic/index.aspx","los-angeles"],["Madera","https://www.madera.courts.ca.gov/divisions/traffic","madera"],["Marin","https://www.marin.courts.ca.gov/divisions/traffic","marin"],["Mariposa","https://www.mariposa.courts.ca.gov/","mariposa"],["Mendocino","https://www.mendocino.courts.ca.gov/divisions/traffic","mendocino"],["Merced","https://www.mercedcourt.org/traffic.htm","merced"],["Modoc","https://www.modoc.courts.ca.gov/","modoc"],["Mono","https://www.mono.courts.ca.gov/","mono"],["Monterey","https://www.monterey.courts.ca.gov/divisions/traffic","monterey"],["Napa","https://www.napa.courts.ca.gov/divisions/traffic","napa"],["Nevada","https://www.nevada.courts.ca.gov/divisions/traffic","nevada"],["Orange","https://www.occourts.org/self-help/traffic","orange"],["Placer","https://www.placer.courts.ca.gov/divisions/traffic","placer"],["Plumas","https://www.plumas.courts.ca.gov/","plumas"],["Riverside","https://www.riverside.courts.ca.gov/traffic","riverside"],["Sacramento","https://www.saccourt.ca.gov/traffic/traffic.aspx","sacramento"],["San Benito","https://www.sanbenito.courts.ca.gov/","san-benito"],["San Bernardino","https://www.sb-court.org/divisions/traffic","san-bernardino"],["San Diego","https://www.sdcourt.ca.gov/sdcourt/traffic2","san-diego"],["San Francisco","https://sf.courts.ca.gov/divisions/traffic","san-francisco"],["San Joaquin","https://www.sjcourts.org/divisions/traffic/","san-joaquin"],["San Luis Obispo","https://www.slo.courts.ca.gov/divisions/traffic","san-luis-obispo"],["San Mateo","https://www.sanmateo.courts.ca.gov/divisions/traffic","san-mateo"],["Santa Barbara","https://www.sbcourts.org/general-information/traffic-citations","santa-barbara"],["Santa Clara","https://www.scscourt.org/self_help/traffic/traffic.shtml","santa-clara"],["Santa Cruz","https://www.santacruzcourt.org/divisions/traffic","santa-cruz"],["Shasta","https://www.shasta.courts.ca.gov/divisions/traffic","shasta"],["Sierra","https://www.sierra.courts.ca.gov/","sierra"],["Siskiyou","https://www.siskiyou.courts.ca.gov/","siskiyou"],["Solano","https://www.solano.courts.ca.gov/divisions/traffic","solano"],["Sonoma","https://sonoma.courts.ca.gov/divisions/traffic","sonoma"],["Stanislaus","https://www.stanct.org/traffic","stanislaus"],["Sutter","https://www.suttercourts.com/divisions/traffic","sutter"],["Tehama","https://www.tehamacourt.ca.gov/","tehama"],["Trinity","https://www.trinity.courts.ca.gov/","trinity"],["Tulare","https://www.tulare.courts.ca.gov/divisions/traffic","tulare"],["Tuolumne","https://www.tuolumne.courts.ca.gov/","tuolumne"],["Ventura","https://www.ventura.courts.ca.gov/traffic","ventura"],["Yolo","https://www.yolo.courts.ca.gov/divisions/traffic","yolo"],["Yuba","https://www.yuba.courts.ca.gov/","yuba"]];
 
   function render(list){
     var g = document.getElementById('countyGrid');
@@ -228,7 +181,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
       return '<div class="ch-tile">' +
         '<div class="ch-ico"><img src="https://www.google.com/s2/favicons?domain=' + host(c[1]) + '&sz=64" alt="" loading="lazy"></div>' +
         '<div class="ch-title">' + c[0] + ' County</div>' +
-        '<a href="' + c[1] + '" target="_blank" rel="noopener">Search / view court &#8599;</a>' +
+        '<a href="' + c[1] + '" target="_blank" rel="noopener">Official traffic site &#8599;</a>' +
+        '<a href="/bot-courthouse?county=' + encodeURIComponent(c[2]) + '" style="display:block;margin-top:8px;">Open Bot Courthouse</a>' +
         '</div>';
     }).join('');
     document.getElementById('noMatch').style.display = list.length ? 'none' : 'block';

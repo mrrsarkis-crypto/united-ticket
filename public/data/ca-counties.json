@@ -1,0 +1,408 @@
+[
+  {
+    "name": "Alameda",
+    "slug": "alameda",
+    "courtName": "Superior Court of California, County of Alameda",
+    "courtSite": "https://www.alameda.courts.ca.gov/",
+    "trafficUrl": "https://www.alameda.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Alpine",
+    "slug": "alpine",
+    "courtName": "Superior Court of California, County of Alpine",
+    "courtSite": "https://www.alpine.courts.ca.gov/",
+    "trafficUrl": "https://www.alpine.courts.ca.gov/"
+  },
+  {
+    "name": "Amador",
+    "slug": "amador",
+    "courtName": "Superior Court of California, County of Amador",
+    "courtSite": "https://www.amadorcourt.org/",
+    "trafficUrl": "https://www.amadorcourt.org/"
+  },
+  {
+    "name": "Butte",
+    "slug": "butte",
+    "courtName": "Superior Court of California, County of Butte",
+    "courtSite": "https://www.buttecourt.ca.gov/",
+    "trafficUrl": "https://www.buttecourt.ca.gov/divisions/traffic/"
+  },
+  {
+    "name": "Calaveras",
+    "slug": "calaveras",
+    "courtName": "Superior Court of California, County of Calaveras",
+    "courtSite": "https://www.calaveras.courts.ca.gov/",
+    "trafficUrl": "https://www.calaveras.courts.ca.gov/"
+  },
+  {
+    "name": "Colusa",
+    "slug": "colusa",
+    "courtName": "Superior Court of California, County of Colusa",
+    "courtSite": "https://www.colusa.courts.ca.gov/",
+    "trafficUrl": "https://www.colusa.courts.ca.gov/"
+  },
+  {
+    "name": "Contra Costa",
+    "slug": "contra-costa",
+    "courtName": "Superior Court of California, County of Contra Costa",
+    "courtSite": "https://www.cc-courts.org/",
+    "trafficUrl": "https://www.cc-courts.org/traffic/traffic.aspx"
+  },
+  {
+    "name": "Del Norte",
+    "slug": "del-norte",
+    "courtName": "Superior Court of California, County of Del Norte",
+    "courtSite": "https://www.delnorte.courts.ca.gov/",
+    "trafficUrl": "https://www.delnorte.courts.ca.gov/"
+  },
+  {
+    "name": "El Dorado",
+    "slug": "el-dorado",
+    "courtName": "Superior Court of California, County of El Dorado",
+    "courtSite": "https://www.eldorado.courts.ca.gov/",
+    "trafficUrl": "https://www.eldorado.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Fresno",
+    "slug": "fresno",
+    "courtName": "Superior Court of California, County of Fresno",
+    "courtSite": "https://www.fresno.courts.ca.gov/",
+    "trafficUrl": "https://www.fresno.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Glenn",
+    "slug": "glenn",
+    "courtName": "Superior Court of California, County of Glenn",
+    "courtSite": "https://www.glenn.courts.ca.gov/",
+    "trafficUrl": "https://www.glenn.courts.ca.gov/"
+  },
+  {
+    "name": "Humboldt",
+    "slug": "humboldt",
+    "courtName": "Superior Court of California, County of Humboldt",
+    "courtSite": "https://www.humboldt.courts.ca.gov/",
+    "trafficUrl": "https://www.humboldt.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Imperial",
+    "slug": "imperial",
+    "courtName": "Superior Court of California, County of Imperial",
+    "courtSite": "https://www.imperial.courts.ca.gov/",
+    "trafficUrl": "https://www.imperial.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Inyo",
+    "slug": "inyo",
+    "courtName": "Superior Court of California, County of Inyo",
+    "courtSite": "https://www.inyo.courts.ca.gov/",
+    "trafficUrl": "https://www.inyo.courts.ca.gov/"
+  },
+  {
+    "name": "Kern",
+    "slug": "kern",
+    "courtName": "Superior Court of California, County of Kern",
+    "courtSite": "https://www.kern.courts.ca.gov/",
+    "trafficUrl": "https://www.kern.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Kings",
+    "slug": "kings",
+    "courtName": "Superior Court of California, County of Kings",
+    "courtSite": "https://www.kings.courts.ca.gov/",
+    "trafficUrl": "https://www.kings.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Lake",
+    "slug": "lake",
+    "courtName": "Superior Court of California, County of Lake",
+    "courtSite": "https://www.lake.courts.ca.gov/",
+    "trafficUrl": "https://www.lake.courts.ca.gov/"
+  },
+  {
+    "name": "Lassen",
+    "slug": "lassen",
+    "courtName": "Superior Court of California, County of Lassen",
+    "courtSite": "https://www.lassen.courts.ca.gov/",
+    "trafficUrl": "https://www.lassen.courts.ca.gov/"
+  },
+  {
+    "name": "Los Angeles",
+    "slug": "los-angeles",
+    "courtName": "Superior Court of California, County of Los Angeles",
+    "courtSite": "https://www.lacourt.org/",
+    "trafficUrl": "https://www.lacourt.org/division/traffic/index.aspx"
+  },
+  {
+    "name": "Madera",
+    "slug": "madera",
+    "courtName": "Superior Court of California, County of Madera",
+    "courtSite": "https://www.madera.courts.ca.gov/",
+    "trafficUrl": "https://www.madera.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Marin",
+    "slug": "marin",
+    "courtName": "Superior Court of California, County of Marin",
+    "courtSite": "https://www.marin.courts.ca.gov/",
+    "trafficUrl": "https://www.marin.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Mariposa",
+    "slug": "mariposa",
+    "courtName": "Superior Court of California, County of Mariposa",
+    "courtSite": "https://www.mariposa.courts.ca.gov/",
+    "trafficUrl": "https://www.mariposa.courts.ca.gov/"
+  },
+  {
+    "name": "Mendocino",
+    "slug": "mendocino",
+    "courtName": "Superior Court of California, County of Mendocino",
+    "courtSite": "https://www.mendocino.courts.ca.gov/",
+    "trafficUrl": "https://www.mendocino.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Merced",
+    "slug": "merced",
+    "courtName": "Superior Court of California, County of Merced",
+    "courtSite": "https://www.mercedcourt.org/",
+    "trafficUrl": "https://www.mercedcourt.org/traffic.htm"
+  },
+  {
+    "name": "Modoc",
+    "slug": "modoc",
+    "courtName": "Superior Court of California, County of Modoc",
+    "courtSite": "https://www.modoc.courts.ca.gov/",
+    "trafficUrl": "https://www.modoc.courts.ca.gov/"
+  },
+  {
+    "name": "Mono",
+    "slug": "mono",
+    "courtName": "Superior Court of California, County of Mono",
+    "courtSite": "https://www.mono.courts.ca.gov/",
+    "trafficUrl": "https://www.mono.courts.ca.gov/"
+  },
+  {
+    "name": "Monterey",
+    "slug": "monterey",
+    "courtName": "Superior Court of California, County of Monterey",
+    "courtSite": "https://www.monterey.courts.ca.gov/",
+    "trafficUrl": "https://www.monterey.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Napa",
+    "slug": "napa",
+    "courtName": "Superior Court of California, County of Napa",
+    "courtSite": "https://www.napa.courts.ca.gov/",
+    "trafficUrl": "https://www.napa.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Nevada",
+    "slug": "nevada",
+    "courtName": "Superior Court of California, County of Nevada",
+    "courtSite": "https://www.nevada.courts.ca.gov/",
+    "trafficUrl": "https://www.nevada.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Orange",
+    "slug": "orange",
+    "courtName": "Superior Court of California, County of Orange",
+    "courtSite": "https://www.occourts.org/",
+    "trafficUrl": "https://www.occourts.org/self-help/traffic"
+  },
+  {
+    "name": "Placer",
+    "slug": "placer",
+    "courtName": "Superior Court of California, County of Placer",
+    "courtSite": "https://www.placer.courts.ca.gov/",
+    "trafficUrl": "https://www.placer.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Plumas",
+    "slug": "plumas",
+    "courtName": "Superior Court of California, County of Plumas",
+    "courtSite": "https://www.plumas.courts.ca.gov/",
+    "trafficUrl": "https://www.plumas.courts.ca.gov/"
+  },
+  {
+    "name": "Riverside",
+    "slug": "riverside",
+    "courtName": "Superior Court of California, County of Riverside",
+    "courtSite": "https://www.riverside.courts.ca.gov/",
+    "trafficUrl": "https://www.riverside.courts.ca.gov/traffic"
+  },
+  {
+    "name": "Sacramento",
+    "slug": "sacramento",
+    "courtName": "Superior Court of California, County of Sacramento",
+    "courtSite": "https://www.saccourt.ca.gov/",
+    "trafficUrl": "https://www.saccourt.ca.gov/traffic/traffic.aspx"
+  },
+  {
+    "name": "San Benito",
+    "slug": "san-benito",
+    "courtName": "Superior Court of California, County of San Benito",
+    "courtSite": "https://www.sanbenito.courts.ca.gov/",
+    "trafficUrl": "https://www.sanbenito.courts.ca.gov/"
+  },
+  {
+    "name": "San Bernardino",
+    "slug": "san-bernardino",
+    "courtName": "Superior Court of California, County of San Bernardino",
+    "courtSite": "https://www.sb-court.org/",
+    "trafficUrl": "https://www.sb-court.org/divisions/traffic"
+  },
+  {
+    "name": "San Diego",
+    "slug": "san-diego",
+    "courtName": "Superior Court of California, County of San Diego",
+    "courtSite": "https://www.sdcourt.ca.gov/",
+    "trafficUrl": "https://www.sdcourt.ca.gov/sdcourt/traffic2"
+  },
+  {
+    "name": "San Francisco",
+    "slug": "san-francisco",
+    "courtName": "Superior Court of California, County of San Francisco",
+    "courtSite": "https://sf.courts.ca.gov/",
+    "trafficUrl": "https://sf.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "San Joaquin",
+    "slug": "san-joaquin",
+    "courtName": "Superior Court of California, County of San Joaquin",
+    "courtSite": "https://www.sjcourts.org/",
+    "trafficUrl": "https://www.sjcourts.org/divisions/traffic/"
+  },
+  {
+    "name": "San Luis Obispo",
+    "slug": "san-luis-obispo",
+    "courtName": "Superior Court of California, County of San Luis Obispo",
+    "courtSite": "https://www.slo.courts.ca.gov/",
+    "trafficUrl": "https://www.slo.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "San Mateo",
+    "slug": "san-mateo",
+    "courtName": "Superior Court of California, County of San Mateo",
+    "courtSite": "https://www.sanmateo.courts.ca.gov/",
+    "trafficUrl": "https://www.sanmateo.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Santa Barbara",
+    "slug": "santa-barbara",
+    "courtName": "Superior Court of California, County of Santa Barbara",
+    "courtSite": "https://www.sbcourts.org/",
+    "trafficUrl": "https://www.sbcourts.org/general-information/traffic-citations"
+  },
+  {
+    "name": "Santa Clara",
+    "slug": "santa-clara",
+    "courtName": "Superior Court of California, County of Santa Clara",
+    "courtSite": "https://www.scscourt.org/",
+    "trafficUrl": "https://www.scscourt.org/self_help/traffic/traffic.shtml"
+  },
+  {
+    "name": "Santa Cruz",
+    "slug": "santa-cruz",
+    "courtName": "Superior Court of California, County of Santa Cruz",
+    "courtSite": "https://www.santacruzcourt.org/",
+    "trafficUrl": "https://www.santacruzcourt.org/divisions/traffic"
+  },
+  {
+    "name": "Shasta",
+    "slug": "shasta",
+    "courtName": "Superior Court of California, County of Shasta",
+    "courtSite": "https://www.shasta.courts.ca.gov/",
+    "trafficUrl": "https://www.shasta.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Sierra",
+    "slug": "sierra",
+    "courtName": "Superior Court of California, County of Sierra",
+    "courtSite": "https://www.sierra.courts.ca.gov/",
+    "trafficUrl": "https://www.sierra.courts.ca.gov/"
+  },
+  {
+    "name": "Siskiyou",
+    "slug": "siskiyou",
+    "courtName": "Superior Court of California, County of Siskiyou",
+    "courtSite": "https://www.siskiyou.courts.ca.gov/",
+    "trafficUrl": "https://www.siskiyou.courts.ca.gov/"
+  },
+  {
+    "name": "Solano",
+    "slug": "solano",
+    "courtName": "Superior Court of California, County of Solano",
+    "courtSite": "https://www.solano.courts.ca.gov/",
+    "trafficUrl": "https://www.solano.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Sonoma",
+    "slug": "sonoma",
+    "courtName": "Superior Court of California, County of Sonoma",
+    "courtSite": "https://sonoma.courts.ca.gov/",
+    "trafficUrl": "https://sonoma.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Stanislaus",
+    "slug": "stanislaus",
+    "courtName": "Superior Court of California, County of Stanislaus",
+    "courtSite": "https://www.stanct.org/",
+    "trafficUrl": "https://www.stanct.org/traffic"
+  },
+  {
+    "name": "Sutter",
+    "slug": "sutter",
+    "courtName": "Superior Court of California, County of Sutter",
+    "courtSite": "https://www.suttercourts.com/",
+    "trafficUrl": "https://www.suttercourts.com/divisions/traffic"
+  },
+  {
+    "name": "Tehama",
+    "slug": "tehama",
+    "courtName": "Superior Court of California, County of Tehama",
+    "courtSite": "https://www.tehamacourt.ca.gov/",
+    "trafficUrl": "https://www.tehamacourt.ca.gov/"
+  },
+  {
+    "name": "Trinity",
+    "slug": "trinity",
+    "courtName": "Superior Court of California, County of Trinity",
+    "courtSite": "https://www.trinity.courts.ca.gov/",
+    "trafficUrl": "https://www.trinity.courts.ca.gov/"
+  },
+  {
+    "name": "Tulare",
+    "slug": "tulare",
+    "courtName": "Superior Court of California, County of Tulare",
+    "courtSite": "https://www.tulare.courts.ca.gov/",
+    "trafficUrl": "https://www.tulare.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Tuolumne",
+    "slug": "tuolumne",
+    "courtName": "Superior Court of California, County of Tuolumne",
+    "courtSite": "https://www.tuolumne.courts.ca.gov/",
+    "trafficUrl": "https://www.tuolumne.courts.ca.gov/"
+  },
+  {
+    "name": "Ventura",
+    "slug": "ventura",
+    "courtName": "Superior Court of California, County of Ventura",
+    "courtSite": "https://www.ventura.courts.ca.gov/",
+    "trafficUrl": "https://www.ventura.courts.ca.gov/traffic"
+  },
+  {
+    "name": "Yolo",
+    "slug": "yolo",
+    "courtName": "Superior Court of California, County of Yolo",
+    "courtSite": "https://www.yolo.courts.ca.gov/",
+    "trafficUrl": "https://www.yolo.courts.ca.gov/divisions/traffic"
+  },
+  {
+    "name": "Yuba",
+    "slug": "yuba",
+    "courtName": "Superior Court of California, County of Yuba",
+    "courtSite": "https://www.yuba.courts.ca.gov/",
+    "trafficUrl": "https://www.yuba.courts.ca.gov/"
+  }
+]
