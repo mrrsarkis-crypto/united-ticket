@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>UTTD myimprov Referral Funnel</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+:root{--navy:#0033A0;--red:#B00020;--orange:#F2A800;--ink:#172033;--muted:#62718a;--line:#dfe6ef;--bg:#f3f6fa;--good:#166534;--goodbg:#dcfce7;--warn:#92400e;--warnbg:#fef3c7;--bad:#991b1b;--badbg:#fee2e2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,textarea{font:inherit}header{background:linear-gradient(120deg,#071a49,#0033A0);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}header h1{margin:0;font-size:20px}header p{margin:4px 0 0;color:#d7e2f4;font-size:13px}.wrap{max-width:1100px;margin:0 auto;padding:22px}.toolbar,.stats,.panel,.importbox{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px rgba(15,35,70,.05)}.toolbar{padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input{padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;min-width:260px}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--navy);color:#fff}.btn.secondary{background:#fff;color:var(--navy);border:1px solid #98add5}.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin:16px 0}.stat{padding:16px;border-right:1px solid var(--line)}.stat:last-child{border-right:0}.stat .n{font-size:24px;font-weight:800}.stat .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}.panel{overflow:hidden}.panelhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.panelhead strong{font-size:16px}.muted{color:var(--muted)}.error{margin:14px 0;padding:12px 14px;border-radius:10px;background:var(--badbg);color:var(--bad)}.good{margin:14px 0;padding:12px 14px;border-radius:10px;background:var(--goodbg);color:var(--good)}.hide{display:none}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f8fafc;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.pill{border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}.pill.yes{background:var(--goodbg);color:var(--good)}.pill.no{background:#eef2f7;color:var(--muted)}.bar{height:8px;background:#e9eef5;border-radius:99px;overflow:hidden;min-width:120px}.bar span{display:block;height:100%;background:var(--navy)}.importbox{padding:16px;margin-top:16px}.importbox textarea{width:100%;min-height:110px;border:1px solid #cbd5e1;border-radius:9px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical}.importbox .hint{color:var(--muted);font-size:12px;margin:8px 0}.foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}.empty{padding:26px;text-align:center;color:var(--muted)}code{background:#eef2f7;padding:1px 6px;border-radius:6px;font-size:12px}</style>
+</head>
+<body>
+<header><div><h1>myimprov Referral Funnel</h1><p>Click tracking → partner conversions. Correlates <code>ref=UTTD-*</code> tags IMPROV reports back.</p></div><div id="lastLoaded">Not loaded</div></header>
+<main class="wrap">
+  <section class="toolbar">
+    <input id="code" type="password" autocomplete="current-password" placeholder="Admin code">
+    <button class="btn primary" id="loadBtn">Load funnel</button>
+    <button class="btn secondary" id="csvBtn" disabled>Export clicks CSV</button>
+  </section>
+  <div id="error" class="error hide"></div>
+  <div id="good" class="good hide"></div>
+  <section class="stats">
+    <div class="stat"><div class="n" id="clicksCount">0</div><div class="l">Clicks</div></div>
+    <div class="stat"><div class="n" id="humansCount">0</div><div class="l">Humans</div></div>
+    <div class="stat"><div class="n" id="uniqueCount">0</div><div class="l">Unique visitors</div></div>
+    <div class="stat"><div class="n" id="convCount">0</div><div class="l">Conversions</div></div>
+    <div class="stat"><div class="n" id="rateCount">0</div><div class="l">Conversion rate</div></div>
+    <div class="stat"><div class="n" id="revCount">0</div><div class="l">Revenue</div></div>
+  </section>
+  <section class="panel">
+    <div class="panelhead"><strong>Placement performance</strong><span class="muted" id="contentTotal"></span></div>
+    <div class="tablewrap"><table><thead><tr><th>Placement</th><th>Clicks</th><th>Conversions</th><th>Rate</th><th>Bar</th></tr></thead><tbody id="contentRows"></tbody></table></div>
+  </section>
+  <section class="panel" style="margin-top:16px">
+    <div class="panelhead"><strong>By referring page</strong><span class="muted" id="refTotal"></span></div>
+    <div class="tablewrap"><table><thead><tr><th>Referrer</th><th>Clicks</th><th>Conversions</th><th>Rate</th></tr></thead><tbody id="refRows"></tbody></table></div>
+  </section>
+  <section class="panel" style="margin-top:16px">
+    <div class="panelhead"><strong>Recent clicks</strong><span class="muted">last 50</span></div>
+    <div class="tablewrap"><table><thead><tr><th>When</th><th>Click id</th><th>Placement</th><th>Device</th><th>Status</th><th>Amount</th></tr></thead><tbody id="recentRows"></tbody></table><div id="empty" class="empty hide">No clicks recorded yet.</div></div>
+  </section>
+  <section class="importbox">
+    <strong>Import IMPROV conversion data</strong>
+    <p class="hint">Paste an IMPROV enrollment report for this campaign. Each row must carry its <code>UTTD-*</code> ref tag. Formats accepted:</p>
+    <p class="hint">CSV: <code>click_id,amount,ts</code> — e.g. <code>UTTD-mtvl43yn-8LEFZB,199,2026-09-10</code><br>
+    JSON: <code>[{"click_id":"UTTD-...","amount":199,"ts":"2026-09-10"}]</code></p>
+    <textarea id="importData" placeholder="Paste CSV or JSON rows here..."></textarea>
+    <div class="foot"><button class="btn primary" id="importBtn" disabled>Import conversions</button><span class="muted" id="importResult"></span></div>
+  </section>
+</main>
+<script>
+(function(){'use strict';
+var data=null,codeEl=document.getElementById('code');
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmt(v){return String(v==null?'':v)}
+function show(which,m){var el=document.getElementById(which);if(m){el.textContent=m;el.classList.remove('hide')}else{el.classList.add('hide')}}
+function pill(c){return '<span class="pill '+(c?'yes':'no')+'">'+(c?'yes':'no')+'</span>'}
+function pct(v,base){return base?Math.round((v/base)*1000)/10+'%':'0%'}
+function render(){
+  document.getElementById('clicksCount').textContent=data.total_clicks;
+  document.getElementById('humansCount').textContent=data.human_clicks;
+  document.getElementById('uniqueCount').textContent=data.unique_visitors;
+  document.getElementById('convCount').textContent=data.conversions_total;
+  document.getElementById('rateCount').textContent=data.conversion_rate+'%';
+  document.getElementById('revCount').textContent='$'+Number(data.revenue||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  renderContent();renderRef();renderRecent();
+}
+function renderContent(){
+  var rows=Object.entries(data.by_content||{}),tb=document.getElementById('contentRows');
+  document.getElementById('contentTotal').textContent=rows.length+' placements';
+  tb.innerHTML=rows.map(function(e){var k=e[0],v=e[1];var w=Math.min(100,Math.round((v.conversions/Math.max(1,v.clicks))*100));return '<tr><td><strong>'+esc(k||'generic')+'</strong></td><td>'+esc(v.clicks)+'</td><td>'+esc(v.conversions)+'</td><td>'+esc(v.rate)+'</td><td><div class="bar"><span style="width:'+w+'%"></span></div> <span class="muted">'+w+'%</span></td></tr>'}).join('');
+}
+function renderRef(){
+  var rows=Object.entries(data.by_referring_page||{}),tb=document.getElementById('refRows');
+  document.getElementById('refTotal').textContent=rows.length+' pages';
+  tb.innerHTML=rows.map(function(e){var k=e[0],v=e[1];return '<tr><td>'+esc(k||'(direct)')+'</td><td>'+esc(v.clicks)+'</td><td>'+esc(v.conversions)+'</td><td>'+esc(v.rate)+'</td></tr>'}).join('');
+}
+function renderRecent(){
+  var list=(data.recent||[]),rows=document.getElementById('recentRows');
+  document.getElementById('empty').classList.toggle('hide',!!list.length);
+  rows.innerHTML=list.map(function(r){return '<tr><td>'+esc(new Date(r.ts).toLocaleString())+'</td><td><code>UTTD-'+esc(r.click_id)+'</code></td><td>'+esc(r.content||'generic')+'</td><td>'+esc(r.device||'')+'</td><td>'+pill(r.converted)+'</td><td>'+(r.amount?'$'+esc(r.amount):'')+'</td></tr>'}).join('');
+}
+async function load(){
+  var code=codeEl.value.trim();if(!code){show('error','Enter the admin code.');return}show('error');
+  try{var r=await fetch('/api/analytics/myimprov?code='+encodeURIComponent(code));var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));data=d;document.getElementById('lastLoaded').textContent='Loaded '+new Date().toLocaleTimeString();document.getElementById('csvBtn').disabled=false;document.getElementById('importData').addEventListener('input',function(){document.getElementById('importBtn').disabled=!document.getElementById('importData').value.trim()});render()}catch(e){show('error','Unable to load funnel: '+e.message)}
+}
+async function doImport(){
+  var body=document.getElementById('importData').value.trim(),code=codeEl.value.trim();if(!code){show('error','Enter the admin code first.');return}
+  var isCsv=/^\s*UTTD-/m.test(body)&&!body.trim().startsWith('[');
+  var r;
+  try{show('error');
+    r=await fetch('/api/analytics/myimprov/convert?code='+encodeURIComponent(code),{method:'POST',headers:{'Content-Type':isCsv?'text/csv':'application/json'},body:body});
+    var d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+    show('good','Imported '+d.imported+' conversion(s).'+(d.errors&&d.errors.length?' Errors: '+d.errors.join('; '):''));
+    document.getElementById('importResult').textContent='';
+    document.getElementById('importData').value='';
+    await load();
+  }catch(e){show('error','Import failed: '+e.message)}
+}
+document.getElementById('loadBtn').addEventListener('click',load);
+codeEl.addEventListener('keydown',function(e){if(e.key==='Enter')load()});
+document.getElementById('csvBtn').addEventListener('click',function(){window.location.href='/api/analytics/myimprov.csv?code='+encodeURIComponent(codeEl.value.trim())});
+document.getElementById('importBtn').addEventListener('click',doImport);
+})();
+</script>
+</body></html>
