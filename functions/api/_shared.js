@@ -134,16 +134,25 @@ export async function anthropic(env, { system, messages, max_tokens = 1024, temp
     'anthropic-version': '2023-06-01',
   };
   if (env.ANTHROPIC_WORKSPACE_ID) headers['anthropic-workspace-id'] = env.ANTHROPIC_WORKSPACE_ID;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ model, system, messages, max_tokens, temperature }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error('Anthropic HTTP ' + res.status + ': ' + text.slice(0, 500));
+  const [signal, cancel] = timedAbort(AI_TOTAL_TIMEOUT_MS);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model, system, messages, max_tokens, temperature }),
+      signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error('Anthropic HTTP ' + res.status + ': ' + text.slice(0, 500));
+    }
+    return res.json();
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Anthropic request timed out');
+    throw e;
+  } finally {
+    cancel();
   }
-  return res.json();
 }
 
 // Pull the concatenated text out of an Anthropic response message's content.
@@ -167,6 +176,18 @@ export function anthropicText(data) {
 export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
 export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
+// Total wall-clock budget for a single AI helper call. Cloudflare Free/Pro
+// terminates Pages Function requests around ~100s with an HTML 524 page, so the
+// retry loops below must fail fast with a clean JSON error well before then.
+export const AI_TOTAL_TIMEOUT_MS = 60000;
+
+// Build an AbortController that fires after `ms` and returns [signal, cancel].
+export function timedAbort(ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return [ctrl.signal, () => clearTimeout(timer)];
+}
+
 export function pickAiProvider(env) {
   if (env.ANTHROPIC_API_KEY) return 'anthropic';
   if (env.GROQ_API_KEY) return 'groq';
@@ -186,37 +207,47 @@ export async function geminiFetch(env, model, contents, opts = {}) {
 
   const maxAttempts = 4;
   const delays = [800, 1600, 3200, 6400];
+  const deadline = Date.now() + (opts.timeoutMs || AI_TOTAL_TIMEOUT_MS);
+  const [signal, cancel] = timedAbort(opts.timeoutMs || AI_TOTAL_TIMEOUT_MS);
   let attempt = 1;
-  for (;;) {
-    let res;
-    try {
-      res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-goog-api-key': key },
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      console.error('Gemini request error (attempt ' + attempt + ')', e);
-      if (attempt >= maxAttempts) throw e;
-      await sleep(delays[attempt - 1]);
-      attempt++;
-      continue;
-    }
-    if (res.ok) return res.json();
-    if ((res.status === 429 || res.status === 503) && attempt < maxAttempts) {
-      let waitMs = delays[attempt - 1];
-      if (res.status === 429) {
-        const text = await res.text().catch(() => '');
-        const m = /retry in (\d+(?:\.\d+)?)s/i.exec(text);
-        if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 45000));
+  try {
+    for (;;) {
+      let res;
+      try {
+        res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-goog-api-key': key },
+          body: JSON.stringify(body),
+          signal,
+        });
+      } catch (e) {
+        console.error('Gemini request error (attempt ' + attempt + ')', e);
+        if (e && e.name === 'AbortError') throw new Error('Gemini request timed out');
+        if (attempt >= maxAttempts || Date.now() > deadline) throw e;
+        await sleep(Math.min(delays[attempt - 1], Math.max(0, deadline - Date.now())));
+        attempt++;
+        continue;
       }
-      console.warn('Gemini ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
-      await sleep(waitMs);
-      attempt++;
-      continue;
+      if (res.ok) return res.json();
+      if ((res.status === 429 || res.status === 503) && attempt < maxAttempts && Date.now() <= deadline) {
+        let waitMs = delays[attempt - 1];
+        if (res.status === 429) {
+          const text = await res.text().catch(() => '');
+          const m = /retry in (\d+(?:\.\d+)?)s/i.exec(text);
+          if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 15000));
+        }
+        waitMs = Math.min(waitMs, Math.max(0, deadline - Date.now()));
+        if (waitMs <= 0) throw new Error('Gemini HTTP ' + res.status + ': timed out waiting to retry');
+        console.warn('Gemini ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
+        await sleep(waitMs);
+        attempt++;
+        continue;
+      }
+      const text = await res.text().catch(() => '');
+      throw new Error('Gemini HTTP ' + res.status + ': ' + text.slice(0, 500));
     }
-    const text = await res.text().catch(() => '');
-    throw new Error('Gemini HTTP ' + res.status + ': ' + text.slice(0, 500));
+  } finally {
+    cancel();
   }
 }
 
@@ -321,35 +352,45 @@ export async function groqFetch(env, messages, opts = {}) {
 
   const maxAttempts = 4;
   const delays = [800, 1600, 3200, 6400];
+  const deadline = Date.now() + (opts.timeoutMs || AI_TOTAL_TIMEOUT_MS);
+  const [signal, cancel] = timedAbort(opts.timeoutMs || AI_TOTAL_TIMEOUT_MS);
   let attempt = 1;
-  for (;;) {
-    let res;
-    try {
-      res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      console.error('Groq request error (attempt ' + attempt + ')', e);
-      if (attempt >= maxAttempts) throw e;
-      await sleep(delays[attempt - 1]);
-      attempt++;
-      continue;
-    }
-    if (res.ok) return res.json();
-    if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
+  try {
+    for (;;) {
+      let res;
+      try {
+        res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+          body: JSON.stringify(body),
+          signal,
+        });
+      } catch (e) {
+        console.error('Groq request error (attempt ' + attempt + ')', e);
+        if (e && e.name === 'AbortError') throw new Error('Groq request timed out');
+        if (attempt >= maxAttempts || Date.now() > deadline) throw e;
+        await sleep(Math.min(delays[attempt - 1], Math.max(0, deadline - Date.now())));
+        attempt++;
+        continue;
+      }
+      if (res.ok) return res.json();
+      if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts && Date.now() <= deadline) {
+        const text = await res.text().catch(() => '');
+        let waitMs = delays[attempt - 1];
+        const m = /retry after[:\s]+(\d+)s?/i.exec(text) || /(?:again|retry) in (\d+)/i.exec(text);
+        if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 15000));
+        waitMs = Math.min(waitMs, Math.max(0, deadline - Date.now()));
+        if (waitMs <= 0) throw new Error('Groq HTTP ' + res.status + ': timed out waiting to retry');
+        console.warn('Groq ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
+        await sleep(waitMs);
+        attempt++;
+        continue;
+      }
       const text = await res.text().catch(() => '');
-      let waitMs = delays[attempt - 1];
-      const m = /retry after[:\s]+(\d+)s?/i.exec(text) || /(?:again|retry) in (\d+)/i.exec(text);
-      if (m) waitMs = Math.max(waitMs, Math.min(Number(m[1]) * 1000 + 1000, 45000));
-      console.warn('Groq ' + res.status + ' (attempt ' + attempt + '/' + maxAttempts + '), waiting ' + Math.round(waitMs) + 'ms');
-      await sleep(waitMs);
-      attempt++;
-      continue;
+      throw new Error('Groq HTTP ' + res.status + ': ' + text.slice(0, 500));
     }
-    const text = await res.text().catch(() => '');
-    throw new Error('Groq HTTP ' + res.status + ': ' + text.slice(0, 500));
+  } finally {
+    cancel();
   }
 }
 

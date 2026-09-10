@@ -1,6 +1,20 @@
 (function () {
   'use strict';
 
+  // Safely read a JSON response body. Cloudflare returns a plain-HTML 524/5xx
+  // page when a Function times out, which breaks plain res.json() with a
+  // confusing "Unexpected token '<'" error — surface a readable message instead.
+  async function parseResponse(res) {
+    var ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (ct.indexOf('application/json') >= 0) {
+      try { return await res.json(); } catch (e) { throw new Error('The server returned an invalid response. Please try again.'); }
+    }
+    await res.text();
+    throw new Error(res.ok
+      ? 'The server returned an unexpected response. Please try again.'
+      : 'The service is experiencing an issue (' + res.status + '). Please try again shortly.');
+  }
+
   var drop = document.getElementById('drop');
   var fileInput = document.getElementById('fileInput');
   var preview = document.getElementById('preview');
@@ -111,7 +125,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ consent: true, docType: 'auto', image: dataUrl })
     });
-    var data = await res.json();
+    var data = await parseResponse(res);
     if (!res.ok) throw new Error((data && data.error) || 'Scan failed');
     return data && data.extracted;
   }
@@ -417,7 +431,7 @@
           scan: { extracted: window.__lastExtracted || null, ocrText: window.__lastOcrText || '' }
         })
       });
-      var data = await res.json();
+      var data = await parseResponse(res);
       if (!res.ok) throw new Error(data.error || 'Could not save your results');
       currentTrackingCode = data.trackingCode;
       currentClaimToken = data.claimToken;
@@ -514,7 +528,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      var data = await res.json();
+      var data = await parseResponse(res);
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
       if (data.url) {
         window.location.href = data.url; // Stripe Checkout
@@ -538,7 +552,7 @@
     if (!code) { out.innerHTML = '<p class="status">Enter a tracking code.</p>'; return; }
     try {
       var res = await fetch('/api/cases/' + encodeURIComponent(code));
-      var data = await res.json();
+      var data = await parseResponse(res);
       if (!res.ok) throw new Error(data.error || 'Not found');
       var pills = (data.statusHistory || []).map(function (s) {
         return '<span class="pill active">' + escapeHtml(s) + '</span>';

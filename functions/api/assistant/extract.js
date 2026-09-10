@@ -126,7 +126,11 @@ export async function onRequestPost(context) {
   } catch (e) {
     console.error('AI extract error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
-    return json({ error: 'The AI scan is temporarily unavailable. Please try again shortly.' + (debug ? ' ' + String(e && e.message) : '') }, 502);
+    const timedOut = e && (e.name === 'AbortError' || /timed out/i.test(String(e && e.message)));
+    const msg = timedOut
+      ? 'The AI scan is taking too long to read that document. Please try a smaller or clearer photo, or fill the fields below.'
+      : 'The AI scan is temporarily unavailable. Please try again shortly.';
+    return json({ error: msg + (debug ? ' ' + String(e && e.message) : '') }, timedOut ? 504 : 502);
   }
 }
 

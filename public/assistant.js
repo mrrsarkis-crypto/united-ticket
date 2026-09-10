@@ -1,6 +1,20 @@
 (function () {
   'use strict';
 
+  // Safely read a JSON response body. Cloudflare returns a plain-HTML 524/5xx
+  // page when a Function times out, which breaks plain res.json() with a
+  // confusing "Unexpected token '<'" error — surface a readable message instead.
+  async function parseOrDefault(res) {
+    var ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (ct.indexOf('application/json') >= 0) {
+      try { return await res.json(); } catch (e) { throw new Error('The server returned an invalid response. Please try again.'); }
+    }
+    await res.text();
+    throw new Error(res.ok
+      ? 'The server returned an unexpected response. Please try again.'
+      : 'The service is experiencing an issue (' + res.status + '). Please try again shortly.');
+  }
+
   var els = {};
   ['stage1', 'stage2', 'stage3', 'astDrop', 'astFile', 'astPreview', 'astConsentBool',
     'astScan', 'astStatus', 'astFields', 'astSteps', 'astContinue', 'astStatus2',
@@ -219,7 +233,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      var data = await res.json();
+      var data = await parseOrDefault(res);
       if (!res.ok) throw new Error(data.error || 'The assistant could not respond. Please try again.');
       addChat('assistant', data.reply || '(no response)');
       setStatus(els.astChatStatus, '');
@@ -280,7 +294,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      var data = await res.json();
+      var data = await parseOrDefault(res);
       if (!res.ok) {
         setStatus(els.astCheckoutStatus, data.error || 'Could not create checkout. Please try again.', true);
         els.astCheckout.disabled = false;
