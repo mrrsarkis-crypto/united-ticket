@@ -20,6 +20,43 @@ export function unauthorizedIfNotAdmin(request, env) {
   return null;
 }
 
+// KV list() is paginated. Keep following cursors so a listing across a large
+// prefix never silently omits keys. Shared by the admin and analytics routes.
+export async function listRecords(env, prefix) {
+  const records = [];
+  let cursor;
+  do {
+    const list = await env.CASES.list({ prefix, ...(cursor ? { cursor } : {}) });
+    for (const item of list.keys) {
+      const r = await env.CASES.get(item.name, 'json');
+      if (r) records.push(r);
+    }
+    cursor = list.list_complete ? undefined : list.cursor;
+  } while (cursor);
+  return records;
+}
+
+// UTF-8 BOM CSV download with RFC-4180 double-quote escaping.
+export function csvResponse(records, cols, filename) {
+  const esc = (v) => {
+    if (v == null) return '';
+    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const rows = [
+    cols.map((c) => esc(c)).join(','),
+    ...records.map((r) => cols.map((c) => esc(r[c])).join(',')),
+  ];
+  return new Response('\uFEFF' + rows.join('\n'), {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="' + filename + '"',
+      'Cache-Control': 'no-store, private',
+    },
+  });
+}
+
 export function priceFor(service) {
   if (service === '199') return 'STRIPE_PRICE_199';
   if (service === '299') return 'STRIPE_PRICE_299';

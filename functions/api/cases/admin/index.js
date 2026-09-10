@@ -1,27 +1,16 @@
 // GET /api/cases/admin?code=ADMIN_CODE  — list all submissions (private)
-// GET /api/cases/admin.csv?code=ADMIN_CODE — CSV export
-import { json, unauthorizedIfNotAdmin } from '../../_shared.js';
+// CSV export is a separate route: /api/cases/admin.csv (see admin.csv.js)
+import { json, unauthorizedIfNotAdmin, listRecords } from '../../_shared.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const denied = unauthorizedIfNotAdmin(request, env);
   if (denied) return denied;
-  const url = new URL(request.url);
   if (!env.CASES) return json({ error: 'Case database not configured' }, 500);
 
-  let records = [];
+  let records;
   try {
-    // KV list() is paginated. Keep following cursors so the admin dashboard
-    // cannot silently omit cases after the first page of results.
-    let cursor;
-    do {
-      const list = await env.CASES.list({ prefix: 'case:', ...(cursor ? { cursor } : {}) });
-      for (const item of list.keys) {
-        const r = await env.CASES.get(item.name, 'json');
-        if (r) records.push(r);
-      }
-      cursor = list.list_complete ? undefined : list.cursor;
-    } while (cursor);
+    records = await listRecords(env, 'case:');
   } catch (e) {
     return json({ error: 'Failed to read cases: ' + String(e && e.message) }, 500);
   }
@@ -30,37 +19,12 @@ export async function onRequestGet(context) {
 
   const orphans = records.filter((r) => r.needs_intake === true);
 
-  if (url.pathname.endsWith('.csv')) {
-    return csv(records);
-  }
-
   // This endpoint contains sensitive customer information. Never allow browsers,
   // proxies, or shared caches to retain an admin response.
   return new Response(JSON.stringify({ count: records.length, cases: records, orphan_count: orphans.length, orphans }), {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store, private',
-    },
-  });
-}
-
-function csv(records) {
-  const cols = ['tracking_code', 'created_at', 'status', 'paid_at', 'name', 'email', 'court', 'citation', 'service', 'dob', 'dl', 'session_id', 'notes'];
-  const esc = (v) => {
-    if (v == null) return '';
-    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    return '"' + s.replace(/"/g, '""') + '"';
-  };
-  const rows = [
-    cols.map((c) => esc(c)).join(','),
-    ...records.map((r) => cols.map((c) => esc(r[c])).join(',')),
-  ];
-  return new Response('\uFEFF' + rows.join('\n'), {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="cases.csv"',
       'Cache-Control': 'no-store, private',
     },
   });
