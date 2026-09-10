@@ -88,8 +88,14 @@ export async function onRequestPost(context) {
     return json({ error: 'A document image is required and must be base64-encoded.' }, 400);
   }
 
-  // Guard against empty / non-image / non-PDF payloads.
+  // Guard against empty / unsupported / oversized payloads.
   if (!base64 || base64.length < 64) return json({ error: 'Document data appears empty or invalid.' }, 400);
+  if (!['image/jpeg', 'image/png', 'application/pdf'].includes(mediaType)) {
+    return json({ error: 'Unsupported document type. Please upload a JPG, PNG, or PDF.' }, 415);
+  }
+  if (base64.length > 14 * 1024 * 1024) {
+    return json({ error: 'Document is too large. Please upload a file no larger than 10 MB.' }, 413);
+  }
 
   const docType = String(body.docType || 'auto').toLowerCase();
   const typeHint =
