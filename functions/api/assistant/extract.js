@@ -122,7 +122,52 @@ export async function onRequestPost(context) {
       return json({ error: 'Could not interpret the document. Please try a clearer photo or scan.', raw: text.slice(0, 500) }, 502);
     }
 
-    // Never trust model-generated helper content for the customer-facing result.\n    // Keep the scan result limited to ticket fields plus our fixed, neutral options.\n    parsed.nextSteps = [\n      { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },\n      { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },\n      { title: 'Traffic school', body: 'Traffic school may be available for some California traffic violations when eligibility requirements are met. It is not available for every citation. This is general information, not legal advice.' },\n      { title: 'Contesting', body: 'If you believe the citation is incorrect, you may have an option to contest it, including by written declaration in some circumstances. Procedures and deadlines depend on the court. This is general information, not legal advice.' },\n    ];\n    return json({ ok: true, extracted: parsed }, 200);
+    // Never trust model-generated helper content for the customer-facing result.
+    // Keep the scan response restricted to the fields our UI actually supports.
+    const allowedFields = [
+      'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
+      'citationNumber','violationDate','courtDate','violationCode','violationDescription',
+      'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
+      'vehiclePlate','bailAmount','dueDate','legibility','unknownFields'
+    ];
+    const clean = {};
+    for (const key of allowedFields) {
+      if (!Object.prototype.hasOwnProperty.call(parsed, key)) continue;
+      if (key === 'unknownFields') {
+        clean.unknownFields = Array.isArray(parsed[key])
+          ? parsed[key].filter((v) => typeof v === 'string').slice(0, 30)
+          : [];
+        continue;
+      }
+      if (key === 'legibility') {
+        clean.legibility = ['good','fair','poor'].includes(parsed[key]) ? parsed[key] : 'fair';
+        continue;
+      }
+      const value = parsed[key];
+      if (value && typeof value === 'object') {
+        const v = value.value;
+        clean[key] = { value: v == null ? null : String(v).slice(0, 500), found: value.found === true, confident: value.confident === true };
+      } else if (typeof value === 'string' || value == null || typeof value === 'number') {
+        clean[key] = value == null ? null : String(value).slice(0, 500);
+      }
+    }
+    parsed = clean;
+    // A payment merchant name has no place in a ticket extraction result.
+    // If a model ever hallucinates this brand, discard that value rather than showing it to a customer.
+    for (const key of Object.keys(parsed)) {
+      const v = parsed[key];
+      if (typeof v === 'string' && /aliexpress/i.test(v)) parsed[key] = null;
+      if (v && typeof v === 'object' && /aliexpress/i.test(String(v.value || ''))) {
+        parsed[key] = { value: null, found: false, confident: false };
+      }
+    }
+    parsed.nextSteps = [
+      { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },
+      { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
+      { title: 'Traffic school', body: 'Traffic school may be available for some California traffic violations when eligibility requirements are met. It is not available for every citation. This is general information, not legal advice.' },
+      { title: 'Contesting', body: 'If you believe the citation is incorrect, you may have an option to contest it, including by written declaration in some circumstances. Procedures and deadlines depend on the court. This is general information, not legal advice.' },
+    ];
+    return json({ ok: true, extracted: parsed }, 200);
   } catch (e) {
     console.error('AI extract error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
