@@ -122,7 +122,7 @@ export async function onRequestPost(context) {
       return json({ error: 'Could not interpret the document. Please try a clearer photo or scan.', raw: text.slice(0, 500) }, 502);
     }
 
-    return json({ ok: true, extracted: parsed, raw: text.slice(0, 4000) }, 200);
+    // Never trust model-generated helper content for the customer-facing result.\n    // Keep the scan result limited to ticket fields plus our fixed, neutral options.\n    parsed.nextSteps = [\n      { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },\n      { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },\n      { title: 'Traffic school', body: 'Traffic school may be available for some California traffic violations when eligibility requirements are met. It is not available for every citation. This is general information, not legal advice.' },\n      { title: 'Contesting', body: 'If you believe the citation is incorrect, you may have an option to contest it, including by written declaration in some circumstances. Procedures and deadlines depend on the court. This is general information, not legal advice.' },\n    ];\n    return json({ ok: true, extracted: parsed }, 200);
   } catch (e) {
     console.error('AI extract error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
