@@ -62,7 +62,6 @@ const EXTRACT_SYSTEM =
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-
   const contentType = request.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) return json({ error: 'Expected JSON body' }, 415);
 
@@ -73,7 +72,7 @@ export async function onRequestPost(context) {
     return json({ error: 'You must consent to AI processing of your document before it can be scanned.' }, 403);
   }
 
-  const image = body.image; // e.g. "data:image/jpeg;base64,...." OR { data, mediaType }
+  const image = body.image;
   let base64;
   let mediaType;
   if (typeof image === 'string' && image.startsWith('data:')) {
@@ -88,7 +87,6 @@ export async function onRequestPost(context) {
     return json({ error: 'A document image is required and must be base64-encoded.' }, 400);
   }
 
-  // Guard against empty / unsupported / oversized payloads.
   if (!base64 || base64.length < 64) return json({ error: 'Document data appears empty or invalid.' }, 400);
   if (!['image/jpeg', 'image/png', 'application/pdf'].includes(mediaType)) {
     return json({ error: 'Unsupported document type. Please upload a JPG, PNG, or PDF.' }, 415);
@@ -119,10 +117,57 @@ export async function onRequestPost(context) {
     try {
       parsed = JSON.parse(extractJson(text));
     } catch {
-      return json({ error: 'Could not interpret the document. Please try a clearer photo or scan.', raw: text.slice(0, 500) }, 502);
+      return json({ error: 'Could not interpret the document. Please try a clearer photo or scan.' }, 502);
     }
 
-    return json({ ok: true, extracted: parsed, raw: text.slice(0, 4000) }, 200);
+    // Never trust model-generated helper content or arbitrary model fields.
+    // Keep the customer-facing result restricted to the fields our UI supports.
+    const allowedFields = [
+      'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
+      'citationNumber','violationDate','courtDate','violationCode','violationDescription',
+      'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
+      'vehiclePlate','bailAmount','dueDate','legibility','unknownFields'
+    ];
+    const clean = {};
+    for (const key of allowedFields) {
+      if (!Object.prototype.hasOwnProperty.call(parsed, key)) continue;
+      if (key === 'unknownFields') {
+        clean.unknownFields = Array.isArray(parsed[key])
+          ? parsed[key].filter((v) => typeof v === 'string').slice(0, 30)
+          : [];
+        continue;
+      }
+      if (key === 'legibility') {
+        clean.legibility = ['good','fair','poor'].includes(parsed[key]) ? parsed[key] : 'fair';
+        continue;
+      }
+      const value = parsed[key];
+      if (value && typeof value === 'object') {
+        const v = value.value;
+        clean[key] = { value: v == null ? null : String(v).slice(0, 500), found: value.found === true, confident: value.confident === true };
+      } else if (typeof value === 'string' || value == null || typeof value === 'number') {
+        clean[key] = value == null ? null : String(value).slice(0, 500);
+      }
+    }
+
+    // A shopping/payment merchant name has no place in a ticket extraction result.
+    // Strip this specific false-positive defensively before it can reach the UI.
+    for (const key of Object.keys(clean)) {
+      const v = clean[key];
+      if (typeof v === 'string' && /aliexpress/i.test(v)) clean[key] = null;
+      if (v && typeof v === 'object' && /aliexpress/i.test(String(v.value || ''))) {
+        clean[key] = { value: null, found: false, confident: false };
+      }
+    }
+
+    clean.nextSteps = [
+      { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },
+      { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
+      { title: 'Traffic school', body: 'Traffic school may be available for some California traffic violations when eligibility requirements are met. It is not available for every citation. This is general information, not legal advice.' },
+      { title: 'Contesting', body: 'If you believe the citation is incorrect, you may have an option to contest it, including by written declaration in some circumstances. Procedures and deadlines depend on the court. This is general information, not legal advice.' },
+    ];
+
+    return json({ ok: true, extracted: clean }, 200);
   } catch (e) {
     console.error('AI extract error', e);
     const debug = (env.DEBUG_MODE || '0') === '1';
@@ -134,8 +179,6 @@ export async function onRequestPost(context) {
   }
 }
 
-// Pull the first balanced {...} block out of a string (defensive against stray
-// markdown fences even though the model is told to output pure JSON).
 function extractJson(text) {
   if (!text) return '{}';
   const start = text.indexOf('{');
