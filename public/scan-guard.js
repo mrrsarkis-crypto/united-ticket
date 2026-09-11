@@ -11,11 +11,13 @@
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
       if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
-      if (blocked.test(el.textContent || '')) {
-        // Do not remove our own page if a harmless attribute happens to match.
-        // Remove only small visible UI nodes, which is where extension overlays land.
-        var text = (el.textContent || '').trim();
-        if (text.length < 1200) el.remove();
+      var text = (el.textContent || '').trim();
+      if (!text || text.length > 500) continue;
+      if (!blocked.test(text)) continue;
+      // Remove the smallest matching UI node. This avoids deleting our whole
+      // scanner card when a browser extension injects a nested overlay.
+      if (el.children.length === 0 || /^(BUTTON|A|SPAN|P|LABEL|LI|IMG)$/.test(el.tagName)) {
+        el.remove();
       }
     }
   }
