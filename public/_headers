@@ -1,10 +1,2 @@
 /*
-  Load the small responsive trust-rail stylesheet on every page.
-  Rules are scoped to .bc-trust-strip, so other pages are unaffected.
-*/
-/*
-  Cloudflare Pages supports Link response headers for stylesheets.
-*/
-/*
-  Link: </trust-responsive.css>; rel="stylesheet"
-*/
+  Link: </trust-responsive.css>; rel=stylesheet
