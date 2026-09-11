@@ -21,7 +21,7 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const isAmp = url.pathname.startsWith('/amp/') || url.pathname.startsWith('/amp');
   const isHtml = !isAmp && newHeaders.get('content-type') && newHeaders.get('content-type').includes('text/html');
-  const isPrivateAdminApi = url.pathname === '/api/cases/admin' || url.pathname.startsWith('/api/cases/admin.');
+  const isPrivateAdminApi = /^\/api\/cases\/admin(?:\.|$|\/)/.test(url.pathname);
 
   if (isHtml) {
     const csp = [
