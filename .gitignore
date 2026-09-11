@@ -16,3 +16,16 @@ Thumbs.db
 
 # Backups
 *.bak*
+
+# Android build artifacts (never commit)
+android-app/.gradle/
+android-app/app/build/
+android-app/build/
+android-app/app-release-signed.apk
+android-app/app-release-signed.apk.idsig
+android-app/app-release-unsigned-aligned.apk
+
+# Android signing secrets — never commit keystores
+*.keystore
+*.jks
+*.p12

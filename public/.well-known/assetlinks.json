@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.unitedtraffictickets.defense",
+      "sha256_cert_fingerprints": [
+        "33:E6:4F:5A:66:7E:B5:45:9F:23:13:21:24:28:ED:93:A2:57:8C:91:90:11:8E:84:B6:43:BB:CD:D3:9D:4C:B0"
+      ]
+    }
+  }
+]
