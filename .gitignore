@@ -16,6 +16,7 @@ Thumbs.db
 
 # Backups
 *.bak*
+android-app/backup-*/
 
 # Android build artifacts (never commit)
 android-app/.gradle/
