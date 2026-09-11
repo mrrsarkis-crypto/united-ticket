@@ -1,16 +1,5 @@
 // Cloudflare Pages Functions middleware (runs on every request to /api/*)
 
-
-// Microsoft Clarity tracking snippet (injected into every HTML page).
-const CLARITY_SNIPPET =
-  '<script type="text/javascript">' +
-  '(function(c,l,a,r,i,t,y){' +
-  'c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};' +
-  't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
-  'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
-  '})(window, document, "clarity", "script", "ye7n3evot7");' +
-  '</script>';
-
 export async function onRequest(context) {
   let response = await context.next();
 
@@ -28,10 +17,10 @@ export async function onRequest(context) {
       "default-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
-      `script-src 'self' https://cdnjs.cloudflare.com https://www.clarity.ms 'unsafe-inline'`,
+      `script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'`,
       `img-src 'self' data:`,
       "style-src 'self' 'unsafe-inline'",
-      `connect-src 'self' https://api.stripe.com https://www.clarity.ms`,
+      `connect-src 'self' https://api.stripe.com`,
       `frame-src 'self' https://checkout.stripe.com https://js.stripe.com`,
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
@@ -58,17 +47,6 @@ export async function onRequest(context) {
   }
 
   let body = response.body;
-  if (isHtml) {
-    try {
-      const html = await response.text();
-      body =
-        html.includes('clarity.ms/tag/ye7n3evot7') || html.includes('c[a]=c[a]||function')
-          ? html
-          : html.replace('</head>', CLARITY_SNIPPET + '</head>');
-    } catch {
-      body = response.body;
-    }
-  }
 
   return new Response(body, {
     status: response.status,
