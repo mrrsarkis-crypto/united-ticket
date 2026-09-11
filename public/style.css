@@ -914,7 +914,6 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .faq-item summary{min-height:58px;}
 .section-yelp{background:#F1F5FA;}
 .section-cta{background:radial-gradient(circle at 50% 0,rgba(242,168,0,.18),transparent 42%),linear-gradient(135deg,#041C4D,#063A90);}
-.consent-bar{background:#031A45;}
 
 @media(max-width:1040px){
   .wrap{padding-left:22px;padding-right:22px;}
@@ -962,8 +961,7 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
   .intake-card{border-radius:20px;}
   .intake-trust{padding:15px 18px;}
   .intake-progress,.intake-card .intake-step{padding-left:18px;padding-right:18px;}
-  .drop{min-height:170px;padding:28px 14px;}
-  .consent-inner{padding-bottom:env(safe-area-inset-bottom);}
+.drop{min-height:170px;padding:28px 14px;}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto;}

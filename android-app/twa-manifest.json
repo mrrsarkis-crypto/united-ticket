@@ -1,0 +1,61 @@
+{
+  "packageId": "com.unitedtraffictickets.defense",
+  "host": "unitedtraffictickets.com",
+  "name": "United Traffic Tickets Defense",
+  "launcherName": "UTTD",
+  "display": "standalone",
+  "themeColor": "#0033A0",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#FAFBFE",
+  "enableNotifications": true,
+  "startUrl": "/assistant",
+  "iconUrl": "https://unitedtraffictickets.com/icon-512.png",
+  "maskableIconUrl": "https://unitedtraffictickets.com/icon-512.png",
+  "monochromeIconUrl": "https://unitedtraffictickets.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "C:\\Users\\arpin\\united-ticket\\android-app\\android.keystore",
+    "alias": "uttd-release"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Scan My Ticket",
+      "shortName": "Scan",
+      "url": "https://unitedtraffictickets.com/assistant",
+      "chosenIconUrl": "https://unitedtraffictickets.com/icon-192.png"
+    },
+    {
+      "name": "Track My Case",
+      "shortName": "Track",
+      "url": "https://unitedtraffictickets.com/case",
+      "chosenIconUrl": "https://unitedtraffictickets.com/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://unitedtraffictickets.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://unitedtraffictickets.com/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
+}

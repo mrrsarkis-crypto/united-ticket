@@ -135,18 +135,6 @@
 
 @media (max-width:860px){ .ticket-grid{grid-template-columns:1fr;} .sub-hero h1{font-size:31px;}
   .ch-feature{grid-template-columns:1fr;text-align:center;justify-items:center;} }
-/* Cookie consent banner */
-.consent-bar{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#0033A0;color:#fff;
-  box-shadow:0 -8px 24px rgba(0,0,0,.25);padding:16px 20px;font-size:14px;line-height:1.55;display:none;}
-.consent-inner{max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;}
-.consent-text{flex:1 1 60%;color:#cdd8ec;}
-.consent-text a{color:#F2A800;font-weight:700;text-decoration:underline;text-underline-offset:2px;}
-.consent-actions{display:flex;gap:10px;flex-wrap:wrap;}
-.consent-btn{border:none;cursor:pointer;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:700;}
-.consent-btn-ok{background:#F2A800;color:#0033A0;}
-.consent-btn-ok:hover{background:#e29a0f;}
-.consent-btn-no{background:transparent;color:#cdd8ec;border:1px solid #4a5a78;}
-.consent-btn-no:hover{background:#1a2c4e;}
 
 /* ============================================================
    2026 VISUAL REFRESH - shared sub-page layer
@@ -199,9 +187,6 @@ body{background:var(--page-cream);color:var(--page-ink);}
 .article-card p{font-size:14.5px;line-height:1.65;}
 .sources,.toc{border-radius:14px;border-color:#dbe2ea;background:#f5f7f9;}
 .byline .badge{background:#fbf3df;border-color:#ead7ad;}
-.consent-bar{background:#071120;}
-.consent-btn-ok{background:#d99a2b;color:#101d31;}
-.consent-btn-ok:hover{background:#e1a43a;}
 
 @media(max-width:860px){
   .sub-hero{padding:54px 0 48px;}
@@ -292,12 +277,6 @@ body{background:#f7f2e9;color:#24312f;}
 .sources ul,.toc li{color:#495753;}
 .toc a{color:#32625c;}
 
-.consent-bar{background:#102c2b;}
-.consent-text{color:#d7e1dd;}
-.consent-text a{color:#e7c78f;}
-.consent-btn-ok{background:#c98a3a;color:#fffaf1;}
-.consent-btn-ok:hover{background:#a96c25;}
-
 @media(max-width:860px){
   .nav-links a{color:rgba(255,250,241,.86);}
   .nav-links .drop>ul a{color:rgba(255,250,241,.82);}
@@ -340,7 +319,7 @@ body{background:#FAFBFE;color:#102A5B}
 .site-header{border-top:4px solid var(--arm-red)}
 .nav{background:linear-gradient(90deg,var(--arm-blue-dark),var(--arm-blue))}
 .topbar{background:var(--arm-blue-dark)}
-.nav-links a.cta,.consent-btn-ok{background:var(--arm-orange);color:#10234A}
+.nav-links a.cta{background:var(--arm-orange);color:#10234A}
 .sub-hero{background:radial-gradient(circle at 82% 18%,rgba(242,168,0,.16),transparent 31%),linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
 .sub-hero .eyebrow{color:var(--arm-orange)}
 .pg-section.tint{background:#F3F6FC}
@@ -349,19 +328,16 @@ body{background:#FAFBFE;color:#102A5B}
 .ticket-card:hover,.ch-tile:hover,.article-card:hover{border-color:rgba(242,168,0,.55)}
 .ch-feature,.info-box,.byline .badge,.sources,.toc{background:#FFF5DE;border-color:#E9D29A}
 .page-cta{background:linear-gradient(135deg,var(--arm-blue-dark),var(--arm-blue))}
-.consent-bar{background:var(--arm-blue-dark)}
-.consent-text a{color:var(--arm-orange)}
 
 /* Armenian warmth pass */
 :root{--arm-orange:#F2A800;--arm-orange-bright:#FFB81C;--arm-orange-deep:#D88A00;}
 .sub-hero{border-top:4px solid var(--arm-orange);background:radial-gradient(circle at 90% 10%,rgba(242,168,0,.20),transparent 32%),var(--arm-blue-dark);}
 .sub-hero .eyebrow{color:var(--arm-orange-bright);font-weight:800;}
 .related-links a:hover{border-color:var(--arm-orange);background:#FFF6E0;}
-.consent-btn-ok{background:linear-gradient(135deg,var(--arm-orange-bright),var(--arm-orange));color:var(--arm-blue-dark);}
 /* Armenian tricolor hierarchy */
 :root{--arm-red:#D90012;--arm-red-dark:#A9000E;--arm-blue:#0033A0;--arm-blue-dark:#00266F;--arm-blue-mid:#174CB8;--arm-orange:#F2A800;--arm-orange-fire:#FF6A00;--arm-orange-hot:#FF3D00;}
-.nav-links a.cta,.consent-btn-ok{background:linear-gradient(135deg,var(--arm-orange),var(--arm-orange-fire) 62%,var(--arm-orange-hot));}
-.nav-links a.cta:hover,.consent-btn-ok:hover{background:linear-gradient(135deg,var(--arm-orange-fire),var(--arm-orange-hot));}
+.nav-links a.cta{background:linear-gradient(135deg,var(--arm-orange),var(--arm-orange-fire) 62%,var(--arm-orange-hot));}
+.nav-links a.cta:hover{background:linear-gradient(135deg,var(--arm-orange-fire),var(--arm-orange-hot));}
 .sub-hero .eyebrow{color:var(--arm-orange);}
 
 /* Refined Armenian palette: remove decorative red strips */

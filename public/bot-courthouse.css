@@ -500,7 +500,7 @@
 }
 
 @media print {
-  .site-header, .site-footer, .consent-bar, .utt-quick-contact,
+  .site-header, .site-footer, .utt-quick-contact,
   .bc-steps, .bc-search-wrap, .bc-county-grid, .bc-path-grid,
   .bc-draft-actions, .bc-final-ctas, .nav, .topbar, .page-cta,
   .bc-tricolor, .bc-trust-strip, .bc-sticky-bar {
