@@ -113,6 +113,24 @@ export async function onRequestPost(context) {
     // check can miss blocked text hidden inside arrays or nested objects.
     parsed = scrubBlockedValues(clean);
 
+    // Do not display an arbitrary model response as a ticket. A valid ticket
+    // extraction needs at least one credible citation signal from the document.
+    const ticketSignals = [
+      'citationNumber','violationDate','courtDate','violationCode',
+      'violationDescription','courtOrAgency','bailAmount','dueDate'
+    ];
+    const hasTicketSignal = ticketSignals.some((key) => parsed[key]?.found === true);
+    const hasIdentitySignal = [
+      'defendantName','drivingLicenseNumber','vehiclePlate'
+    ].some((key) => parsed[key]?.found === true);
+
+    if (docType === 'ticket' && !hasTicketSignal) {
+      return json({ error: 'The scan did not find reliable citation information. Please upload a clearer photo of the ticket, showing the citation number, violation, court, or date.' }, 422);
+    }
+    if (docType === 'auto' && parsed.legibility === 'poor' && !hasTicketSignal && !hasIdentitySignal) {
+      return json({ error: 'The document could not be read reliably. Please upload a clearer photo or scan.' }, 422);
+    }
+
     parsed.nextSteps = [
       { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },
       { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
