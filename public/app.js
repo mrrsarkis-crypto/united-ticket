@@ -146,6 +146,8 @@
   function applyServerExtract(ext) {
     var progress = document.getElementById('progress');
     hideProgress(progress, document.getElementById('progressBar'));
+    // Defense-in-depth: scrub any shopping/catalog/plugin text before it reaches fields or scoring.
+    if (window.UTTDScanGuard && ext) ext = window.UTTDScanGuard.cleanObject(ext) || {};
     window.__lastExtracted = ext || null;
     if (!ext) {
       window.__lastOcrText = '';

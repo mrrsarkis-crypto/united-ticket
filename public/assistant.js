@@ -107,6 +107,8 @@
       }
       if (!res.ok) throw new Error(data.error || 'The scan failed. Please try a clearer photo.');
       extracted = data.extracted || {};
+      // Defense-in-depth: never let shopping/catalog/plugin text reach the UI.
+      if (window.UTTDScanGuard) extracted = window.UTTDScanGuard.cleanObject(extracted) || {};
       renderVerify(extracted);
       renderSteps(extracted.nextSteps);
       show('stage2');
