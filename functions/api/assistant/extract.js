@@ -12,7 +12,8 @@ const EXTRACT_SYSTEM =
   'HARD RULES:\n' +
   '- Never promise dismissal, a win, a specific outcome, or that a court will side ' +
   '  with anyone. Never assert an unchecked legal conclusion.\n' +
-  '- The provided document is the single source of truth for extraction.\n' +
+  '- The provided document is the single source of truth for extraction. Do not browse, ' +
+  '  search, infer from outside knowledge, or return shopping/catalog/product content.\n' +
   '- If a field is not visible or not legible, set its value to null and its "found" ' +
   '  to false. Never invent values.\n' +
   '- Output ONLY valid JSON matching the shape described in the user message. No ' +
@@ -41,6 +42,7 @@ export async function onRequestPost(context) {
   let mediaType;
   if (typeof image === 'string' && image.startsWith('data:')) {
     const comma = image.indexOf(',');
+    if (comma < 0) return json({ error: 'Document data appears malformed.' }, 400);
     const meta = image.slice(5, comma);
     mediaType = (meta.split(';')[0] || 'image/jpeg').toLowerCase();
     base64 = image.slice(comma + 1);
@@ -59,9 +61,15 @@ export async function onRequestPost(context) {
     return json({ error: 'Document is too large. Please upload a file no larger than 10 MB.' }, 413);
   }
 
-  const docType = String(body.docType || 'auto').toLowerCase();
+  // This endpoint is used by the public ticket scanner, so default to a ticket
+  // instead of auto-detecting arbitrary images. Explicit internal callers may
+  // still request license/notice/auto when needed.
+  const requestedDocType = String(body.docType || 'ticket').toLowerCase();
+  const docType = ['ticket', 'license', 'notice', 'auto'].includes(requestedDocType)
+    ? requestedDocType
+    : 'ticket';
   const typeHint =
-    docType === 'ticket' ? 'This is a California traffic citation (ticket). ' :
+    docType === 'ticket' ? 'This is expected to be a California traffic citation (ticket). Reject unrelated image content and extract only what is visible on the citation. ' :
     docType === 'license' ? 'This is a driver\'s license card. ' :
     docType === 'notice' ? 'This is a court or DMV notice / letter. ' :
     'This may be a traffic citation, a driver\'s license, or a court/DMV notice. ';
@@ -131,11 +139,13 @@ export async function onRequestPost(context) {
       return json({ error: 'The document could not be read reliably. Please upload a clearer photo or scan.' }, 422);
     }
 
+    const assessment = buildScanAssessment(parsed);
+    parsed.scanAssessment = assessment;
     parsed.nextSteps = [
+      { title: 'Ticket scan quality: ' + assessment.label, body: assessment.summary + ' Please verify every field against the citation before continuing.' },
       { title: 'Response options', body: 'Depending on the citation and court, options may include paying the bail amount, requesting traffic school if eligible, or contesting the citation. Availability varies by case. This is general information, not legal advice.' },
       { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
-      { title: 'Traffic school', body: 'Traffic school may be available for some California traffic violations when eligibility requirements are met. It is not available for every citation. This is general information, not legal advice.' },
-      { title: 'Contesting', body: 'If you believe the citation is incorrect, you may have an option to contest it, including by written declaration in some circumstances. Procedures and deadlines depend on the court. This is general information, not legal advice.' },
+      { title: 'Trial by written declaration', body: 'California Courts explains that eligible traffic matters may be contested in writing using a trial by written declaration. Court-specific procedures and deadlines still apply. This is general information, not legal advice.' },
     ];
     return json({ ok: true, extracted: parsed }, 200);
   } catch (e) {
@@ -147,6 +157,44 @@ export async function onRequestPost(context) {
       : 'The AI scan is temporarily unavailable. Please try again shortly.';
     return json({ error: msg + (debug ? ' ' + String(e && e.message) : '') }, timedOut ? 504 : 502);
   }
+}
+
+function buildScanAssessment(parsed) {
+  const keyFields = [
+    ['citationNumber', 'citation number'],
+    ['violationCode', 'violation code'],
+    ['courtOrAgency', 'court/agency'],
+    ['dueDate', 'response deadline'],
+    ['violationDate', 'violation date'],
+  ];
+  const found = [];
+  const missing = [];
+  let confidentCount = 0;
+  for (const [key, label] of keyFields) {
+    const field = parsed[key];
+    if (field && typeof field === 'object' && field.found === true && field.value) {
+      found.push(label);
+      if (field.confident === true) confidentCount++;
+    } else {
+      missing.push(label);
+    }
+  }
+
+  let label = 'Needs review';
+  if (parsed.legibility === 'good' && found.length >= 4 && confidentCount >= 3) label = 'Strong read';
+  else if (found.length >= 3 && parsed.legibility !== 'poor') label = 'Usable read';
+
+  const foundText = found.length ? 'Detected ' + found.join(', ') + '.' : 'Only limited ticket details were detected.';
+  const missingText = missing.length ? ' Double-check ' + missing.join(', ') + ' manually.' : ' All key ticket fields were detected.';
+  return {
+    label,
+    legibility: parsed.legibility || 'fair',
+    keyFieldsDetected: found.length,
+    keyFieldsExpected: keyFields.length,
+    missingKeyFields: missing,
+    needsManualReview: label !== 'Strong read',
+    summary: foundText + missingText,
+  };
 }
 
 function scrubBlockedValues(value) {
