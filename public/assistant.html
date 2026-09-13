@@ -84,10 +84,10 @@
       <!-- STAGE 1: UPLOAD + CONSENT -->
       <div class="ast-card" id="stage1">
         <h2>Step 1 — Upload your citation</h2>
-        <p class="muted">Supported: JPG, PNG, HEIC. For best results, use a clear, well-lit photo with all fields visible.</p>
+        <p class="muted">Supported: JPG and PNG. For best results, use a clear, well-lit photo with the full citation visible and readable.</p>
 
         <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload ticket image">
-          <input type="file" id="astFile" accept="image/*" hidden>
+          <input type="file" id="astFile" accept="image/jpeg,image/png" hidden>
           <p><strong>Click to upload</strong> or drag a photo of your ticket here</p>
           <img id="astPreview" class="ast-preview" style="display:none" alt="Ticket preview">
         </div>
@@ -112,6 +112,7 @@
           <h3>Your options, in plain language</h3>
           <em class="ast-nl">Information, not legal advice. The right choice depends on your court, your record, and the facts. Outcomes are never guaranteed.</em>
           <div id="astSteps"></div>
+          <p class="muted"><a href="https://selfhelp.courts.ca.gov/traffic/trial-declaration" rel="noopener" target="_blank">Verify Trial by Written Declaration directly with California Courts</a>.</p>
         </div>
 
         <button type="button" class="btn btn-amber ast-btn" id="astContinue">Looks right — continue <span class="ast-arrow">&rarr;</span></button>
@@ -218,3 +219,5 @@ document.getElementById('year').textContent = new Date().getFullYear();
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
 </script>
+</body>
+</html>
