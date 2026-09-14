@@ -38,7 +38,6 @@
   });
 })();
 
-
 // Sitewide quick-contact launcher: persistent AI + phone actions.
 // Hidden on small screens where the dedicated mobile conversion rail is used.
 (function () {
@@ -64,4 +63,54 @@
   var cta = list.querySelector('.cta');
   if (cta && cta.parentElement) list.insertBefore(li, cta.parentElement);
   else list.appendChild(li);
+})();
+
+// Revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
+// Never load it on the homepage/scanner, assistant, intake, checkout, case center,
+// tracking, admin tools, privacy/legal pages, or other conversion workflows.
+(function () {
+  'use strict';
+  if (window.__uttAdsenseBooted) return;
+
+  // Never send production ad traffic from preview/development hosts.
+  if (window.location.hostname !== 'unitedtraffictickets.com' && window.location.hostname !== 'www.unitedtraffictickets.com') return;
+
+  // Respect browser-level Global Privacy Control by declining to start ad requests.
+  if (navigator.globalPrivacyControl === true) return;
+
+  var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  var monetized =
+    path === '/resources' || path === '/resources.html' ||
+    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
+    path === '/faq' || path === '/faq.html' ||
+    path === '/courthouses' || path === '/courthouses.html' ||
+    path === '/all-courthouses' || path === '/all-courthouses.html' ||
+    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+
+  if (!monetized) return;
+  window.__uttAdsenseBooted = true;
+  document.documentElement.setAttribute('data-utt-ads', 'informational-only');
+
+  function preconnect(href) {
+    if (document.querySelector('link[rel="preconnect"][href="' + href + '"]')) return;
+    var link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = href;
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
+
+  preconnect('https://pagead2.googlesyndication.com');
+  preconnect('https://googleads.g.doubleclick.net');
+
+  // Cloudflare middleware may have already inserted the exact AdSense tag into
+  // the HTML source. Avoid a second request if it is already present.
+  if (document.querySelector('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]')) return;
+
+  var script = document.createElement('script');
+  script.async = true;
+  script.crossOrigin = 'anonymous';
+  script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395';
+  script.setAttribute('data-utt-adsense', 'informational-pages');
+  document.head.appendChild(script);
 })();

@@ -4,6 +4,8 @@
   "private": true,
   "description": "United Traffic Tickets defense website and Cloudflare Pages Functions",
   "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/build-vercel.js",
     "test": "node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js",
     "check": "npm test"
   },
