@@ -10,6 +10,7 @@
   var links = document.getElementById('navLinks');
   if (!links) return;
 
+  // Toggle a dropdown when its top-level toggle link is tapped/clicked.
   links.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('.drop > a') : null;
     if (!a) return;
@@ -17,16 +18,19 @@
     if (!li || !li.classList || !li.classList.contains('drop')) return;
     e.preventDefault();
     var wasOpen = li.classList.contains('open');
+    // Close sibling dropdowns so only one is open at a time.
     var siblings = li.parentElement ? li.parentElement.querySelectorAll('li.drop.open') : [];
     siblings.forEach(function (s) { if (s !== li) s.classList.remove('open'); });
     li.classList.toggle('open', !wasOpen);
   });
 
+  // Close any open dropdown when clicking/tapping anywhere else.
   document.addEventListener('click', function (e) {
     if (e.target.closest && e.target.closest('.drop')) return;
     links.querySelectorAll('li.drop.open').forEach(function (s) { s.classList.remove('open'); });
   });
 
+  // Esc closes any open dropdown.
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       links.querySelectorAll('li.drop.open').forEach(function (s) { s.classList.remove('open'); });
@@ -61,29 +65,23 @@
   else list.appendChild(li);
 })();
 
-// Production revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
-// It never loads on previews/dev, the homepage/scanner, assistant, intake, checkout,
-// case center, tracking, admin, legal/privacy pages, or other conversion workflows.
+// Revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
+// Never load it on the homepage/scanner, assistant, intake, checkout, case center,
+// tracking, admin tools, privacy/legal pages, or other conversion workflows.
 (function () {
   'use strict';
   if (window.__uttAdsenseBooted) return;
 
-  var host = (window.location.hostname || '').toLowerCase();
-  var productionHost = host === 'unitedtraffictickets.com' || host === 'www.unitedtraffictickets.com';
-  if (!productionHost) return;
+  // Never send production ad traffic from preview/development hosts.
+  if (window.location.hostname !== 'unitedtraffictickets.com' && window.location.hostname !== 'www.unitedtraffictickets.com') return;
 
-  // Respect Global Privacy Control by not initiating advertising requests.
-  if (navigator.globalPrivacyControl === true) {
-    document.documentElement.setAttribute('data-utt-ads', 'gpc-disabled');
-    return;
-  }
+  // Respect browser-level Global Privacy Control by declining to start ad requests.
+  if (navigator.globalPrivacyControl === true) return;
 
   var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
-  var sensitive = /^(?:\/|\/assistant(?:\.html)?|\/case(?:\.html)?|\/admin(?:[-/]|\.html|$)|\/api(?:\/|$)|\/privacy(?:\.html)?|\/terms(?:\.html)?|\/refund-policy(?:\.html)?|\/contact(?:\.html)?)/.test(path);
-  if (sensitive) return;
-
   var monetized =
     path === '/resources' || path === '/resources.html' ||
+    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
     path === '/faq' || path === '/faq.html' ||
     path === '/courthouses' || path === '/courthouses.html' ||
     path === '/all-courthouses' || path === '/all-courthouses.html' ||
@@ -105,11 +103,13 @@
   preconnect('https://pagead2.googlesyndication.com');
   preconnect('https://googleads.g.doubleclick.net');
 
-  if (document.querySelector('script[data-utt-adsense]')) return;
+  // Cloudflare middleware may have already inserted the exact AdSense tag into
+  // the HTML source. Avoid a second request if it is already present.
+  if (document.querySelector('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]')) return;
+
   var script = document.createElement('script');
   script.async = true;
   script.crossOrigin = 'anonymous';
-  script.referrerPolicy = 'strict-origin-when-cross-origin';
   script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395';
   script.setAttribute('data-utt-adsense', 'informational-pages');
   document.head.appendChild(script);
