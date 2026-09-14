@@ -1,11 +1,12 @@
 // Resilient vision pipeline dedicated to the public ticket scanner.
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 
-export const SCANNER_ENGINE_VERSION = '2026.09.14-2';
+export const SCANNER_ENGINE_VERSION = '2026.09.14-3';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 26000;
 const MAX_PROVIDER_TIMEOUT_MS = 30000;
 const MIN_PROVIDER_TIMEOUT_MS = 8000;
+const MAX_TOTAL_VISION_MS = 50000;
 const MAX_ATTEMPTS = 2;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -166,12 +167,30 @@ export async function extractVisionDocument(env, input) {
 
   available.sort((a, b) => (a === preferred ? -1 : b === preferred ? 1 : 0));
   const failures = [];
+  const totalDeadline = Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * Math.max(1, available.length));
+  let totalAttempts = 0;
+
   for (const provider of available) {
+    const remainingTotal = totalDeadline - Date.now();
+    if (remainingTotal < 1500) {
+      failures.push(provider + ': total scanner deadline exhausted');
+      break;
+    }
     try {
+      const providerBudget = Math.min(timeoutMs, remainingTotal);
       const result = provider === 'gemini'
-        ? await callGemini(env, { ...input, timeoutMs })
-        : await callAnthropic(env, { ...input, timeoutMs });
-      return { text: result.text, provider, attempts: result.attempts };
+        ? await callGemini(env, { ...input, timeoutMs: providerBudget })
+        : await callAnthropic(env, { ...input, timeoutMs: providerBudget });
+      totalAttempts += result.attempts;
+
+      if (typeof input.validateText === 'function') {
+        let valid = false;
+        try { valid = input.validateText(result.text) === true; }
+        catch { valid = false; }
+        if (!valid) throw new Error('vision provider returned an invalid extraction contract');
+      }
+
+      return { text: result.text, provider, attempts: totalAttempts };
     } catch (error) {
       const safe = safeErrorMessage(error);
       failures.push(provider + ': ' + safe);
