@@ -11,15 +11,25 @@ export async function onRequestGet(context) {
   ];
 
   const missing = required.filter((key) => !env[key]);
-  const ok = missing.length === 0 && !!env.CASES && !!env.R2;
+  const scannerVisionReady = !!(env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY);
+  const ok = missing.length === 0 && !!env.CASES && !!env.R2 && scannerVisionReady;
+  const safeMissing = [];
+  if (missing.length) safeMissing.push('required_runtime_configuration');
+  if (!scannerVisionReady) safeMissing.push('scanner_vision_provider');
 
   return new Response(JSON.stringify({
     ok,
-    service: 'ticket-fighter',
-    missing: missing.length ? ['required_runtime_configuration'] : [],
+    service: 'united-traffic-tickets-defense',
+    missing: safeMissing,
     bindings: {
       cases: !!env.CASES,
       r2: !!env.R2,
+      scannerVision: scannerVisionReady,
+    },
+    scanner: {
+      visionConfigured: scannerVisionReady,
+      geminiConfigured: !!env.GEMINI_API_KEY,
+      anthropicConfigured: !!env.ANTHROPIC_API_KEY,
     },
   }), {
     status: ok ? 200 : 503,
