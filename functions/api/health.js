@@ -11,23 +11,32 @@ export async function onRequestGet(context) {
   ];
 
   const missing = required.filter((key) => !env[key]);
-  const scannerVisionReady = !!(env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY);
-  const ok = missing.length === 0 && !!env.CASES && !!env.R2 && scannerVisionReady;
+  const gatewayReady = !!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN);
+  const scannerVisionReady = !!(env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
+  const casesReady = !!env.CASES;
+  const r2Ready = !!env.R2;
+  const platform = env.VERCEL || env.VERCEL_ENV ? 'vercel' : 'cloudflare';
+  const ok = missing.length === 0 && casesReady && r2Ready && scannerVisionReady;
   const safeMissing = [];
   if (missing.length) safeMissing.push('required_runtime_configuration');
   if (!scannerVisionReady) safeMissing.push('scanner_vision_provider');
+  if (!casesReady) safeMissing.push('case_storage');
+  if (!r2Ready) safeMissing.push('document_storage');
 
   return new Response(JSON.stringify({
     ok,
     service: 'united-traffic-tickets-defense',
+    platform,
     missing: safeMissing,
     bindings: {
-      cases: !!env.CASES,
-      r2: !!env.R2,
+      cases: casesReady,
+      r2: r2Ready,
       scannerVision: scannerVisionReady,
     },
     scanner: {
+      ready: scannerVisionReady,
       visionConfigured: scannerVisionReady,
+      gatewayConfigured: gatewayReady,
       geminiConfigured: !!env.GEMINI_API_KEY,
       anthropicConfigured: !!env.ANTHROPIC_API_KEY,
     },
