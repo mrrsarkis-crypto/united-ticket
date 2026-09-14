@@ -170,3 +170,33 @@ test('Gemini JSON response is returned with provider metadata', async (t) => {
   assert.equal(result.attempts, 1);
   assert.equal(result.text, '{"legibility":"good"}');
 });
+
+test('invalid Gemini extraction automatically falls back to Anthropic', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('generativelanguage.googleapis.com')) {
+      return new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: 'not valid json' }] } }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (String(url).includes('api.anthropic.com')) {
+      return new Response(JSON.stringify({
+        content: [{ type: 'text', text: '{"legibility":"fair"}' }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    throw new Error('unexpected provider URL');
+  };
+
+  const result = await extractVisionDocument(
+    {
+      GEMINI_API_KEY: 'test-gemini',
+      ANTHROPIC_API_KEY: 'test-anthropic',
+      SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+    },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x' }
+  );
+  assert.equal(result.provider, 'anthropic');
+  assert.equal(result.attempts, 2);
+  assert.equal(result.text, '{"legibility":"fair"}');
+});
