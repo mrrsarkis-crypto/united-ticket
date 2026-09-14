@@ -1011,3 +1011,39 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 @media(prefers-reduced-motion:reduce){.utt-ai-launch,.utt-call-launch{transition:none}.utt-ai-launch:hover,.utt-call-launch:hover{transform:none;}}
 
 .case-center-link{margin:14px 0 0}.case-center-link a{font-weight:900;color:var(--flag-blue,#0033A0);text-decoration:none}.case-center-link a:hover{text-decoration:underline}
+
+/* ============================================================
+   UNITED AI — above-the-fold AI command center (tricolor)
+   Added for homepage + bot-courthouse AI links upgrade
+   ============================================================ */
+.ai-strip{position:relative;overflow:hidden;padding:20px 0 18px;border-bottom:1px solid rgba(255,194,71,.35);background:
+  linear-gradient(180deg,#001024 0%,#00214E 55%,#001A45 100%);}
+.ai-strip::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(90deg,rgba(217,0,18,.22),rgba(0,51,160,.18) 50%,rgba(242,168,0,.22));pointer-events:none;}
+.ai-strip .wrap{position:relative;z-index:1;}
+.ai-strip-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;justify-content:space-between;margin-bottom:12px;}
+.ai-live{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:11px;font-weight:800;letter-spacing:.14em;}
+.ai-live i{width:9px;height:9px;border-radius:50%;background:#3DF08A;box-shadow:0 0 0 0 rgba(61,240,138,.7);animation:aiPulse 1.8s infinite;}
+@keyframes aiPulse{0%{box-shadow:0 0 0 0 rgba(61,240,138,.7)}70%{box-shadow:0 0 0 11px rgba(61,240,138,0)}100%{box-shadow:0 0 0 0 rgba(61,240,138,0)}}
+.ai-note{color:#B8C7E0;font-size:11px;font-weight:700;letter-spacing:.05em;}
+.ai-tiles{display:flex;flex-wrap:wrap;gap:10px;}
+.ai-tile{display:flex;align-items:center;gap:11px;padding:12px 16px;border-radius:14px;text-decoration:none;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);transition:transform .15s,background .15s,border-color .15s;}
+.ai-tile:hover{transform:translateY(-2px);background:rgba(255,255,255,.10);border-color:#FFC247;}
+.ai-tile-icon{flex:0 0 auto;font-size:21px;line-height:1;}
+.ai-tile-body{display:flex;flex-direction:column;gap:2px;}
+.ai-tile-body strong{color:#fff;font-size:13.5px;font-weight:800;letter-spacing:.01em;}
+.ai-tile-body small{color:#B8C7E0;font-size:11px;line-height:1.35;}
+.ai-compliance{margin:13px 0 0;color:#9FB0CC;font-size:11.5px;line-height:1.65;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;}
+.ai-compliance strong{color:#fff;}
+.ai-compliance a{color:#FFC247;text-decoration:underline;text-underline-offset:2px;}
+.ai-compliance a:hover{color:#FFD98A;}
+@media(max-width:560px){.ai-strip{padding:16px 0 14px;}.ai-tiles{justify-content:center;}.ai-tile{flex:1 1 100%;justify-content:flex-start;}}
+
+/* hero AI quick chips */
+.hero-ai-chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px;}
+.hero-ai-chips a{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;text-decoration:none;
+  font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;border:1px solid rgba(255,199,71,.4);background:rgba(0,51,160,.25);
+  transition:transform .15s,background .15s;backdrop-filter:blur(3px);}
+.hero-ai-chips a:hover{transform:translateY(-2px);background:rgba(0,33,78,.85);border-color:#FFC247;}
+@media(max-width:560px){.hero-ai-chips{justify-content:center;}}
