@@ -233,23 +233,27 @@
     var meta = ext.scanMeta || {};
     var quality = meta.clientQuality;
     var qualityGrade = quality && quality.grade;
-    if (qualityGrade === 'fair') confidence = Math.min(79, Math.max(0, confidence - 10));
-    if (qualityGrade === 'poor') confidence = Math.min(54, Math.max(0, confidence - 25));
+    var serverAlreadyAdjusted = source.qualityAdjusted === true;
+    if (!serverAlreadyAdjusted) {
+      if (qualityGrade === 'fair') confidence = Math.min(79, Math.max(0, confidence - 10));
+      if (qualityGrade === 'poor') confidence = Math.min(54, Math.max(0, confidence - 25));
+    }
 
     var label = 'Needs review';
     if (meta.preflightRejected) label = 'Retake photo';
+    else if (serverAlreadyAdjusted && source.label) label = source.label;
     else if (confidence >= 80 && source.legibility === 'good' && qualityGrade !== 'fair' && qualityGrade !== 'poor') label = 'Strong read';
     else if (confidence >= 55 && source.legibility !== 'poor' && qualityGrade !== 'poor') label = 'Usable read';
 
     return {
       label: label,
       confidence: confidence,
-      qualityGrade: qualityGrade || null,
+      qualityGrade: qualityGrade || source.imageQualityGrade || null,
       preflightRejected: meta.preflightRejected === true,
       missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
       verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
       summary: source.summary || '',
-      validationWarningCount: Number(meta.validationWarningCount || 0)
+      validationWarningCount: Number(source.validationWarningCount != null ? source.validationWarningCount : meta.validationWarningCount || 0)
     };
   }
 
