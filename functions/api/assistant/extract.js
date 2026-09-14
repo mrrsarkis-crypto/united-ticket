@@ -5,6 +5,7 @@ import { json } from '../_shared.js';
 import { extractVisionDocument, SCANNER_ENGINE_VERSION } from './_vision.js';
 import { applyFieldPlausibility } from './_plausibility.js';
 import { buildScanAssessment as buildQualityAwareAssessment } from './_assessment.js';
+import { resolveDocumentType } from './_document-type.js';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -15,10 +16,6 @@ const FIELD_KEYS = [
   'citationNumber','violationDate','courtDate','violationCode','violationDescription',
   'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
   'vehiclePlate','bailAmount','dueDate'
-];
-const TICKET_SIGNAL_KEYS = [
-  'citationNumber','violationDate','courtDate','violationCode',
-  'violationDescription','courtOrAgency','bailAmount','dueDate'
 ];
 const BLOCKED_TEXT = /aliexpress|dsers|dropshipping|shopify product|shopping catalog/i;
 const QUALITY_WARNING_KEYS = new Set(['low_resolution','too_dark','too_bright','low_contrast','possible_blur']);
@@ -82,31 +79,29 @@ export async function onRequestPost(context) {
   const { base64, mediaType, fileBytes } = parsedInput;
   const clientQuality = normalizeClientQuality(body.clientQuality);
 
-  // The browser performs a conservative preflight after image optimization.
-  // Only obviously unusable images are stopped here so paid vision capacity is
-  // not spent on blank, tiny, severely underexposed, or washed-out uploads.
   if (mediaType !== 'application/pdf' && clientQuality && clientQuality.hardReject) {
     return json({
-      error: 'This photo is too difficult to read reliably. Please retake it in good light with the full ticket filling most of the frame.',
+      error: 'This photo is too difficult to read reliably. Please retake it in good light with the full document filling most of the frame.',
       code: 'image_quality_low',
       quality: clientQuality,
     }, 422, headers);
   }
 
-  // This public endpoint is deliberately ticket-first. Explicit license/notice
-  // callers remain supported, but "auto" is treated as ticket to prevent an
-  // unrelated image from being accepted by the public traffic-ticket scanner.
-  const requestedDocType = String(body.docType || 'ticket').toLowerCase();
-  const docType = ['ticket', 'license', 'notice'].includes(requestedDocType) ? requestedDocType : 'ticket';
-  const typeHint = docType === 'ticket'
+  const requestedDocTypeRaw = String(body.docType || 'auto').toLowerCase();
+  const requestedDocType = ['auto', 'ticket', 'license', 'notice'].includes(requestedDocTypeRaw)
+    ? requestedDocTypeRaw
+    : 'auto';
+  const typeHint = requestedDocType === 'ticket'
     ? 'Expected document: California traffic citation / Notice to Appear. Reject unrelated images. '
-    : docType === 'license'
-      ? 'Expected document: driver license card. '
-      : 'Expected document: court or DMV notice or letter. ';
+    : requestedDocType === 'license'
+      ? 'Expected document: driver license card. Reject unrelated images. '
+      : requestedDocType === 'notice'
+        ? 'Expected document: court or DMV notice or letter related to a driving or traffic matter. Reject unrelated images. '
+        : 'Expected document: one of a California traffic citation / Notice to Appear, a driver license card, or a court/DMV notice related to a driving or traffic matter. Reject unrelated images, receipts, shopping pages, and other documents. ';
 
   const prompt = typeHint +
     'Extract every requested field literally from the document. ' +
-    'For citation number, violation code, dates, court/agency, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
+    'For citation number, driver license number, violation code, dates, court/agency, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {
@@ -131,19 +126,19 @@ export async function onRequestPost(context) {
     const extracted = normalizeExtraction(modelJson);
     const plausibilityWarnings = applyFieldPlausibility(extracted);
     extracted.validationWarnings = plausibilityWarnings;
-    const hasTicketSignal = TICKET_SIGNAL_KEYS.some((key) => usableField(extracted[key]));
-    const hasIdentitySignal = ['defendantName','drivingLicenseNumber','vehiclePlate'].some((key) => usableField(extracted[key]));
 
-    if (docType === 'ticket' && !hasTicketSignal) {
+    const resolvedDocType = resolveDocumentType(requestedDocType, extracted);
+    if (!resolvedDocType) {
       return json({
-        error: 'The scan did not find reliable citation information. Please upload a clearer image showing the citation number, violation, court, or date.'
+        error: requestedDocType === 'auto'
+          ? 'This does not appear to be a supported traffic document. Please upload a traffic ticket, driver license, or court/DMV notice related to your driving matter.'
+          : 'The scan did not find the expected document details. Please upload a clearer image of the selected document type.',
+        code: 'unsupported_or_unreadable_document'
       }, 422, headers);
-    }
-    if (docType !== 'ticket' && extracted.legibility === 'poor' && !hasTicketSignal && !hasIdentitySignal) {
-      return json({ error: 'The document could not be read reliably. Please upload a clearer photo or scan.' }, 422, headers);
     }
 
     const assessment = buildQualityAwareAssessment(extracted, {
+      documentType: resolvedDocType,
       clientQuality,
       validationWarnings: plausibilityWarnings,
     });
@@ -151,7 +146,8 @@ export async function onRequestPost(context) {
     extracted.scanMeta = {
       engineVersion: SCANNER_ENGINE_VERSION,
       scanId,
-      documentType: docType,
+      requestedDocumentType: requestedDocType,
+      documentType: resolvedDocType,
       mediaType,
       inputBytes: fileBytes,
       provider: vision.provider,
@@ -161,12 +157,7 @@ export async function onRequestPost(context) {
       validationWarningCount: plausibilityWarnings.length,
       requiresHumanVerification: true,
     };
-    extracted.nextSteps = [
-      { title: 'Ticket scan quality: ' + assessment.label, body: assessment.summary + ' Please verify every field against the citation before continuing.' },
-      { title: 'Professional review', body: 'A scan can organize what is printed on the citation, but it cannot determine every issue that may matter. A professional review can check the ticket and available response options. This is general information, not legal advice.' },
-      { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
-      { title: 'Trial by written declaration', body: 'California Courts explains that eligible traffic matters may be contested in writing using a trial by written declaration. Court-specific procedures and deadlines still apply. This is general information, not legal advice.' },
-    ];
+    extracted.nextSteps = buildNextSteps(resolvedDocType, assessment);
 
     console.log('scanner extraction complete', {
       scanId,
@@ -175,6 +166,8 @@ export async function onRequestPost(context) {
       durationMs: Date.now() - startedAt,
       mediaType,
       fileBytes,
+      requestedDocumentType: requestedDocType,
+      documentType: resolvedDocType,
       confidence: assessment.scanConfidencePercent,
       label: assessment.label,
       clientQuality: clientQuality && clientQuality.grade,
@@ -192,6 +185,36 @@ export async function onRequestPost(context) {
       : 'The AI scan is temporarily unavailable. Please try again shortly.';
     return json({ error: userMessage + (debug ? ' ' + message.slice(0, 250) : '') }, timedOut ? 504 : 502, headers);
   }
+}
+
+function buildNextSteps(documentType, assessment) {
+  const verify = {
+    title: 'Document scan quality: ' + assessment.label,
+    body: assessment.summary + ' Please verify every captured field against the original document before continuing.'
+  };
+
+  if (documentType === 'license') {
+    return [
+      verify,
+      { title: 'Identity details', body: 'Confirm the name, driver license number, state, and date of birth before using these details in your case intake.' },
+      { title: 'Continue your case', body: 'Your license can help prefill identity information, but the traffic citation or court notice is still needed for a complete case review.' },
+    ];
+  }
+
+  if (documentType === 'notice') {
+    return [
+      verify,
+      { title: 'Deadlines matter', body: 'Check the response deadline and court date printed on the notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
+      { title: 'Professional review', body: 'A court or DMV notice can contain case references and deadlines that should be checked together with the underlying citation. This is general information, not legal advice.' },
+    ];
+  }
+
+  return [
+    verify,
+    { title: 'Professional review', body: 'A scan can organize what is printed on the citation, but it cannot determine every issue that may matter. A professional review can check the ticket and available response options. This is general information, not legal advice.' },
+    { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
+    { title: 'Trial by written declaration', body: 'California Courts explains that eligible traffic matters may be contested in writing using a trial by written declaration. Court-specific procedures and deadlines still apply. This is general information, not legal advice.' },
+  ];
 }
 
 function isAllowedScannerRequest(request, env = {}) {
@@ -342,6 +365,8 @@ function usableField(field) {
   return !!(field && field.found === true && field.value);
 }
 
+// Legacy ticket-only helper is retained for deterministic regression fixtures.
+// The live endpoint uses the document-type-aware assessment module above.
 function buildScanAssessment(extracted) {
   const keyFields = [
     ['citationNumber', 'citation number'],
@@ -418,8 +443,6 @@ function extractJson(text) {
   return '{}';
 }
 
-// Deterministic helpers are exported only so CI can lock the scanner contract
-// down with fixtures. The public endpoint remains onRequestPost.
 export const __scannerTest = {
   isAllowedScannerRequest,
   enforceScannerRateLimit,
@@ -427,5 +450,6 @@ export const __scannerTest = {
   parseDocumentInput,
   normalizeExtraction,
   buildScanAssessment,
+  buildNextSteps,
   extractJson,
 };
