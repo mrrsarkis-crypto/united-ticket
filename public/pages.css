@@ -2,38 +2,6 @@
 :root { --navy:#0033A0; --navy-dark:#00266F; --amber:#F2A800; --amber-dark:#9A6900;
   --ink:#1a2332; --muted:#5a6b83; --line:#e2e8f0; --ok:#15803d; --lightcolor:#f4f6fa; }
 
-/* Nav dropdown (parent = .nav-links li) */
-.nav-links li{list-style:none;position:relative;}
-.nav-links .drop>ul{display:none;position:absolute;top:100%;left:0;min-width:230px;
-  background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;
-  box-shadow:0 14px 30px rgba(0,0,0,.14);z-index:50;}
-/* Desktop: open on hover (and keyboard focus). Scoped to hover-capable devices
-   so it does not fight the mobile tap-to-open behavior. */
-@media(hover:hover){
-  .nav-links .drop:hover>ul{display:block;}
-}
-.nav-links .drop>a:focus-visible+ul{display:block;}
-/* A programmatically set .open class always shows the submenu — this is what
-   makes tap/click work on touch devices (and desktop). */
-.nav-links .drop.open>ul{display:block;}
-.nav-links .drop>ul a{color:var(--ink);display:block;padding:9px 12px;font-size:13.5px;border-radius:6px;}
-.nav-links .drop>ul a:hover{background:#f1f5fb;color:var(--navy);}
-.nav-links .drop>a{display:flex;align-items:center;}
-/* Mobile (menu-open) dropdown: stacked under the toggle, collapsed until it
-   gains .open (tap). Overrides the desktop absolute panel for touch screens. */
-@media(max-width:860px){
-  .nav-links li.drop{position:static;}
-  .nav-links .drop>ul{position:static;box-shadow:none;background:transparent;border:none;
-    padding:0 0 4px 12px;min-width:0;}
-  .nav-links .drop>ul a{white-space:normal;font-size:14.5px;padding:11px 12px;
-    border-bottom:1px solid rgba(255,255,255,.06);border-radius:0;color:rgba(255,255,255,.82);}
-  .nav-links .drop>ul a:hover{background:rgba(255,255,255,.1);color:#fff;}
-  .nav-links .drop>ul a::after{display:none;}
-  .nav-links .drop>a::after{content:'';width:7px;height:7px;border-right:2px solid rgba(255,255,255,.75);
-    border-bottom:2px solid rgba(255,255,255,.75);transform:rotate(45deg);margin-left:6px;margin-top:-3px;transition:transform .15s;}
-  .nav-links .drop.open>a::after{transform:rotate(225deg);margin-top:3px;}
-}
-
 /* Sub-page layout */
 .subpage{min-height:100vh;}
 .sub-hero{background:linear-gradient(135deg,var(--navy) 0%,#16305f 100%);color:#fff;padding:52px 0 46px;}
@@ -280,36 +248,6 @@ body{background:#f7f2e9;color:#24312f;}
 @media(max-width:860px){
   .nav-links a{color:rgba(255,250,241,.86);}
   .nav-links .drop>ul a{color:rgba(255,250,241,.82);}
-}
-
-/* FINAL NAV CLEANUP - keep shared dropdowns from appearing as white blocks */
-.nav-links li.drop > a,
-.nav-links li.drop > a:hover,
-.nav-links li.drop > a:focus-visible{
-  background:transparent !important;
-  color:rgba(255,250,241,.88) !important;
-  box-shadow:none !important;
-}
-.nav-links li.drop > ul{
-  display:none !important;
-  top:calc(100% + 8px) !important;
-  min-width:238px !important;
-  margin:0 !important;
-  background:#173b3a !important;
-  border:1px solid rgba(255,250,241,.14) !important;
-  border-radius:14px !important;
-  box-shadow:0 18px 40px rgba(8,27,26,.28) !important;
-}
-@media(hover:hover){
-  .nav-links li.drop:hover > ul{display:block !important;}
-}
-.nav-links li.drop.open > ul,
-.nav-links li.drop > a:focus-visible + ul{display:block !important;}
-.nav-links li.drop > ul a{background:transparent !important;color:rgba(255,250,241,.86) !important;}
-.nav-links li.drop > ul a:hover,
-.nav-links li.drop > ul a:focus-visible{background:rgba(255,250,241,.09) !important;color:#fffaf1 !important;}
-@media(max-width:860px){
-  .nav-links li.drop > ul{position:static !important;min-width:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
 }
 
 
