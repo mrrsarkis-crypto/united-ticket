@@ -1,0 +1,6 @@
+{
+  "resource": "https://unitedtraffictickets.com",
+  "authorization_servers": ["https://unitedtraffictickets.com"],
+  "scopes_supported": ["agent", "cases:read", "cases:write"],
+  "service_documentation": "https://unitedtraffictickets.com/auth.md"
+}

@@ -1,2 +1,8 @@
 /*
   Link: </trust-responsive.css>; rel=stylesheet
+
+/.well-known/oauth-authorization-server
+  Content-Type: application/json; charset=utf-8
+
+/.well-known/oauth-protected-resource
+  Content-Type: application/json; charset=utf-8

@@ -1,0 +1,14 @@
+{
+  "issuer": "https://unitedtraffictickets.com",
+  "authorization_endpoint": "",
+  "token_endpoint": "https://unitedtraffictickets.com/oauth2/token",
+  "revocation_endpoint": "https://unitedtraffictickets.com/oauth2/revoke",
+  "grant_types_supported": ["client_credentials"],
+  "response_types_supported": [],
+  "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic"],
+  "revocation_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic"],
+  "scopes_supported": ["agent", "cases:read", "cases:write"],
+  "code_challenge_methods_supported": [],
+  "introspection_endpoint": "",
+  "service_documentation": "https://unitedtraffictickets.com/auth.md"
+}
