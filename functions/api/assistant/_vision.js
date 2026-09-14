@@ -1,8 +1,8 @@
 // Resilient vision pipeline dedicated to the public ticket scanner.
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
-import { GEMINI_EXTRACTION_SCHEMA } from './_schema.js';
+import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.14-4';
+export const SCANNER_ENGINE_VERSION = '2026.09.14-5';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 26000;
 const MAX_PROVIDER_TIMEOUT_MS = 30000;
@@ -52,12 +52,30 @@ function firstJsonObject(text) {
   return null;
 }
 
+function validFieldContract(field) {
+  if (!field || typeof field !== 'object' || Array.isArray(field)) return false;
+  if (!Object.prototype.hasOwnProperty.call(field, 'value')) return false;
+  if (!(field.value === null || typeof field.value === 'string')) return false;
+  if (typeof field.found !== 'boolean' || typeof field.confident !== 'boolean') return false;
+  if (field.found === false && field.confident === true) return false;
+  return true;
+}
+
+function validExtractionObject(parsed) {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+  if (!['good', 'fair', 'poor'].includes(parsed.legibility)) return false;
+  if (!Array.isArray(parsed.unknownFields) || parsed.unknownFields.some((v) => typeof v !== 'string')) return false;
+  for (const name of EXTRACTION_FIELD_NAMES) {
+    if (!validFieldContract(parsed[name])) return false;
+  }
+  return true;
+}
+
 function validExtractionText(text) {
   const candidate = firstJsonObject(text);
   if (!candidate) return false;
   try {
-    const parsed = JSON.parse(candidate);
-    return !!parsed && typeof parsed === 'object' && !Array.isArray(parsed);
+    return validExtractionObject(JSON.parse(candidate));
   } catch {
     return false;
   }
@@ -225,7 +243,7 @@ export async function extractVisionDocument(env, input) {
       let valid = false;
       try { valid = validator(result.text) === true; }
       catch { valid = false; }
-      if (!valid) throw new Error('vision provider returned an invalid extraction contract');
+      if (!valid) throw new Error('vision provider returned an incomplete or invalid extraction contract');
 
       return { text: result.text, provider, attempts: totalAttempts };
     } catch (error) {
@@ -238,4 +256,4 @@ export async function extractVisionDocument(env, input) {
   throw new Error('All configured scanner vision providers failed: ' + failures.join(' | '));
 }
 
-export const __visionTest = { firstJsonObject, validExtractionText };
+export const __visionTest = { firstJsonObject, validFieldContract, validExtractionObject, validExtractionText };
