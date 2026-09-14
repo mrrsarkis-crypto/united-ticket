@@ -10,7 +10,6 @@
   var links = document.getElementById('navLinks');
   if (!links) return;
 
-  // Toggle a dropdown when its top-level toggle link is tapped/clicked.
   links.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('.drop > a') : null;
     if (!a) return;
@@ -18,26 +17,22 @@
     if (!li || !li.classList || !li.classList.contains('drop')) return;
     e.preventDefault();
     var wasOpen = li.classList.contains('open');
-    // Close sibling dropdowns so only one is open at a time.
     var siblings = li.parentElement ? li.parentElement.querySelectorAll('li.drop.open') : [];
     siblings.forEach(function (s) { if (s !== li) s.classList.remove('open'); });
     li.classList.toggle('open', !wasOpen);
   });
 
-  // Close any open dropdown when clicking/tapping anywhere else.
   document.addEventListener('click', function (e) {
     if (e.target.closest && e.target.closest('.drop')) return;
     links.querySelectorAll('li.drop.open').forEach(function (s) { s.classList.remove('open'); });
   });
 
-  // Esc closes any open dropdown.
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       links.querySelectorAll('li.drop.open').forEach(function (s) { s.classList.remove('open'); });
     }
   });
 })();
-
 
 // Sitewide quick-contact launcher: persistent AI + phone actions.
 // Hidden on small screens where the dedicated mobile conversion rail is used.
@@ -66,10 +61,13 @@
   else list.appendChild(li);
 })();
 
-// AdSense is intentionally limited to informational pages so ads never compete
-// with ticket scanning, intake, payment, case tracking, or admin workflows.
+// Revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
+// Never load it on the homepage/scanner, assistant, intake, checkout, case center,
+// tracking, admin tools, privacy/legal pages, or other conversion workflows.
 (function () {
   'use strict';
+  if (window.__uttAdsenseBooted) return;
+
   var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
   var monetized =
     path === '/resources' || path === '/resources.html' ||
@@ -78,8 +76,23 @@
     path === '/all-courthouses' || path === '/all-courthouses.html' ||
     /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
 
-  if (!monetized || document.querySelector('script[data-utt-adsense]')) return;
+  if (!monetized) return;
+  window.__uttAdsenseBooted = true;
+  document.documentElement.setAttribute('data-utt-ads', 'informational-only');
 
+  function preconnect(href) {
+    if (document.querySelector('link[rel="preconnect"][href="' + href + '"]')) return;
+    var link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = href;
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
+
+  preconnect('https://pagead2.googlesyndication.com');
+  preconnect('https://googleads.g.doubleclick.net');
+
+  if (document.querySelector('script[data-utt-adsense]')) return;
   var script = document.createElement('script');
   script.async = true;
   script.crossOrigin = 'anonymous';
