@@ -8,6 +8,7 @@ const publisher = 'ca-pub-9943048295609395';
 const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}"
      crossorigin="anonymous"></script>`;
 const accountMeta = `<meta name="google-adsense-account" content="${publisher}">`;
+const scannerClientTag = '<script src="/scanner-client.js"></script>';
 
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -44,6 +45,11 @@ for (const file of await walk(outDir)) {
     continue;
   }
 
+  if (!html.includes('/scanner-client.js')) {
+    html = html.replace(/<head([^>]*)>/i, `$&\n${scannerClientTag}`);
+    changed = true;
+  }
+
   if (!html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${adsenseTag}`);
     changed = true;
@@ -68,4 +74,4 @@ try {
   // nav.js is optional for the build step.
 }
 
-console.log(`Vercel static build complete: ${normalHtml} standard HTML pages with AdSense tag + account meta; ${ampHtml} AMP pages with account meta.`);
+console.log(`Vercel static build complete: ${normalHtml} standard HTML pages with scanner optimizer + AdSense tags; ${ampHtml} AMP pages with account meta.`);
