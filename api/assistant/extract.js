@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { getVercelOidcToken } from '@vercel/oidc';
 import { onRequestPost } from '../../functions/api/assistant/extract.js';
 
 export const config = {
@@ -88,6 +89,18 @@ async function sendWebResponse(res, response) {
   res.end(bytes);
 }
 
+async function runtimeEnv() {
+  try {
+    const token = await getVercelOidcToken();
+    if (token) return { ...process.env, VERCEL_OIDC_TOKEN: token };
+  } catch (error) {
+    // Do not log token material. The shared provider chain will fail closed with
+    // a safe scanner-unavailable response if no other vision provider exists.
+    console.warn('vercel scanner OIDC token unavailable', String(error && error.message || error || '').slice(0, 160));
+  }
+  return process.env;
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
@@ -117,7 +130,8 @@ export default async function handler(req, res) {
   }
 
   const request = await toWebRequest(req);
-  const response = await onRequestPost({ request, env: process.env });
+  const env = await runtimeEnv();
+  const response = await onRequestPost({ request, env });
   return sendWebResponse(res, response);
 }
 
