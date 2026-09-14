@@ -1,13 +1,27 @@
 // Deterministic scan-read confidence. This measures extraction reliability only.
 // It is not a legal assessment, dismissal score, or probability of a court outcome.
 
-const KEY_FIELDS = [
-  ['citationNumber', 'citation number'],
-  ['violationCode', 'violation code'],
-  ['courtOrAgency', 'court/agency'],
-  ['dueDate', 'response deadline'],
-  ['violationDate', 'violation date'],
-];
+const KEY_FIELD_GROUPS = {
+  ticket: [
+    { keys: ['citationNumber'], label: 'citation number' },
+    { keys: ['violationCode'], label: 'violation code' },
+    { keys: ['courtOrAgency'], label: 'court/agency' },
+    { keys: ['dueDate', 'courtDate'], label: 'response/court date' },
+    { keys: ['violationDate'], label: 'violation date' },
+  ],
+  license: [
+    { keys: ['drivingLicenseNumber'], label: 'driver license number' },
+    { keys: ['defendantName'], label: 'name' },
+    { keys: ['dateOfBirth'], label: 'date of birth' },
+    { keys: ['drivingLicenseState'], label: 'issuing state' },
+  ],
+  notice: [
+    { keys: ['courtOrAgency'], label: 'court/agency' },
+    { keys: ['dueDate', 'courtDate'], label: 'response/court date' },
+    { keys: ['citationNumber'], label: 'citation/case reference' },
+    { keys: ['defendantName', 'mailingAddress'], label: 'recipient identity' },
+  ],
+};
 
 const QUALITY_WARNING_PENALTY = {
   low_resolution: 4,
@@ -21,6 +35,15 @@ function usableField(field) {
   return !!(field && field.found === true && field.value);
 }
 
+function readGroup(extracted, group) {
+  const candidates = group.keys.map((key) => extracted && extracted[key]).filter(Boolean);
+  const found = candidates.filter(usableField);
+  return {
+    found: found.length > 0,
+    confident: found.some((field) => field.confident === true),
+  };
+}
+
 function normalizedQuality(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const grade = ['good', 'fair', 'poor'].includes(raw.grade) ? raw.grade : null;
@@ -31,19 +54,23 @@ function normalizedQuality(raw) {
 }
 
 export function buildScanAssessment(extracted, options = {}) {
+  const documentType = ['ticket', 'license', 'notice'].includes(options.documentType)
+    ? options.documentType
+    : 'ticket';
+  const keyFields = KEY_FIELD_GROUPS[documentType];
   const found = [];
   const missing = [];
   const verify = [];
   let confidentCount = 0;
 
-  for (const [key, label] of KEY_FIELDS) {
-    const field = extracted && extracted[key];
-    if (usableField(field)) {
-      found.push(label);
-      if (field.confident === true) confidentCount++;
-      else verify.push(label);
+  for (const group of keyFields) {
+    const state = readGroup(extracted, group);
+    if (state.found) {
+      found.push(group.label);
+      if (state.confident) confidentCount++;
+      else verify.push(group.label);
     } else {
-      missing.push(label);
+      missing.push(group.label);
     }
   }
 
@@ -51,9 +78,11 @@ export function buildScanAssessment(extracted, options = {}) {
     ? extracted.legibility
     : 'fair';
   const legibilityPoints = legibility === 'good' ? 30 : legibility === 'fair' ? 18 : 5;
-  const rawConfidence = Math.max(0, Math.min(100,
-    legibilityPoints + (found.length * 10) + (confidentCount * 4)
-  ));
+  const perFieldPoints = keyFields.length ? 50 / keyFields.length : 0;
+  const perConfidencePoints = keyFields.length ? 20 / keyFields.length : 0;
+  const rawConfidence = Math.max(0, Math.min(100, Math.round(
+    legibilityPoints + (found.length * perFieldPoints) + (confidentCount * perConfidencePoints)
+  )));
 
   const quality = normalizedQuality(options.clientQuality);
   let imageQualityPenalty = 0;
@@ -90,12 +119,13 @@ export function buildScanAssessment(extracted, options = {}) {
     label = 'Usable read';
   }
 
+  const noun = documentType === 'license' ? 'license' : documentType === 'notice' ? 'notice' : 'ticket';
   const foundText = found.length
     ? 'Detected ' + found.join(', ') + '.'
-    : 'Only limited ticket details were detected.';
+    : 'Only limited ' + noun + ' details were detected.';
   const missingText = missing.length
     ? ' Double-check ' + missing.join(', ') + ' manually.'
-    : ' All key ticket fields were detected.';
+    : ' All key ' + noun + ' fields were detected.';
   const verifyText = verify.length
     ? ' Verify ' + verify.join(', ') + ' because the scan was not fully confident.'
     : '';
@@ -110,6 +140,7 @@ export function buildScanAssessment(extracted, options = {}) {
 
   return {
     label,
+    documentType,
     legibility,
     scanConfidencePercent,
     rawScanConfidencePercent: rawConfidence,
@@ -120,7 +151,7 @@ export function buildScanAssessment(extracted, options = {}) {
     validationWarningCount,
     validationPenalty,
     keyFieldsDetected: found.length,
-    keyFieldsExpected: KEY_FIELDS.length,
+    keyFieldsExpected: keyFields.length,
     confidentKeyFields: confidentCount,
     missingKeyFields: missing,
     fieldsNeedingVerification: verify,
@@ -129,4 +160,10 @@ export function buildScanAssessment(extracted, options = {}) {
   };
 }
 
-export const __assessmentTest = { normalizedQuality, usableField, QUALITY_WARNING_PENALTY };
+export const __assessmentTest = {
+  normalizedQuality,
+  usableField,
+  readGroup,
+  QUALITY_WARNING_PENALTY,
+  KEY_FIELD_GROUPS,
+};
