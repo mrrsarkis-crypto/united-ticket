@@ -65,3 +65,25 @@
   if (cta && cta.parentElement) list.insertBefore(li, cta.parentElement);
   else list.appendChild(li);
 })();
+
+// AdSense is intentionally limited to informational pages so ads never compete
+// with ticket scanning, intake, payment, case tracking, or admin workflows.
+(function () {
+  'use strict';
+  var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  var monetized =
+    path === '/resources' || path === '/resources.html' ||
+    path === '/faq' || path === '/faq.html' ||
+    path === '/courthouses' || path === '/courthouses.html' ||
+    path === '/all-courthouses' || path === '/all-courthouses.html' ||
+    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+
+  if (!monetized || document.querySelector('script[data-utt-adsense]')) return;
+
+  var script = document.createElement('script');
+  script.async = true;
+  script.crossOrigin = 'anonymous';
+  script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395';
+  script.setAttribute('data-utt-adsense', 'informational-pages');
+  document.head.appendChild(script);
+})();
