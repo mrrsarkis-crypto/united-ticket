@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build-vercel.js",
-    "test:scanner": "node --check functions/api/assistant/_vision.js && node --check functions/api/assistant/extract.js && node --check public/scanner-client.js && node --check public/app.js && node --check api/assistant/extract.js && node --check api/health.js",
+    "test:scanner": "node --check functions/api/assistant/_vision.js && node --check functions/api/assistant/extract.js && node --check public/scanner-client.js && node --check public/app.js && node --check api/assistant/extract.js && node --check api/health.js && node --test tests/scanner-contract.test.mjs",
     "test": "npm run test:scanner && node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check functions/api/health.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js",
     "check": "npm test"
   },
