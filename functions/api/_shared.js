@@ -37,10 +37,14 @@ export async function listRecords(env, prefix) {
 }
 
 // UTF-8 BOM CSV download with RFC-4180 double-quote escaping.
+// Cells beginning with the Excel formula-injection markers (=, +, -, @, tab,
+// CR) are apostrophe-prefixed so customer-supplied data exported to the admin
+// CSV can never be executed as a formula when opened in a spreadsheet.
 export function csvResponse(records, cols, filename) {
   const esc = (v) => {
     if (v == null) return '';
-    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    let s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return '"' + s.replace(/"/g, '""') + '"';
   };
   const rows = [
