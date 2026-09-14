@@ -1,9 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractVisionDocument } from '../functions/api/assistant/_vision.js';
-import { GEMINI_EXTRACTION_SCHEMA } from '../functions/api/assistant/_schema.js';
+import { extractVisionDocument, __visionTest } from '../functions/api/assistant/_vision.js';
+import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from '../functions/api/assistant/_schema.js';
 
 const SAMPLE_B64 = 'A'.repeat(80);
+
+function completeExtraction(overrides = {}) {
+  const data = {};
+  for (const name of EXTRACTION_FIELD_NAMES) {
+    data[name] = { value: null, found: false, confident: false };
+  }
+  return Object.assign(data, { unknownFields: [], legibility: 'good' }, overrides);
+}
 
 test('Gemini scanner request enforces the full structured extraction schema', async (t) => {
   const originalFetch = globalThis.fetch;
@@ -20,7 +28,7 @@ test('Gemini scanner request enforces the full structured extraction schema', as
 
   await extractVisionDocument(
     { GEMINI_API_KEY: 'test', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
-    { system: 'system', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'prompt' }
+    { system: 'system', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'prompt', validateText: () => true }
   );
 
   assert.equal(sentBody.generationConfig.responseMimeType, 'application/json');
@@ -40,4 +48,19 @@ test('schema requires all extraction fields plus quality metadata', () => {
     assert.ok(GEMINI_EXTRACTION_SCHEMA.required.includes(key));
     assert.ok(GEMINI_EXTRACTION_SCHEMA.properties[key]);
   }
+});
+
+test('fallback validator rejects partial JSON and accepts a complete extraction contract', () => {
+  assert.equal(__visionTest.validExtractionText('{"legibility":"good"}'), false);
+  const complete = completeExtraction({
+    citationNumber: { value: 'A1234567', found: true, confident: true },
+  });
+  assert.equal(__visionTest.validExtractionText(JSON.stringify(complete)), true);
+});
+
+test('fallback validator rejects impossible field-state combinations', () => {
+  const invalid = completeExtraction({
+    citationNumber: { value: null, found: false, confident: true },
+  });
+  assert.equal(__visionTest.validExtractionText(JSON.stringify(invalid)), false);
 });
