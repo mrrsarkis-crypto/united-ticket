@@ -155,7 +155,7 @@ test('PDF scan refuses an Anthropic-only configuration instead of sending PDF as
   );
 });
 
-test('Gemini JSON response is returned with provider metadata', async (t) => {
+test('Gemini transport response is returned with provider metadata', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
   globalThis.fetch = async () => new Response(JSON.stringify({
@@ -164,7 +164,7 @@ test('Gemini JSON response is returned with provider metadata', async (t) => {
 
   const result = await extractVisionDocument(
     { GEMINI_API_KEY: 'test', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
-    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x' }
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', validateText: () => true }
   );
   assert.equal(result.provider, 'gemini');
   assert.equal(result.attempts, 1);
@@ -194,7 +194,13 @@ test('invalid Gemini extraction automatically falls back to Anthropic', async (t
       ANTHROPIC_API_KEY: 'test-anthropic',
       SCANNER_PROVIDER_TIMEOUT_MS: '8000',
     },
-    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x' }
+    {
+      system: 'x',
+      base64: SAMPLE_B64,
+      mediaType: 'image/jpeg',
+      prompt: 'x',
+      validateText: (text) => text === '{"legibility":"fair"}',
+    }
   );
   assert.equal(result.provider, 'anthropic');
   assert.equal(result.attempts, 2);
