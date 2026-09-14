@@ -181,6 +181,95 @@
     return dataUrl;
   }
 
+  function adjustedAssessment(ext) {
+    if (!ext || !ext.scanAssessment) return null;
+    var source = ext.scanAssessment;
+    var confidence = Number(source.scanConfidencePercent);
+    if (!Number.isFinite(confidence)) return null;
+    confidence = Math.max(0, Math.min(100, Math.round(confidence)));
+
+    var quality = ext.scanMeta && ext.scanMeta.clientQuality;
+    var qualityGrade = quality && quality.grade;
+    if (qualityGrade === 'fair') confidence = Math.min(79, Math.max(0, confidence - 10));
+    if (qualityGrade === 'poor') confidence = Math.min(54, Math.max(0, confidence - 25));
+
+    var label = 'Needs review';
+    if (confidence >= 80 && source.legibility === 'good' && qualityGrade !== 'fair' && qualityGrade !== 'poor') label = 'Strong read';
+    else if (confidence >= 55 && source.legibility !== 'poor' && qualityGrade !== 'poor') label = 'Usable read';
+
+    return {
+      label: label,
+      confidence: confidence,
+      qualityGrade: qualityGrade || null,
+      missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
+      verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
+      summary: source.summary || '',
+      validationWarningCount: ext.scanMeta && Number(ext.scanMeta.validationWarningCount || 0)
+    };
+  }
+
+  function renderScanConfidence() {
+    var panel = document.getElementById('scorePanel');
+    var rankEl = document.getElementById('scoreRank');
+    var numEl = document.getElementById('scoreNum');
+    var listEl = document.getElementById('scoreList');
+    if (!panel || !rankEl || !numEl || !listEl) return;
+
+    var ext = window.__lastExtracted;
+    var result = adjustedAssessment(ext);
+    if (!result) return;
+
+    var scanId = ext.scanMeta && ext.scanMeta.scanId || 'local';
+    var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.missing.join(',') + '|' + result.verify.join(',');
+    var targetNum = result.confidence + '% scan confidence';
+    if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
+
+    panel.setAttribute('data-utt-scan-signature', signature);
+    rankEl.textContent = result.label;
+    rankEl.className = 'score-rank ' + (result.label === 'Strong read' ? 'rank-low' : result.label === 'Usable read' ? 'rank-med' : 'rank-high');
+    numEl.textContent = targetNum;
+
+    var tag = panel.querySelector('.score-tag');
+    if (tag) tag.textContent = 'Scan confidence measures how clearly the document and key fields were read. It is not a win probability, legal assessment, or prediction of a court result.';
+
+    var messages = [];
+    if (result.summary) messages.push(result.summary);
+    if (result.qualityGrade === 'fair') messages.push('The photo quality was usable but not ideal. Verify the extracted details carefully before continuing.');
+    if (result.qualityGrade === 'poor') messages.push('The photo quality was weak. A clearer photo is recommended before relying on the extracted details.');
+    if (result.validationWarningCount > 0) messages.push('One or more captured values failed a format check and were marked for human verification.');
+    if (result.verify.length) messages.push('Please verify: ' + result.verify.join(', ') + '.');
+    if (result.missing.length) messages.push('Not confidently captured: ' + result.missing.join(', ') + '.');
+    messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue on a citation.');
+
+    listEl.innerHTML = '';
+    messages.slice(0, 6).forEach(function (message) {
+      var li = document.createElement('li');
+      li.textContent = message;
+      listEl.appendChild(li);
+    });
+    panel.style.display = 'block';
+  }
+
+  function installResultAdapter() {
+    var panel = document.getElementById('scorePanel');
+    if (!panel || panel.__uttScanObserver) return;
+    var queued = false;
+    var observer = new MutationObserver(function () {
+      if (queued) return;
+      queued = true;
+      setTimeout(function () {
+        queued = false;
+        renderScanConfidence();
+      }, 0);
+    });
+    observer.observe(panel, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
+    panel.__uttScanObserver = observer;
+    renderScanConfidence();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installResultAdapter);
+  else installResultAdapter();
+
   window.fetch = async function (input, init) {
     if (!isExtractRequest(input)) return originalFetch(input, init);
 
@@ -195,6 +284,7 @@
             payload.image = await optimizeImage(payload.image);
             if (payload.image.indexOf('data:image/') === 0) {
               payload.clientQuality = await inspectImageQuality(payload.image);
+              window.__UTTD_LAST_CLIENT_QUALITY__ = payload.clientQuality;
             }
           }
           options.body = JSON.stringify(payload);
