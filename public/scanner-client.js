@@ -191,9 +191,9 @@
         legibility: 'poor',
         scanConfidencePercent: 0,
         keyFieldsDetected: 0,
-        keyFieldsExpected: 5,
+        keyFieldsExpected: 0,
         confidentKeyFields: 0,
-        missingKeyFields: ['citation number', 'violation code', 'court/agency', 'response deadline', 'violation date'],
+        missingKeyFields: [],
         fieldsNeedingVerification: [],
         needsManualReview: true,
         summary: 'The photo quality is too weak for a reliable automated read.'
@@ -201,7 +201,8 @@
       scanMeta: {
         engineVersion: 'client-preflight',
         scanId: 'preflight-' + Date.now().toString(36),
-        documentType: 'ticket',
+        requestedDocumentType: 'auto',
+        documentType: 'auto',
         mediaType: 'image',
         inputBytes: 0,
         provider: 'none',
@@ -214,7 +215,7 @@
       },
       nextSteps: [{
         title: 'Retake the photo',
-        body: 'Use good light, keep the full citation in frame, avoid glare, and move close enough that the printed text is sharp.'
+        body: 'Use good light, keep the full document in frame, avoid glare, and move close enough that the printed text is sharp.'
       }]
     };
     return new Response(JSON.stringify({ ok: true, extracted: extracted }), {
@@ -247,10 +248,11 @@
       label: 'Needs review',
       confidence: confidence,
       qualityGrade: qualityGrade,
+      documentType: 'ticket',
       preflightRejected: false,
       missing: missing,
       verify: labels.filter(function (label) { return missing.indexOf(label) === -1; }),
-      summary: 'The primary AI scan was unavailable, so this result came from a lower-confidence on-device OCR fallback. Verify every captured field against the citation.',
+      summary: 'The primary AI scan was unavailable, so this result came from a lower-confidence on-device OCR fallback. Verify every captured field against the original document.',
       validationWarningCount: 0,
       scanId: 'local-' + text.length + '-' + detected
     };
@@ -282,6 +284,7 @@
       label: label,
       confidence: confidence,
       qualityGrade: qualityGrade || source.imageQualityGrade || null,
+      documentType: source.documentType || meta.documentType || 'ticket',
       preflightRejected: meta.preflightRejected === true,
       missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
       verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
@@ -303,7 +306,7 @@
     if (!result) return;
 
     var scanId = result.scanId || ext && ext.scanMeta && ext.scanMeta.scanId || 'local';
-    var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.missing.join(',') + '|' + result.verify.join(',');
+    var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.documentType + '|' + result.missing.join(',') + '|' + result.verify.join(',');
     var targetNum = result.preflightRejected ? 'New photo needed' : result.confidence + '% scan confidence';
     if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
 
@@ -319,7 +322,7 @@
 
     var messages = [];
     if (result.preflightRejected) {
-      messages.push('Retake the photo in good light with the full ticket filling most of the frame.');
+      messages.push('Retake the photo in good light with the full document filling most of the frame.');
       messages.push('Keep the camera steady, avoid glare and shadows, and make sure the printed text looks sharp before uploading.');
       messages.push('No AI scan was charged or relied on for this unreadable image.');
     } else {
@@ -329,7 +332,11 @@
       if (result.validationWarningCount > 0) messages.push('One or more captured values failed a format check and were marked for human verification.');
       if (result.verify.length) messages.push('Please verify: ' + result.verify.join(', ') + '.');
       if (result.missing.length) messages.push('Not confidently captured: ' + result.missing.join(', ') + '.');
-      messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue on a citation.');
+      if (result.documentType === 'license') {
+        messages.push('The license scan helps prefill identity information. Your ticket or court notice is still needed for a complete case review.');
+      } else {
+        messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue in a traffic matter.');
+      }
     }
 
     listEl.innerHTML = '';
@@ -395,7 +402,9 @@
       if (typeof options.body === 'string') {
         var payload = JSON.parse(options.body);
         if (payload && typeof payload === 'object') {
-          payload.docType = 'ticket';
+          payload.docType = ['auto', 'ticket', 'license', 'notice'].indexOf(String(payload.docType || '').toLowerCase()) >= 0
+            ? String(payload.docType).toLowerCase()
+            : 'auto';
           payload.source = 'public-scanner';
           if (typeof payload.image === 'string') {
             payload.image = await optimizeImage(payload.image);
