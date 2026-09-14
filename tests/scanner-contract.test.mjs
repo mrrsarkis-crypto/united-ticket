@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import { __scannerTest } from '../functions/api/assistant/extract.js';
 import { extractVisionDocument } from '../functions/api/assistant/_vision.js';
 
-const { isAllowedScannerRequest, parseDocumentInput, normalizeExtraction, buildScanAssessment, extractJson } = __scannerTest;
+const {
+  isAllowedScannerRequest,
+  enforceScannerRateLimit,
+  normalizeClientQuality,
+  parseDocumentInput,
+  normalizeExtraction,
+  buildScanAssessment,
+  extractJson,
+} = __scannerTest;
 const SAMPLE_B64 = 'A'.repeat(80);
 
 test('accepts same-origin scanner calls and rejects cross-site browser calls', () => {
@@ -24,6 +32,55 @@ test('allows explicit trusted scanner origins and non-browser server requests', 
   const serverRequest = new Request('https://unitedtraffictickets.com/api/assistant/extract');
   assert.equal(isAllowedScannerRequest(configured, { SCANNER_ALLOWED_ORIGINS: 'capacitor://localhost' }), true);
   assert.equal(isAllowedScannerRequest(serverRequest, {}), true);
+});
+
+test('rate limiter hashes client identity and stops bursts over the configured minute limit', async () => {
+  const map = new Map();
+  const CASES = {
+    async get(key) { return map.get(key) || null; },
+    async put(key, value) { map.set(key, value); },
+  };
+  const request = new Request('https://unitedtraffictickets.com/api/assistant/extract', {
+    headers: { 'cf-connecting-ip': '203.0.113.44' },
+  });
+  const env = { CASES, SCANNER_RATE_LIMIT_PER_MINUTE: '5', SCANNER_RATE_LIMIT_SALT: 'test-salt' };
+  for (let i = 0; i < 5; i++) {
+    const result = await enforceScannerRateLimit(request, env);
+    assert.equal(result.allowed, true);
+    assert.equal(result.enforced, true);
+  }
+  const blocked = await enforceScannerRateLimit(request, env);
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.remaining, 0);
+  assert.ok(blocked.retryAfter >= 1 && blocked.retryAfter <= 60);
+  assert.equal([...map.keys()].some((key) => key.includes('203.0.113.44')), false);
+});
+
+test('rate limiter fails open if no shared store is bound', async () => {
+  const request = new Request('https://unitedtraffictickets.com/api/assistant/extract', {
+    headers: { 'x-forwarded-for': '203.0.113.10' },
+  });
+  const result = await enforceScannerRateLimit(request, {});
+  assert.equal(result.allowed, true);
+  assert.equal(result.enforced, false);
+});
+
+test('client quality metadata is bounded and unknown warnings are discarded', () => {
+  const quality = normalizeClientQuality({
+    width: 99999,
+    height: 240,
+    brightness: -2,
+    contrast: 12.34,
+    sharpness: 3.21,
+    grade: 'poor',
+    hardReject: true,
+    warnings: ['low_resolution', 'possible_blur', 'made_up_warning'],
+  });
+  assert.equal(quality.width, 20000);
+  assert.equal(quality.height, 240);
+  assert.equal(quality.brightness, 0);
+  assert.equal(quality.hardReject, true);
+  assert.deepEqual(quality.warnings, ['low_resolution', 'possible_blur']);
 });
 
 test('accepts a bounded JPEG data URL and measures decoded size', () => {
