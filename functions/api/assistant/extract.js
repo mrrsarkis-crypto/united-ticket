@@ -299,3 +299,12 @@ function extractJson(text) {
   }
   return '{}';
 }
+
+// Deterministic pure helpers are exported only so CI can lock the scanner
+// contract down with fixtures. The public endpoint remains onRequestPost.
+export const __scannerTest = {
+  parseDocumentInput,
+  normalizeExtraction,
+  buildScanAssessment,
+  extractJson,
+};
