@@ -40,6 +40,10 @@ export async function onRequestPost(context) {
   const startedAt = Date.now();
   const headers = { 'X-Scanner-Version': SCANNER_ENGINE_VERSION, 'X-Scan-Id': scanId };
 
+  if (!isAllowedScannerRequest(request, env)) {
+    return json({ error: 'Scanner request origin is not allowed.' }, 403, headers);
+  }
+
   const contentType = request.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) return json({ error: 'Expected JSON body' }, 415, headers);
 
@@ -131,7 +135,7 @@ export async function onRequestPost(context) {
     console.log('scanner extraction complete', {
       scanId,
       provider: vision.provider,
-      attempts: vision.attempts,
+      attempts: vision.atempts,
       durationMs: Date.now() - startedAt,
       mediaType,
       fileBytes,
@@ -150,6 +154,25 @@ export async function onRequestPost(context) {
       : 'The AI scan is temporarily unavailable. Please try again shortly.';
     return json({ error: userMessage + (debug ? ' ' + message.slice(0, 250) : '') }, timedOut ? 504 : 502, headers);
   }
+}
+
+function isAllowedScannerRequest(request, env = {}) {
+  const fetchSite = String(request.headers.get('sec-fetch-site') || '').toLowerCase();
+  if (fetchSite === 'cross-site') return false;
+
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+
+  let requestOrigin;
+  try { requestOrigin = new URL(request.url).origin; }
+  catch { return false; }
+
+  if (origin === requestOrigin) return true;
+  const extras = String(env.SCANNER_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return extras.includes(origin);
 }
 
 function parseDocumentInput(image) {
@@ -303,6 +326,7 @@ function extractJson(text) {
 // Deterministic pure helpers are exported only so CI can lock the scanner
 // contract down with fixtures. The public endpoint remains onRequestPost.
 export const __scannerTest = {
+  isAllowedScannerRequest,
   parseDocumentInput,
   normalizeExtraction,
   buildScanAssessment,
