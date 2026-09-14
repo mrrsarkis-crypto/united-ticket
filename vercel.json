@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "if [ \"$VERCEL_PROJECT_ID\" = \"prj_WXphSH7xZsBBvyzWkumzEpKomUTV\" ]; then exit 0; else exit 1; fi",
   "buildCommand": "npm test && node scripts/build-vercel.js",
   "outputDirectory": "dist",
   "cleanUrls": true,
