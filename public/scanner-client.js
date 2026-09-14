@@ -223,8 +223,41 @@
     });
   }
 
+  function localFallbackAssessment() {
+    var text = String(window.__lastOcrText || '').trim();
+    if (!text) return null;
+    var ids = ['f_citation', 'f_code', 'f_court', 'f_date', 'f_bail'];
+    var detected = 0;
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && String(el.value || '').trim()) detected++;
+    });
+    var quality = window.__UTTD_LAST_CLIENT_QUALITY__ || null;
+    var qualityGrade = quality && quality.grade || null;
+    var confidence = Math.min(50, 20 + detected * 6 + (text.length >= 120 ? 4 : 0));
+    if (qualityGrade === 'fair') confidence = Math.min(44, confidence);
+    if (qualityGrade === 'poor') confidence = Math.min(29, confidence);
+    var missing = [];
+    var labels = ['citation number', 'violation code', 'court/agency', 'violation/court date', 'fine/bail amount'];
+    ids.forEach(function (id, index) {
+      var el = document.getElementById(id);
+      if (!el || !String(el.value || '').trim()) missing.push(labels[index]);
+    });
+    return {
+      label: 'Needs review',
+      confidence: confidence,
+      qualityGrade: qualityGrade,
+      preflightRejected: false,
+      missing: missing,
+      verify: labels.filter(function (label) { return missing.indexOf(label) === -1; }),
+      summary: 'The primary AI scan was unavailable, so this result came from a lower-confidence on-device OCR fallback. Verify every captured field against the citation.',
+      validationWarningCount: 0,
+      scanId: 'local-' + text.length + '-' + detected
+    };
+  }
+
   function adjustedAssessment(ext) {
-    if (!ext || !ext.scanAssessment) return null;
+    if (!ext || !ext.scanAssessment) return localFallbackAssessment();
     var source = ext.scanAssessment;
     var confidence = Number(source.scanConfidencePercent);
     if (!Number.isFinite(confidence)) return null;
@@ -253,7 +286,8 @@
       missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
       verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
       summary: source.summary || '',
-      validationWarningCount: Number(source.validationWarningCount != null ? source.validationWarningCount : meta.validationWarningCount || 0)
+      validationWarningCount: Number(source.validationWarningCount != null ? source.validationWarningCount : meta.validationWarningCount || 0),
+      scanId: meta.scanId || null
     };
   }
 
@@ -264,11 +298,11 @@
     var listEl = document.getElementById('scoreList');
     if (!panel || !rankEl || !numEl || !listEl) return;
 
-    var ext = window.__lastExtracted;
+    var ext = window.__lastExtracted || null;
     var result = adjustedAssessment(ext);
     if (!result) return;
 
-    var scanId = ext.scanMeta && ext.scanMeta.scanId || 'local';
+    var scanId = result.scanId || ext && ext.scanMeta && ext.scanMeta.scanId || 'local';
     var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.missing.join(',') + '|' + result.verify.join(',');
     var targetNum = result.preflightRejected ? 'New photo needed' : result.confidence + '% scan confidence';
     if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
@@ -346,6 +380,14 @@
 
   window.fetch = async function (input, init) {
     if (!isExtractRequest(input)) return originalFetch(input, init);
+
+    window.__lastExtracted = null;
+    window.__lastOcrText = '';
+    var previousPanel = document.getElementById('scorePanel');
+    if (previousPanel) {
+      previousPanel.removeAttribute('data-utt-scan-signature');
+      previousPanel.style.display = 'none';
+    }
 
     var options = Object.assign({}, init || {});
     var preflightQuality = null;
