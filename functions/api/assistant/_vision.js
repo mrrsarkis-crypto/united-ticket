@@ -1,7 +1,8 @@
 // Resilient vision pipeline dedicated to the public ticket scanner.
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
+import { GEMINI_EXTRACTION_SCHEMA } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.14-3';
+export const SCANNER_ENGINE_VERSION = '2026.09.14-4';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 26000;
 const MAX_PROVIDER_TIMEOUT_MS = 30000;
@@ -92,6 +93,7 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
       temperature: 0,
       maxOutputTokens: 1800,
       responseMimeType: 'application/json',
+      responseSchema: GEMINI_EXTRACTION_SCHEMA,
     },
   };
 
