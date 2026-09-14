@@ -9,6 +9,7 @@
   var JPEG_QUALITY = 0.92;
   var OPTIMIZE_ABOVE_BYTES = 1300000;
   var REQUEST_TIMEOUT_MS = 55000;
+  var QUALITY_SAMPLE_MAX = 256;
   var HEIC2ANY_URL = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
 
   function isExtractRequest(input) {
@@ -91,6 +92,80 @@
     });
   }
 
+  function inspectImageQuality(dataUrl) {
+    return new Promise(function (resolve) {
+      var image = new Image();
+      image.onload = function () {
+        var width = image.naturalWidth || image.width;
+        var height = image.naturalHeight || image.height;
+        if (!width || !height) return resolve(null);
+
+        var scale = Math.min(1, QUALITY_SAMPLE_MAX / Math.max(width, height));
+        var sw = Math.max(2, Math.round(width * scale));
+        var sh = Math.max(2, Math.round(height * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = sw;
+        canvas.height = sh;
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return resolve(null);
+        ctx.drawImage(image, 0, 0, sw, sh);
+
+        var pixels;
+        try { pixels = ctx.getImageData(0, 0, sw, sh).data; }
+        catch (e) { return resolve(null); }
+
+        var gray = new Float32Array(sw * sh);
+        var sum = 0;
+        var sumSq = 0;
+        var i;
+        for (i = 0; i < gray.length; i++) {
+          var p = i * 4;
+          var g = pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+          gray[i] = g;
+          sum += g;
+          sumSq += g * g;
+        }
+        var mean = sum / gray.length;
+        var variance = Math.max(0, sumSq / gray.length - mean * mean);
+        var contrast = Math.sqrt(variance);
+        var edgeSum = 0;
+        var edgeCount = 0;
+        for (var y = 1; y < sh; y++) {
+          for (var x = 1; x < sw; x++) {
+            var idx = y * sw + x;
+            edgeSum += Math.abs(gray[idx] - gray[idx - 1]);
+            edgeSum += Math.abs(gray[idx] - gray[idx - sw]);
+            edgeCount += 2;
+          }
+        }
+        var sharpness = edgeCount ? edgeSum / edgeCount : 0;
+        var maxSide = Math.max(width, height);
+        var minSide = Math.min(width, height);
+        var warnings = [];
+        if (maxSide < 1000 || minSide < 500) warnings.push('low_resolution');
+        if (mean < 35) warnings.push('too_dark');
+        if (mean > 245) warnings.push('too_bright');
+        if (contrast < 18) warnings.push('low_contrast');
+        if (sharpness < 4.2) warnings.push('possible_blur');
+
+        var hardReject = maxSide < 500 || minSide < 250 || mean < 12 || mean > 253 || contrast < 6;
+        var grade = hardReject ? 'poor' : warnings.length >= 2 ? 'fair' : 'good';
+        resolve({
+          width: width,
+          height: height,
+          brightness: Math.round(mean),
+          contrast: Math.round(contrast * 10) / 10,
+          sharpness: Math.round(sharpness * 10) / 10,
+          grade: grade,
+          hardReject: hardReject,
+          warnings: warnings.slice(0, 5)
+        });
+      };
+      image.onerror = function () { resolve(null); };
+      image.src = dataUrl;
+    });
+  }
+
   async function optimizeImage(dataUrl) {
     if (typeof dataUrl !== 'string' || dataUrl.indexOf('data:') !== 0) return dataUrl;
     var lower = dataUrl.slice(0, 40).toLowerCase();
@@ -116,7 +191,12 @@
         if (payload && typeof payload === 'object') {
           payload.docType = 'ticket';
           payload.source = 'public-scanner';
-          if (typeof payload.image === 'string') payload.image = await optimizeImage(payload.image);
+          if (typeof payload.image === 'string') {
+            payload.image = await optimizeImage(payload.image);
+            if (payload.image.indexOf('data:image/') === 0) {
+              payload.clientQuality = await inspectImageQuality(payload.image);
+            }
+          }
           options.body = JSON.stringify(payload);
         }
       }
