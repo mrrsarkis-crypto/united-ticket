@@ -61,14 +61,27 @@
   else list.appendChild(li);
 })();
 
-// Revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
-// Never load it on the homepage/scanner, assistant, intake, checkout, case center,
-// tracking, admin tools, privacy/legal pages, or other conversion workflows.
+// Production revenue boundary: AdSense is allowed ONLY on low-risk informational pages.
+// It never loads on previews/dev, the homepage/scanner, assistant, intake, checkout,
+// case center, tracking, admin, legal/privacy pages, or other conversion workflows.
 (function () {
   'use strict';
   if (window.__uttAdsenseBooted) return;
 
+  var host = (window.location.hostname || '').toLowerCase();
+  var productionHost = host === 'unitedtraffictickets.com' || host === 'www.unitedtraffictickets.com';
+  if (!productionHost) return;
+
+  // Respect Global Privacy Control by not initiating advertising requests.
+  if (navigator.globalPrivacyControl === true) {
+    document.documentElement.setAttribute('data-utt-ads', 'gpc-disabled');
+    return;
+  }
+
   var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  var sensitive = /^(?:\/|\/assistant(?:\.html)?|\/case(?:\.html)?|\/admin(?:[-/]|\.html|$)|\/api(?:\/|$)|\/privacy(?:\.html)?|\/terms(?:\.html)?|\/refund-policy(?:\.html)?|\/contact(?:\.html)?)/.test(path);
+  if (sensitive) return;
+
   var monetized =
     path === '/resources' || path === '/resources.html' ||
     path === '/faq' || path === '/faq.html' ||
@@ -96,6 +109,7 @@
   var script = document.createElement('script');
   script.async = true;
   script.crossOrigin = 'anonymous';
+  script.referrerPolicy = 'strict-origin-when-cross-origin';
   script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9943048295609395';
   script.setAttribute('data-utt-adsense', 'informational-pages');
   document.head.appendChild(script);
