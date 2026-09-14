@@ -26,6 +26,13 @@
   var currentDlDataUrl = null;
   var currentTrackingCode = null;
   var currentClaimToken = null;
+  // Vercel Functions reject request bodies above their platform limit before
+  // application code runs. Base64 adds ~33%, so keep direct PDF uploads safely
+  // below that ceiling. Images may start larger because scanner-client.js
+  // resizes/compresses them before the network request is sent.
+  var MAX_PDF_SCAN_BYTES = 3 * 1024 * 1024;
+  var MAX_IMAGE_SOURCE_BYTES = 15 * 1024 * 1024;
+
   document.querySelectorAll('[data-utt-service]').forEach(function (c) {
     c.addEventListener('click', function () {
       var s = c.getAttribute('data-utt-service');
@@ -79,10 +86,27 @@
   function handleFile(file) {
     // Accept images (JPG/PNG/HEIC) and PDFs; reject others early with a clear message.
     var name = (file && file.name || '').toLowerCase();
-    var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || file.type === 'application/pdf' || /\.(png|jpe?g|heic|pdf)$/i.test(name);
+    var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(name);
+    var typeOk = /^image\/(png|jpe?g|heic)$/i.test(file.type) || isPdf || /\.(png|jpe?g|heic)$/i.test(name);
     if (!typeOk) {
       statusEl.textContent = 'Unsupported file type. Please upload a JPG, PNG, or HEIC image, or a PDF.';
       statusEl.className = 'status';
+      return;
+    }
+    if (isPdf && file.size > MAX_PDF_SCAN_BYTES) {
+      currentImageDataUrl = null;
+      if (fileInput) fileInput.value = '';
+      statusEl.textContent = 'This PDF is too large for the secure online scanner. Please upload a PDF under 3 MB or take a clear photo of the page.';
+      statusEl.className = 'status';
+      setIntakeStep(1, 'PDF too large — use a smaller PDF or a clear photo.');
+      return;
+    }
+    if (!isPdf && file.size > MAX_IMAGE_SOURCE_BYTES) {
+      currentImageDataUrl = null;
+      if (fileInput) fileInput.value = '';
+      statusEl.textContent = 'This image is unusually large. Please choose a photo under 15 MB; normal phone photos are optimized automatically.';
+      statusEl.className = 'status';
+      setIntakeStep(1, 'Image too large — choose a photo under 15 MB.');
       return;
     }
     var reader = new FileReader();
@@ -100,10 +124,10 @@
       // ticket, a driver's license, or any court/DMV mail-out document.
       serverScan(currentImageDataUrl).then(function (extracted) {
         applyServerExtract(extracted);
-      }).catch(function () {
-        if (file.type === 'application/pdf' || /\.pdf$/i.test(name)) {
+      }).catch(function (err) {
+        if (isPdf) {
           hideProgress(progress, progressBar);
-          statusEl.textContent = 'Could not scan this PDF automatically. Please upload a photo of the document, or fill the fields below.';
+          statusEl.textContent = (err && err.message ? err.message + ' ' : '') + 'Please upload a clear photo of the document or fill the fields below.';
           statusEl.className = 'status';
         } else {
           // Fallback: on-device OCR for images so the scan still works offline.
@@ -389,7 +413,7 @@
   }
 
   function showClaimCta() {
-    setIntakeStep(1, 'Scan complete — see your guidance score above.');
+    setIntakeStep(1, 'Scan complete — review the scan confidence above.');
     if (claimCtaWrap) claimCtaWrap.style.display = 'block';
   }
 
