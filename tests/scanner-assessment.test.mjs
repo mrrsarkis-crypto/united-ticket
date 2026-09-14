@@ -67,9 +67,10 @@ test('format validation warnings reduce server confidence', () => {
 test('missing or uncertain fields are surfaced for human verification', () => {
   const ticket = strongTicket();
   ticket.dueDate = { value: null, found: false, confident: false };
+  ticket.courtDate = { value: null, found: false, confident: false };
   ticket.violationCode = field('22350', false);
   const result = buildScanAssessment(ticket, { clientQuality: { grade: 'good', warnings: [] } });
-  assert.ok(result.missingKeyFields.includes('response deadline'));
+  assert.ok(result.missingKeyFields.includes('response/court date'));
   assert.ok(result.fieldsNeedingVerification.includes('violation code'));
   assert.equal(result.needsManualReview, true);
 });
