@@ -25,6 +25,7 @@ export async function onRequest(context) {
   const isHtml = !isAmp && (newHeaders.get('content-type') || '').includes('text/html');
   const monetized = isHtml && isMonetizedPath(url.pathname);
   const isPrivateAdminApi = /^\/api\/cases\/admin(?:\.|$|\/)/.test(url.pathname);
+  const isScannerApi = url.pathname === '/api/assistant/extract';
 
   newHeaders.set('X-Content-Type-Options', 'nosniff');
   newHeaders.set('X-Frame-Options', 'DENY');
@@ -61,7 +62,10 @@ export async function onRequest(context) {
     );
   }
 
-  if (!isPrivateAdminApi) {
+  // Public utility APIs can remain cross-origin. The scanner is deliberately
+  // excluded because each call consumes paid vision capacity and processes a
+  // user document; same-origin browser calls do not need CORS headers.
+  if (!isPrivateAdminApi && !isScannerApi) {
     newHeaders.set('Access-Control-Allow-Origin', '*');
     newHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     newHeaders.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
