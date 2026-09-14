@@ -4,6 +4,7 @@
 import { json } from '../_shared.js';
 import { extractVisionDocument, SCANNER_ENGINE_VERSION } from './_vision.js';
 import { applyFieldPlausibility } from './_plausibility.js';
+import { buildScanAssessment as buildQualityAwareAssessment } from './_assessment.js';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -142,7 +143,10 @@ export async function onRequestPost(context) {
       return json({ error: 'The document could not be read reliably. Please upload a clearer photo or scan.' }, 422, headers);
     }
 
-    const assessment = buildScanAssessment(extracted);
+    const assessment = buildQualityAwareAssessment(extracted, {
+      clientQuality,
+      validationWarnings: plausibilityWarnings,
+    });
     extracted.scanAssessment = assessment;
     extracted.scanMeta = {
       engineVersion: SCANNER_ENGINE_VERSION,
