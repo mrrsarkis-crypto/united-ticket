@@ -3,6 +3,7 @@
 const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
 const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
+const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
 
 function isMonetizedPath(pathname) {
   const path = (pathname || '/').replace(/\/+$/, '') || '/';
@@ -83,6 +84,10 @@ export async function onRequest(context) {
   if (isHtml) {
     output = new HTMLRewriter().on('head', {
       element(element) {
+        // Load the scanner request optimizer before body scripts. It compresses
+        // oversized phone photos, converts supported HEIC uploads, and bounds
+        // request time without changing the visible page structure.
+        element.append(SCANNER_CLIENT_SCRIPT, { html: true });
         // Site ownership signal on every normal HTML page. This does not itself
         // enable ads on protected customer-workflow pages.
         element.append(ADSENSE_META, { html: true });
