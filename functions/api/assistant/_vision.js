@@ -26,6 +26,42 @@ function safeErrorMessage(error) {
   return msg.replace(/[A-Za-z0-9_-]{28,}/g, '[redacted]').slice(0, 300);
 }
 
+function firstJsonObject(text) {
+  const source = String(text || '');
+  const start = source.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < source.length; i++) {
+    const char = source[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '{') depth++;
+    else if (char === '}') {
+      depth--;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function validExtractionText(text) {
+  const candidate = firstJsonObject(text);
+  if (!candidate) return false;
+  try {
+    const parsed = JSON.parse(candidate);
+    return !!parsed && typeof parsed === 'object' && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithDeadline(url, init, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -183,12 +219,11 @@ export async function extractVisionDocument(env, input) {
         : await callAnthropic(env, { ...input, timeoutMs: providerBudget });
       totalAttempts += result.attempts;
 
-      if (typeof input.validateText === 'function') {
-        let valid = false;
-        try { valid = input.validateText(result.text) === true; }
-        catch { valid = false; }
-        if (!valid) throw new Error('vision provider returned an invalid extraction contract');
-      }
+      const validator = typeof input.validateText === 'function' ? input.validateText : validExtractionText;
+      let valid = false;
+      try { valid = validator(result.text) === true; }
+      catch { valid = false; }
+      if (!valid) throw new Error('vision provider returned an invalid extraction contract');
 
       return { text: result.text, provider, attempts: totalAttempts };
     } catch (error) {
@@ -200,3 +235,5 @@ export async function extractVisionDocument(env, input) {
 
   throw new Error('All configured scanner vision providers failed: ' + failures.join(' | '));
 }
+
+export const __visionTest = { firstJsonObject, validExtractionText };
