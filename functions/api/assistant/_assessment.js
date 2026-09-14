@@ -72,10 +72,13 @@ export function buildScanAssessment(extracted, options = {}) {
   if (quality && quality.grade === 'poor') scanConfidencePercent = Math.min(54, scanConfidencePercent);
   scanConfidencePercent = Math.round(scanConfidencePercent);
 
+  const allKeyFieldsReliable = missing.length === 0 && verify.length === 0 && validationWarningCount === 0;
+
   let label = 'Needs review';
   if (
     scanConfidencePercent >= 80 &&
     legibility === 'good' &&
+    allKeyFieldsReliable &&
     (!quality || quality.grade === 'good' || !quality.grade)
   ) {
     label = 'Strong read';
