@@ -181,6 +181,48 @@
     return dataUrl;
   }
 
+  function preflightRejectedResponse(quality) {
+    var extracted = {
+      legibility: 'poor',
+      unknownFields: [],
+      validationWarnings: [],
+      scanAssessment: {
+        label: 'Needs review',
+        legibility: 'poor',
+        scanConfidencePercent: 0,
+        keyFieldsDetected: 0,
+        keyFieldsExpected: 5,
+        confidentKeyFields: 0,
+        missingKeyFields: ['citation number', 'violation code', 'court/agency', 'response deadline', 'violation date'],
+        fieldsNeedingVerification: [],
+        needsManualReview: true,
+        summary: 'The photo quality is too weak for a reliable automated read.'
+      },
+      scanMeta: {
+        engineVersion: 'client-preflight',
+        scanId: 'preflight-' + Date.now().toString(36),
+        documentType: 'ticket',
+        mediaType: 'image',
+        inputBytes: 0,
+        provider: 'none',
+        providerAttempts: 0,
+        durationMs: 0,
+        clientQuality: quality,
+        validationWarningCount: 0,
+        preflightRejected: true,
+        requiresHumanVerification: true
+      },
+      nextSteps: [{
+        title: 'Retake the photo',
+        body: 'Use good light, keep the full citation in frame, avoid glare, and move close enough that the printed text is sharp.'
+      }]
+    };
+    return new Response(JSON.stringify({ ok: true, extracted: extracted }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+    });
+  }
+
   function adjustedAssessment(ext) {
     if (!ext || !ext.scanAssessment) return null;
     var source = ext.scanAssessment;
@@ -188,23 +230,26 @@
     if (!Number.isFinite(confidence)) return null;
     confidence = Math.max(0, Math.min(100, Math.round(confidence)));
 
-    var quality = ext.scanMeta && ext.scanMeta.clientQuality;
+    var meta = ext.scanMeta || {};
+    var quality = meta.clientQuality;
     var qualityGrade = quality && quality.grade;
     if (qualityGrade === 'fair') confidence = Math.min(79, Math.max(0, confidence - 10));
     if (qualityGrade === 'poor') confidence = Math.min(54, Math.max(0, confidence - 25));
 
     var label = 'Needs review';
-    if (confidence >= 80 && source.legibility === 'good' && qualityGrade !== 'fair' && qualityGrade !== 'poor') label = 'Strong read';
+    if (meta.preflightRejected) label = 'Retake photo';
+    else if (confidence >= 80 && source.legibility === 'good' && qualityGrade !== 'fair' && qualityGrade !== 'poor') label = 'Strong read';
     else if (confidence >= 55 && source.legibility !== 'poor' && qualityGrade !== 'poor') label = 'Usable read';
 
     return {
       label: label,
       confidence: confidence,
       qualityGrade: qualityGrade || null,
+      preflightRejected: meta.preflightRejected === true,
       missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
       verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
       summary: source.summary || '',
-      validationWarningCount: ext.scanMeta && Number(ext.scanMeta.validationWarningCount || 0)
+      validationWarningCount: Number(meta.validationWarningCount || 0)
     };
   }
 
@@ -221,7 +266,7 @@
 
     var scanId = ext.scanMeta && ext.scanMeta.scanId || 'local';
     var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.missing.join(',') + '|' + result.verify.join(',');
-    var targetNum = result.confidence + '% scan confidence';
+    var targetNum = result.preflightRejected ? 'New photo needed' : result.confidence + '% scan confidence';
     if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
 
     panel.setAttribute('data-utt-scan-signature', signature);
@@ -230,16 +275,24 @@
     numEl.textContent = targetNum;
 
     var tag = panel.querySelector('.score-tag');
-    if (tag) tag.textContent = 'Scan confidence measures how clearly the document and key fields were read. It is not a win probability, legal assessment, or prediction of a court result.';
+    if (tag) tag.textContent = result.preflightRejected
+      ? 'We stopped before AI/OCR because this image was not clear enough for a dependable scan.'
+      : 'Scan confidence measures how clearly the document and key fields were read. It is not a win probability, legal assessment, or prediction of a court result.';
 
     var messages = [];
-    if (result.summary) messages.push(result.summary);
-    if (result.qualityGrade === 'fair') messages.push('The photo quality was usable but not ideal. Verify the extracted details carefully before continuing.');
-    if (result.qualityGrade === 'poor') messages.push('The photo quality was weak. A clearer photo is recommended before relying on the extracted details.');
-    if (result.validationWarningCount > 0) messages.push('One or more captured values failed a format check and were marked for human verification.');
-    if (result.verify.length) messages.push('Please verify: ' + result.verify.join(', ') + '.');
-    if (result.missing.length) messages.push('Not confidently captured: ' + result.missing.join(', ') + '.');
-    messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue on a citation.');
+    if (result.preflightRejected) {
+      messages.push('Retake the photo in good light with the full ticket filling most of the frame.');
+      messages.push('Keep the camera steady, avoid glare and shadows, and make sure the printed text looks sharp before uploading.');
+      messages.push('No AI scan was charged or relied on for this unreadable image.');
+    } else {
+      if (result.summary) messages.push(result.summary);
+      if (result.qualityGrade === 'fair') messages.push('The photo quality was usable but not ideal. Verify the extracted details carefully before continuing.');
+      if (result.qualityGrade === 'poor') messages.push('The photo quality was weak. A clearer photo is recommended before relying on the extracted details.');
+      if (result.validationWarningCount > 0) messages.push('One or more captured values failed a format check and were marked for human verification.');
+      if (result.verify.length) messages.push('Please verify: ' + result.verify.join(', ') + '.');
+      if (result.missing.length) messages.push('Not confidently captured: ' + result.missing.join(', ') + '.');
+      messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue on a citation.');
+    }
 
     listEl.innerHTML = '';
     messages.slice(0, 6).forEach(function (message) {
@@ -248,6 +301,23 @@
       listEl.appendChild(li);
     });
     panel.style.display = 'block';
+
+    var statusEl = document.getElementById('status');
+    var claimCta = document.getElementById('claimCta');
+    var claimManual = document.getElementById('claimManual');
+    if (result.preflightRejected) {
+      if (statusEl) {
+        statusEl.textContent = 'Photo needs to be retaken before we can scan it reliably.';
+        statusEl.className = 'status';
+      }
+      if (claimCta) claimCta.style.display = 'none';
+      if (claimManual) {
+        claimManual.style.display = '';
+        claimManual.textContent = 'Skip the scan — enter details manually';
+      }
+    } else {
+      if (claimCta) claimCta.style.display = '';
+    }
   }
 
   function installResultAdapter() {
@@ -274,6 +344,7 @@
     if (!isExtractRequest(input)) return originalFetch(input, init);
 
     var options = Object.assign({}, init || {});
+    var preflightQuality = null;
     try {
       if (typeof options.body === 'string') {
         var payload = JSON.parse(options.body);
@@ -284,6 +355,7 @@
             payload.image = await optimizeImage(payload.image);
             if (payload.image.indexOf('data:image/') === 0) {
               payload.clientQuality = await inspectImageQuality(payload.image);
+              preflightQuality = payload.clientQuality;
               window.__UTTD_LAST_CLIENT_QUALITY__ = payload.clientQuality;
             }
           }
@@ -292,6 +364,10 @@
       }
     } catch (e) {
       console.warn('scanner request preparation skipped', e && e.message || e);
+    }
+
+    if (preflightQuality && preflightQuality.hardReject) {
+      return preflightRejectedResponse(preflightQuality);
     }
 
     if (options.signal || typeof AbortController === 'undefined') {
