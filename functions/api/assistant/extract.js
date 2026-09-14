@@ -135,7 +135,7 @@ export async function onRequestPost(context) {
     console.log('scanner extraction complete', {
       scanId,
       provider: vision.provider,
-      attempts: vision.atempts,
+      attempts: vision.attempts,
       durationMs: Date.now() - startedAt,
       mediaType,
       fileBytes,
