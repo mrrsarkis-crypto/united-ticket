@@ -3,8 +3,28 @@ import assert from 'node:assert/strict';
 import { __scannerTest } from '../functions/api/assistant/extract.js';
 import { extractVisionDocument } from '../functions/api/assistant/_vision.js';
 
-const { parseDocumentInput, normalizeExtraction, buildScanAssessment, extractJson } = __scannerTest;
+const { isAllowedScannerRequest, parseDocumentInput, normalizeExtraction, buildScanAssessment, extractJson } = __scannerTest;
 const SAMPLE_B64 = 'A'.repeat(80);
+
+test('accepts same-origin scanner calls and rejects cross-site browser calls', () => {
+  const sameOrigin = new Request('https://unitedtraffictickets.com/api/assistant/extract', {
+    headers: { origin: 'https://unitedtraffictickets.com', 'sec-fetch-site': 'same-origin' },
+  });
+  const crossSite = new Request('https://unitedtraffictickets.com/api/assistant/extract', {
+    headers: { origin: 'https://example.com', 'sec-fetch-site': 'cross-site' },
+  });
+  assert.equal(isAllowedScannerRequest(sameOrigin, {}), true);
+  assert.equal(isAllowedScannerRequest(crossSite, {}), false);
+});
+
+test('allows explicit trusted scanner origins and non-browser server requests', () => {
+  const configured = new Request('https://api.example.net/api/assistant/extract', {
+    headers: { origin: 'capacitor://localhost' },
+  });
+  const serverRequest = new Request('https://unitedtraffictickets.com/api/assistant/extract');
+  assert.equal(isAllowedScannerRequest(configured, { SCANNER_ALLOWED_ORIGINS: 'capacitor://localhost' }), true);
+  assert.equal(isAllowedScannerRequest(serverRequest, {}), true);
+});
 
 test('accepts a bounded JPEG data URL and measures decoded size', () => {
   const parsed = parseDocumentInput('data:image/jpeg;base64,' + SAMPLE_B64);
