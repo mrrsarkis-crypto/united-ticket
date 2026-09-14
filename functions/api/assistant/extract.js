@@ -6,6 +6,7 @@ import { extractVisionDocument, SCANNER_ENGINE_VERSION } from './_vision.js';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 30;
 const ALLOWED_MEDIA = new Set(['image/jpeg', 'image/png', 'application/pdf']);
 const FIELD_KEYS = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
@@ -18,6 +19,7 @@ const TICKET_SIGNAL_KEYS = [
   'violationDescription','courtOrAgency','bailAmount','dueDate'
 ];
 const BLOCKED_TEXT = /aliexpress|dsers|dropshipping|shopify product|shopping catalog/i;
+const QUALITY_WARNING_KEYS = new Set(['low_resolution','too_dark','too_bright','low_contrast','possible_blur']);
 
 const EXTRACT_SYSTEM = [
   'You are the document-reading engine for United Traffic Tickets Defense.',
@@ -44,6 +46,19 @@ export async function onRequestPost(context) {
     return json({ error: 'Scanner request origin is not allowed.' }, 403, headers);
   }
 
+  const rate = await enforceScannerRateLimit(request, env);
+  if (rate.enforced) {
+    headers['X-Scanner-RateLimit-Limit'] = String(rate.limit);
+    headers['X-Scanner-RateLimit-Remaining'] = String(rate.remaining);
+  }
+  if (!rate.allowed) {
+    headers['Retry-After'] = String(rate.retryAfter);
+    return json({
+      error: 'Too many scan requests were received from this connection. Please wait a moment and try again.',
+      code: 'scanner_rate_limited'
+    }, 429, headers);
+  }
+
   const contentType = request.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) return json({ error: 'Expected JSON body' }, 415, headers);
 
@@ -63,6 +78,18 @@ export async function onRequestPost(context) {
   const parsedInput = parseDocumentInput(body.image);
   if (parsedInput.error) return json({ error: parsedInput.error }, parsedInput.status, headers);
   const { base64, mediaType, fileBytes } = parsedInput;
+  const clientQuality = normalizeClientQuality(body.clientQuality);
+
+  // The browser performs a conservative preflight after image optimization.
+  // Only obviously unusable images are stopped here so paid vision capacity is
+  // not spent on blank, tiny, severely underexposed, or washed-out uploads.
+  if (mediaType !== 'application/pdf' && clientQuality && clientQuality.hardReject) {
+    return json({
+      error: 'This photo is too difficult to read reliably. Please retake it in good light with the full ticket filling most of the frame.',
+      code: 'image_quality_low',
+      quality: clientQuality,
+    }, 422, headers);
+  }
 
   // This public endpoint is deliberately ticket-first. Explicit license/notice
   // callers remain supported, but "auto" is treated as ticket to prevent an
@@ -123,6 +150,7 @@ export async function onRequestPost(context) {
       provider: vision.provider,
       providerAttempts: vision.attempts,
       durationMs: Date.now() - startedAt,
+      clientQuality,
       requiresHumanVerification: true,
     };
     extracted.nextSteps = [
@@ -141,6 +169,7 @@ export async function onRequestPost(context) {
       fileBytes,
       confidence: assessment.scanConfidencePercent,
       label: assessment.label,
+      clientQuality: clientQuality && clientQuality.grade,
     });
 
     return json({ ok: true, extracted }, 200, headers);
@@ -173,6 +202,63 @@ function isAllowedScannerRequest(request, env = {}) {
     .map((value) => value.trim())
     .filter(Boolean);
   return extras.includes(origin);
+}
+
+async function enforceScannerRateLimit(request, env = {}) {
+  const store = env.CASES;
+  if (!store || typeof store.get !== 'function' || typeof store.put !== 'function') {
+    return { allowed: true, enforced: false, limit: 0, remaining: 0, retryAfter: 0 };
+  }
+
+  const forwarded = String(request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  const identity = String(request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || forwarded || '').trim();
+  if (!identity) return { allowed: true, enforced: false, limit: 0, remaining: 0, retryAfter: 0 };
+
+  const configured = Number(env.SCANNER_RATE_LIMIT_PER_MINUTE || DEFAULT_RATE_LIMIT_PER_MINUTE);
+  const limit = Number.isFinite(configured) ? Math.max(5, Math.min(120, Math.floor(configured))) : DEFAULT_RATE_LIMIT_PER_MINUTE;
+  const bucket = Math.floor(Date.now() / 60000);
+  const retryAfter = Math.max(1, 60 - (Math.floor(Date.now() / 1000) % 60));
+
+  try {
+    const salt = String(env.SCANNER_RATE_LIMIT_SALT || 'utt-scanner-rate-v1');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity + '|' + salt));
+    const hash = Array.from(new Uint8Array(digest)).slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const key = 'scanner-rate:' + bucket + ':' + hash;
+    const current = Math.max(0, Number(await store.get(key) || 0));
+    if (current >= limit) return { allowed: false, enforced: true, limit, remaining: 0, retryAfter };
+    await store.put(key, String(current + 1), { expirationTtl: 120 });
+    return { allowed: true, enforced: true, limit, remaining: Math.max(0, limit - current - 1), retryAfter };
+  } catch (error) {
+    console.warn('scanner rate limiter unavailable', String(error && error.message || error || '').slice(0, 160));
+    return { allowed: true, enforced: false, limit, remaining: limit, retryAfter: 0 };
+  }
+}
+
+function normalizeClientQuality(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const number = (value, min, max) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : null;
+  };
+  const width = number(raw.width, 0, 20000);
+  const height = number(raw.height, 0, 20000);
+  const brightness = number(raw.brightness, 0, 255);
+  const contrast = number(raw.contrast, 0, 255);
+  const sharpness = number(raw.sharpness, 0, 255);
+  const grade = ['good','fair','poor'].includes(raw.grade) ? raw.grade : 'fair';
+  const warnings = Array.isArray(raw.warnings)
+    ? raw.warnings.filter((v) => QUALITY_WARNING_KEYS.has(v)).slice(0, 5)
+    : [];
+  return {
+    width,
+    height,
+    brightness,
+    contrast,
+    sharpness,
+    grade,
+    hardReject: raw.hardReject === true,
+    warnings,
+  };
 }
 
 function parseDocumentInput(image) {
@@ -323,10 +409,12 @@ function extractJson(text) {
   return '{}';
 }
 
-// Deterministic pure helpers are exported only so CI can lock the scanner
-// contract down with fixtures. The public endpoint remains onRequestPost.
+// Deterministic helpers are exported only so CI can lock the scanner contract
+// down with fixtures. The public endpoint remains onRequestPost.
 export const __scannerTest = {
   isAllowedScannerRequest,
+  enforceScannerRateLimit,
+  normalizeClientQuality,
   parseDocumentInput,
   normalizeExtraction,
   buildScanAssessment,
