@@ -31,20 +31,25 @@ for (const file of await walk(outDir)) {
   let html = await readFile(file, 'utf8');
   const rel = path.relative(outDir, file).replaceAll('\\', '/');
   const isAmp = rel.startsWith('amp/');
+  let changed = false;
+
+  if (!html.includes('google-adsense-account')) {
+    html = html.replace(/<head([^>]*)>/i, `$&\n${accountMeta}`);
+    changed = true;
+  }
 
   if (isAmp) {
-    if (!html.includes(`google-adsense-account`)) {
-      html = html.replace(/<head([^>]*)>/i, `$&\n${accountMeta}`);
-      await writeFile(file, html, 'utf8');
-    }
+    if (changed) await writeFile(file, html, 'utf8');
     ampHtml++;
     continue;
   }
 
   if (!html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${adsenseTag}`);
-    await writeFile(file, html, 'utf8');
+    changed = true;
   }
+
+  if (changed) await writeFile(file, html, 'utf8');
   normalHtml++;
 }
 
@@ -63,4 +68,4 @@ try {
   // nav.js is optional for the build step.
 }
 
-console.log(`Vercel static build complete: ${normalHtml} standard HTML pages with AdSense tag; ${ampHtml} AMP pages with account meta.`);
+console.log(`Vercel static build complete: ${normalHtml} standard HTML pages with AdSense tag + account meta; ${ampHtml} AMP pages with account meta.`);
