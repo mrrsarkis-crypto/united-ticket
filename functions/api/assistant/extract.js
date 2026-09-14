@@ -3,6 +3,7 @@
 // deterministic sanitization, confidence scoring, and no-store responses.
 import { json } from '../_shared.js';
 import { extractVisionDocument, SCANNER_ENGINE_VERSION } from './_vision.js';
+import { applyFieldPlausibility } from './_plausibility.js';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -127,6 +128,8 @@ export async function onRequestPost(context) {
     }
 
     const extracted = normalizeExtraction(modelJson);
+    const plausibilityWarnings = applyFieldPlausibility(extracted);
+    extracted.validationWarnings = plausibilityWarnings;
     const hasTicketSignal = TICKET_SIGNAL_KEYS.some((key) => usableField(extracted[key]));
     const hasIdentitySignal = ['defendantName','drivingLicenseNumber','vehiclePlate'].some((key) => usableField(extracted[key]));
 
@@ -151,6 +154,7 @@ export async function onRequestPost(context) {
       providerAttempts: vision.attempts,
       durationMs: Date.now() - startedAt,
       clientQuality,
+      validationWarningCount: plausibilityWarnings.length,
       requiresHumanVerification: true,
     };
     extracted.nextSteps = [
@@ -170,6 +174,7 @@ export async function onRequestPost(context) {
       confidence: assessment.scanConfidencePercent,
       label: assessment.label,
       clientQuality: clientQuality && clientQuality.grade,
+      validationWarnings: plausibilityWarnings.length,
     });
 
     return json({ ok: true, extracted }, 200, headers);
