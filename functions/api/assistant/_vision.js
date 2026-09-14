@@ -2,13 +2,14 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.14-5';
+export const SCANNER_ENGINE_VERSION = '2026.09.14-6';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 26000;
 const MAX_PROVIDER_TIMEOUT_MS = 30000;
 const MIN_PROVIDER_TIMEOUT_MS = 8000;
 const MAX_TOTAL_VISION_MS = 50000;
 const MAX_ATTEMPTS = 2;
+const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,7 +25,11 @@ function retryable(status) {
 
 function safeErrorMessage(error) {
   const msg = String(error && error.message || error || 'unknown error');
-  return msg.replace(/[A-Za-z0-9_-]{28,}/g, '[redacted]').slice(0, 300);
+  return msg.replace(/[A-Za-z0-9_.-]{28,}/g, '[redacted]').slice(0, 300);
+}
+
+function gatewayToken(env) {
+  return String(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN || '').trim();
 }
 
 function firstJsonObject(text) {
@@ -207,12 +212,92 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
   throw lastError || new Error('Anthropic extraction failed');
 }
 
+function gatewayContentText(content) {
+  if (typeof content === 'string') return content.trim();
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((part) => typeof part === 'string' ? part : (part && (part.text || part.content)) || '')
+    .join('')
+    .trim();
+}
+
+async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }) {
+  const token = gatewayToken(env);
+  if (!token) throw new Error('Vercel AI Gateway is not configured');
+  const model = env.SCANNER_GATEWAY_MODEL || 'google/gemini-2.5-flash';
+  const documentPart = mediaType === 'application/pdf'
+    ? {
+      type: 'file',
+      file: {
+        data: base64,
+        media_type: 'application/pdf',
+        filename: 'traffic-document.pdf',
+      },
+    }
+    : {
+      type: 'image_url',
+      image_url: {
+        url: 'data:' + mediaType + ';base64,' + base64,
+        detail: 'high',
+      },
+    };
+  const body = {
+    model,
+    messages: [
+      { role: 'system', content: system },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          documentPart,
+        ],
+      },
+    ],
+    temperature: 0,
+    stream: false,
+  };
+
+  const deadline = Date.now() + timeoutMs;
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const remaining = deadline - Date.now();
+    if (remaining < 1000) break;
+    try {
+      const res = await fetchWithDeadline(AI_GATEWAY_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }, remaining);
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        const error = new Error('Vercel AI Gateway HTTP ' + res.status + ': ' + detail.slice(0, 180));
+        if (!retryable(res.status) || attempt === MAX_ATTEMPTS) throw error;
+        lastError = error;
+      } else {
+        const data = await res.json();
+        const text = gatewayContentText(data?.choices?.[0]?.message?.content);
+        if (!text) throw new Error('Vercel AI Gateway returned an empty extraction');
+        return { text, attempts: attempt };
+      }
+    } catch (error) {
+      lastError = error;
+      if (attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+    }
+    await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
+  }
+  throw lastError || new Error('Vercel AI Gateway extraction failed');
+}
+
 export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env);
   const preferred = String(env.SCANNER_VISION_PROVIDER || 'gemini').toLowerCase();
   const available = [];
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
+  if (gatewayToken(env)) available.push('gateway');
 
   if (!available.length) {
     if (input.mediaType === 'application/pdf' && env.ANTHROPIC_API_KEY && !env.GEMINI_API_KEY) {
@@ -234,9 +319,10 @@ export async function extractVisionDocument(env, input) {
     }
     try {
       const providerBudget = Math.min(timeoutMs, remainingTotal);
-      const result = provider === 'gemini'
-        ? await callGemini(env, { ...input, timeoutMs: providerBudget })
-        : await callAnthropic(env, { ...input, timeoutMs: providerBudget });
+      let result;
+      if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
+      else if (provider === 'anthropic') result = await callAnthropic(env, { ...input, timeoutMs: providerBudget });
+      else result = await callGateway(env, { ...input, timeoutMs: providerBudget });
       totalAttempts += result.attempts;
 
       const validator = typeof input.validateText === 'function' ? input.validateText : validExtractionText;
@@ -256,4 +342,11 @@ export async function extractVisionDocument(env, input) {
   throw new Error('All configured scanner vision providers failed: ' + failures.join(' | '));
 }
 
-export const __visionTest = { firstJsonObject, validFieldContract, validExtractionObject, validExtractionText };
+export const __visionTest = {
+  firstJsonObject,
+  validFieldContract,
+  validExtractionObject,
+  validExtractionText,
+  gatewayToken,
+  gatewayContentText,
+};
