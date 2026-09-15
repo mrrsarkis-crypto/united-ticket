@@ -116,6 +116,15 @@
         <h2>Step 1 — Upload your traffic document</h2>
         <p class="muted">Supported: JPG, PNG, HEIC, and PDF. You can upload a traffic ticket, driver license, or traffic-related court/DMV notice from any jurisdiction.</p>
 
+        <div class="scan-type" role="group" aria-labelledby="astScanTypeLabel">
+          <label id="astScanTypeLabel" for="astDocumentType">Document type</label>
+          <select id="astDocumentType">
+            <option value="auto">Let the scanner identify it</option>
+            <option value="ticket">Traffic ticket / citation</option>
+            <option value="license">Driver license / permit</option>
+            <option value="notice">Court / DMV / traffic notice</option>
+          </select>
+        </div>
         <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload traffic ticket, driver license, or court notice">
           <input type="file" id="astFile" accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.heic,.heif,.pdf" capture="environment" hidden>
           <p><strong>Click to upload</strong> or drag your traffic document here</p>

@@ -17,7 +17,7 @@
 
   var els = {};
   ['stage1', 'stage2', 'stage3', 'astDrop', 'astFile', 'astPreview', 'astConsentBool',
-    'astScan', 'astStatus', 'astFields', 'astSteps', 'astContinue', 'astStatus2',
+    'astScan', 'astStatus', 'astFields', 'astSteps', 'astContinue', 'astStatus2', 'astDocumentType',
     'astChat', 'astChatForm', 'astChatMsg', 'astChatStatus', 'astApprove',
     'astCheckout', 'astCheckoutStatus']
     .forEach(function (id) { els[id] = document.getElementById(id); });
@@ -103,7 +103,13 @@
       var res = await fetch('/api/assistant/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent: true, image: base64Data })
+        body: JSON.stringify({
+          consent: true,
+          docType: els.astDocumentType && ['auto', 'ticket', 'license', 'notice'].indexOf(els.astDocumentType.value) >= 0
+            ? els.astDocumentType.value
+            : 'auto',
+          image: base64Data,
+        })
       });
       var contentType = (res.headers.get('content-type') || '').toLowerCase();
       var data = null;

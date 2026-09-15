@@ -409,6 +409,15 @@
             <p class="photo-note-sub">No document handy? No problem &mdash; use the "skip the scan" link below and type the details in step 3; only your date of birth and driver's license number are required later.</p>
           </div>
 
+          <div class="scan-type" role="group" aria-labelledby="scanTypeLabel">
+            <label id="scanTypeLabel" for="scanDocumentType">What are you scanning?</label>
+            <select id="scanDocumentType">
+              <option value="auto">Let the scanner identify it</option>
+              <option value="ticket">Traffic ticket / citation</option>
+              <option value="license">Driver license / permit</option>
+              <option value="notice">Court / DMV / traffic notice</option>
+            </select>
+          </div>
           <div class="drop" id="drop">
             <input type="file" id="fileInput" accept="image/*,.pdf,application/pdf" capture="environment" aria-label="Take a photo or upload a scan of your ticket, driver's license, or court/DMV document">
             <p><strong>Click to upload</strong> or drag your <strong>ticket, driver's license, or court/DMV notice</strong> here</p>

@@ -913,6 +913,13 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
   *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;scroll-behavior:auto !important;}
 }
 
+/* Scanner document-type selector */
+.scan-type{display:flex;align-items:center;gap:10px;margin:0 0 12px;}
+.scan-type label{margin:0 !important;color:var(--ink,#10213d) !important;font-size:12px !important;font-weight:700 !important;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+.scan-type select{min-height:46px;flex:1;border:1px solid #C9D5E3;border-radius:11px;background:#fff;color:var(--ink,#10213d);padding:10px 12px;font:inherit;}
+.scan-type select:focus{outline:none;border-color:#FF7A18;box-shadow:0 0 0 4px rgba(255,122,24,.12);}
+@media(max-width:640px){.scan-type{display:block}.scan-type label{display:block !important;margin-bottom:6px !important}.scan-type select{width:100%;}}
+
 /* PLATFORM STORY — flagship product narrative */
 .section-platform{background:#fff;position:relative;overflow:hidden;}
 .section-platform::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 8% 20%,rgba(217,0,18,.06),transparent 24%),radial-gradient(circle at 92% 80%,rgba(242,168,0,.07),transparent 25%);pointer-events:none;}

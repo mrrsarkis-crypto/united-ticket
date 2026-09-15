@@ -26,6 +26,7 @@
   var currentDlDataUrl = null;
   var currentTrackingCode = null;
   var currentClaimToken = null;
+  var scanDocumentTypeEl = document.getElementById('scanDocumentType');
   // Vercel Functions reject request bodies above their platform limit before
   // application code runs. Base64 adds ~33%, so keep direct PDF uploads safely
   // below that ceiling. Images may start larger because scanner-client.js
@@ -152,7 +153,13 @@
     var res = await fetch('/api/assistant/extract', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ consent: true, docType: 'auto', image: dataUrl })
+      body: JSON.stringify({
+        consent: true,
+        docType: scanDocumentTypeEl && ['auto', 'ticket', 'license', 'notice'].indexOf(scanDocumentTypeEl.value) >= 0
+          ? scanDocumentTypeEl.value
+          : 'auto',
+        image: dataUrl,
+      })
     });
     var data = await parseResponse(res);
     if (!res.ok) {
