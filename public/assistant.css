@@ -47,6 +47,8 @@
 @media (max-width: 640px) { .ast-fields { grid-template-columns: 1fr; } }
 
 .ast-legibility { grid-column: 1 / -1; font-size: 13px; color: var(--muted, #5a6b83); background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
+.ast-warning { border: 1px solid #f1c40f; background: #fffaf0; color: #5b4300; }
+.ast-warning ul { margin: 7px 0 0 18px; padding: 0; }
 
 .ast-contact { margin-top: 22px; padding-top: 4px; }
 .ast-contact h3 { margin: 0 0 4px; color: var(--navy, #0033A0); font-size: 16px; }

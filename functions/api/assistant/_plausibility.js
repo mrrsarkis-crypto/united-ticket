@@ -86,6 +86,23 @@ function plausiblePersonName(value) {
   return text.length >= 2 && text.length <= 80 && !/\d{3,}/.test(text) && /^[A-Za-zÀ-ÖØ-öø-ÿ .,'\-]+$/.test(text);
 }
 
+function looksLikeCourtAddress(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  return /\b(superior court|municipal court|district court|traffic court|courthouse|court of|clerk of court|court clerk|judicial district|justice center)\b/i.test(text);
+}
+
+function duplicateIdentifierFields(extracted, pairs, warnings) {
+  for (const [left, right] of pairs) {
+    const a = valueOf(extracted[left]);
+    const b = valueOf(extracted[right]);
+    if (a && b && a.toUpperCase().replace(/[^A-Z0-9]/g, '') === b.toUpperCase().replace(/[^A-Z0-9]/g, '')) {
+      downgrade(extracted, left, warnings, 'identifier_collision');
+      downgrade(extracted, right, warnings, 'identifier_collision');
+    }
+  }
+}
+
 export function applyFieldPlausibility(extracted) {
   const warnings = [];
   const dates = ['violationDate', 'courtDate', 'dueDate', 'dateOfBirth'];
@@ -137,6 +154,17 @@ export function applyFieldPlausibility(extracted) {
   const name = valueOf(extracted.defendantName);
   if (name && !plausiblePersonName(name)) downgrade(extracted, 'defendantName', warnings, 'name_format');
 
+  const mailingAddress = valueOf(extracted.mailingAddress);
+  if (mailingAddress && looksLikeCourtAddress(mailingAddress)) {
+    downgrade(extracted, 'mailingAddress', warnings, 'possible_court_address');
+  }
+
+  duplicateIdentifierFields(extracted, [
+    ['citationNumber', 'officerId'],
+    ['citationNumber', 'vehiclePlate'],
+    ['drivingLicenseNumber', 'vehiclePlate'],
+  ], warnings);
+
   return warnings.slice(0, 20);
 }
 
@@ -150,4 +178,5 @@ export const __plausibilityTest = {
   plausiblePlate,
   plausibleOfficerId,
   plausiblePersonName,
+  looksLikeCourtAddress,
 };

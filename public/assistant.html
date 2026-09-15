@@ -113,18 +113,19 @@
     <div class="wrap ast-wrap">
       <!-- STAGE 1: UPLOAD + CONSENT -->
       <div class="ast-card" id="stage1">
-        <h2>Step 1 — Upload your citation</h2>
-        <p class="muted">Supported: JPG and PNG. For best results, use a clear, well-lit photo with the full citation visible and readable.</p>
+        <h2>Step 1 — Upload your traffic document</h2>
+        <p class="muted">Supported: JPG, PNG, HEIC, and PDF. You can upload a traffic ticket, driver license, or traffic-related court/DMV notice from any jurisdiction.</p>
 
-        <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload ticket image">
-          <input type="file" id="astFile" accept="image/jpeg,image/png" hidden>
-          <p><strong>Click to upload</strong> or drag a photo of your ticket here</p>
-          <img id="astPreview" class="ast-preview" style="display:none" alt="Ticket preview">
+        <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload traffic ticket, driver license, or court notice">
+          <input type="file" id="astFile" accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.heic,.heif,.pdf" capture="environment" hidden>
+          <p><strong>Click to upload</strong> or drag your traffic document here</p>
+          <p class="tiny">On a phone, tapping here can open the rear camera. Use good light, avoid glare, and keep the full document in frame.</p>
+          <img id="astPreview" class="ast-preview" style="display:none" alt="Uploaded document preview">
         </div>
 
         <label class="ast-check">
           <input type="checkbox" id="astConsentBool">
-          <span>I agree that my ticket photo will be sent to a third-party AI service solely to extract the citation fields and explain my options. I understand it will not be sold, and I can stop at any time.</span>
+          <span>I agree that my uploaded traffic document will be sent to a third-party AI service solely to extract document fields and explain my options. I understand it will not be sold, and I can stop at any time.</span>
         </label>
 
         <button type="button" class="btn btn-amber ast-btn" id="astScan">Scan my ticket <span class="ast-arrow">&rarr;</span></button>
@@ -238,6 +239,7 @@
 </footer>
 
 <script src="/scan-guard.js" defer></script>
+<script src="/scanner-client.js" defer></script>
 <script src="/assistant.js" defer></script>
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();

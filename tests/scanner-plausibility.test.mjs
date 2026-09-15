@@ -55,6 +55,32 @@ test('date parser rejects invalid calendar days and accepts leap day', () => {
   assert.equal(__plausibilityTest.plausibleDate('13/01/2026'), false);
 });
 
+test('semantic identifier collisions are downgraded without rewriting values', () => {
+  const extracted = {
+    citationNumber: field('A12345'),
+    officerId: field('A-12 345'),
+    vehiclePlate: field('A12345'),
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.citationNumber.value, 'A12345');
+  assert.equal(extracted.officerId.value, 'A-12 345');
+  assert.equal(extracted.vehiclePlate.value, 'A12345');
+  assert.equal(extracted.citationNumber.confident, false);
+  assert.equal(extracted.officerId.confident, false);
+  assert.equal(extracted.vehiclePlate.confident, false);
+  assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 4);
+});
+
+test('court-looking mailing addresses are flagged while the literal value is preserved', () => {
+  const extracted = {
+    mailingAddress: field('Los Angeles Superior Court, 111 North Hill Street, Los Angeles CA'),
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.mailingAddress.value, 'Los Angeles Superior Court, 111 North Hill Street, Los Angeles CA');
+  assert.equal(extracted.mailingAddress.confident, false);
+  assert.deepEqual(warnings, [{ field: 'mailingAddress', reason: 'possible_court_address' }]);
+});
+
 test('cross-field date checks downgrade impossible chronology without changing text', () => {
   const extracted = {
     violationDate: field('09/20/2026'),

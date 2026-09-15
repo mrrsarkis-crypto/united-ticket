@@ -67,16 +67,24 @@
   });
 
   function handleFile(file) {
-    if (!/^image\/(png|jpe?g|heic)$/i.test(file.type) && file.type !== '') {
-      setStatus(els.astStatus, 'Unsupported file type. Please upload a JPG, PNG, or HEIC image.', true);
+    var type = String(file.type || '').toLowerCase();
+    var name = String(file.name || '').toLowerCase();
+    var supported = /^(image\/(png|jpe?g|heic|heif)|application\/pdf)$/.test(type) || /\.(png|jpe?g|heic|heif|pdf)$/.test(name);
+    if (!supported) {
+      setStatus(els.astStatus, 'Unsupported file type. Please upload a JPG, PNG, HEIC, or PDF document.', true);
       return;
     }
     var reader = new FileReader();
     reader.onload = function (e) {
       base64Data = e.target.result;
-      els.astPreview.src = base64Data;
-      els.astPreview.style.display = 'block';
-      setStatus(els.astStatus, '');
+      if (type === 'application/pdf' || /\.pdf$/.test(name)) {
+        els.astPreview.style.display = 'none';
+        setStatus(els.astStatus, 'PDF selected. It will be read directly by the document scanner.');
+      } else {
+        els.astPreview.src = base64Data;
+        els.astPreview.style.display = 'block';
+        setStatus(els.astStatus, '');
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -160,7 +168,17 @@
     var note = 'The assistant rated this image\'s legibility as <strong>' + esc(leg) + '</strong>. ' +
       (leg === 'good' ? '' : 'Blurry or partial images may miss fields — please correct anything that looks wrong.') +
       ' You must verify the details below before anything is prepared.';
-    els.astFields.insertAdjacentHTML('beforeend', '<p class="ast-legibility">' + note + '</p>');
+    var warnings = Array.isArray(obj.validationWarnings) ? obj.validationWarnings : [];
+    var warningHtml = '';
+    if (warnings.length) {
+      warningHtml = '<div class="ast-legibility ast-warning"><strong>Verification flags</strong><ul>' +
+        warnings.slice(0, 6).map(function (w) {
+          var label = String(w.field || 'field');
+          var reason = String(w.reason || 'verification_needed').replace(/_/g, ' ');
+          return '<li>' + esc(label) + ': ' + esc(reason) + '. Keep the extracted text as printed, but verify it against the original document.</li>';
+        }).join('') + '</ul></div>';
+    }
+    els.astFields.insertAdjacentHTML('beforeend', '<p class="ast-legibility">' + note + '</p>' + warningHtml);
   }
 
   function collectVerified() {
