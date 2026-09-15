@@ -1,0 +1,30 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Syntax check new deadline utilities
+        run: |
+          node --check functions/api/_deadline-utils.js
+          node --check functions/api/deadlines/index.js
+          node --check functions/api/_google-calendar.js
+          node --check functions/api/_welcome-email.js
+          node --check functions/api/cases/admin/sync.js
+      - name: Run project tests
+        run: npm test
