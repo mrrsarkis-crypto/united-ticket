@@ -11,6 +11,7 @@ export async function onRequestGet(context) {
   if (!record) return json({ error: 'Case not found' }, 404);
 
   const notes = record.notes && typeof record.notes === 'object' ? record.notes : {};
+  const workflow = record.workflow && typeof record.workflow === 'object' ? record.workflow : {};
 
   return json({
     trackingCode: record.tracking_code,
@@ -22,5 +23,21 @@ export async function onRequestGet(context) {
     statusHistory: Array.isArray(record.status_history) && record.status_history.length
       ? record.status_history
       : statusHistory(record.status),
+    caseDetails: {
+      jurisdiction: record.jurisdiction || '',
+      courtOrAgency: record.courtOrAgency || record.court || '',
+      violationCode: record.violationCode || notes.code || '',
+      violationDate: record.violation_date || '',
+      dueDate: record.due_date || record.court_date || '',
+    },
+    workflow: {
+      jurisdiction: workflow.jurisdiction || '',
+      procedure: workflow.procedure || '',
+      eligible: typeof workflow.eligible === 'boolean' ? workflow.eligible : null,
+      reason: workflow.reason || '',
+      dueDate: workflow.due_date || record.due_date || record.court_date || '',
+      daysUntilDeadline: typeof workflow.days_until_deadline === 'number' ? workflow.days_until_deadline : null,
+      filingMethod: workflow.filingMethod || '',
+    },
   }, 200);
 }
