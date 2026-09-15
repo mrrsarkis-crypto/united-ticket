@@ -11,6 +11,10 @@ const LABELS = {
   payment_error: 'Payment error',
 };
 
+export async function onRequestGet() {
+  return json({ error: 'Method not allowed' }, 405);
+}
+
 export async function onRequestPatch(context) {
   const { request, env } = context;
   const denied = unauthorizedIfNotAdmin(request, env);

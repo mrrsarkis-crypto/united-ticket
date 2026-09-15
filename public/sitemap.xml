@@ -20,11 +20,10 @@
   <url><loc>https://unitedtraffictickets.com/all-courthouses</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/bot-courthouse</loc><priority>0.8</priority></url>
 
-  <url><loc>https://unitedtraffictickets.com/courthouses/stanley-mosk/</loc><priority>0.6</priority></url>
-  <url><loc>https://unitedtraffictickets.com/courthouses/chatsworth/</loc><priority>0.6</priority></url>
-  
-  <url><loc>https://unitedtraffictickets.com/courthouses/los-angeles-metropolitan/</loc><priority>0.6</priority></url>
-  <url><loc>https://unitedtraffictickets.com/courthouses/van-nuys/</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/courthouses/stanley-mosk</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/courthouses/chatsworth</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/courthouses/los-angeles-metropolitan</loc><priority>0.6</priority></url>
+  <url><loc>https://unitedtraffictickets.com/courthouses/van-nuys</loc><priority>0.6</priority></url>
   <url><loc>https://unitedtraffictickets.com/resources/trial-by-written-declaration</loc><priority>0.7</priority></url>
   <url><loc>https://unitedtraffictickets.com/resources/speeding-ticket-deadlines</loc><priority>0.7</priority></url>
   <url><loc>https://unitedtraffictickets.com/resources/traffic-school-eligibility</loc><priority>0.7</priority></url>
