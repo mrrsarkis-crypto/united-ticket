@@ -123,8 +123,39 @@ export async function onRequestPost(context) {
       }, 502, headers);
     }
 
-    const extracted = normalizeExtraction(modelJson);
-    const plausibilityWarnings = applyFieldPlausibility(extracted);
+    let extracted = normalizeExtraction(modelJson);
+    let plausibilityWarnings = applyFieldPlausibility(extracted);
+
+    // Precision pass: when a usable ticket image still leaves several core
+    // fields uncertain, make one short targeted re-read before returning.
+    // This is deliberately limited to avoid turning every scan into a double
+    // model call, while giving small-print ticket fields a second look.
+    if (shouldRunPrecisionPass(requestedDocType, extracted)) {
+      try {
+        const precisionPrompt = prompt +
+          ' PRECISION PASS: re-inspect the same document at maximum available visual detail. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
+        const precisionVision = await extractVisionDocument(env, {
+          system: EXTRACT_SYSTEM,
+          base64,
+          mediaType,
+          prompt: precisionPrompt,
+          timeoutMs: Math.min(14000, Number(env.SCANNER_PRECISION_TIMEOUT_MS || 14000)),
+        });
+        let precisionJson;
+        try { precisionJson = JSON.parse(extractJson(precisionVision.text)); } catch { precisionJson = null; }
+        if (precisionJson) {
+          const precisionExtracted = normalizeExtraction(precisionJson);
+          const precisionWarnings = applyFieldPlausibility(precisionExtracted);
+          if (preferExtraction(precisionExtracted, precisionWarnings, extracted, plausibilityWarnings, requestedDocType)) {
+            extracted = precisionExtracted;
+            plausibilityWarnings = precisionWarnings;
+          }
+        }
+      } catch (precisionError) {
+        console.warn('scanner precision pass skipped', { scanId, error: String(precisionError && precisionError.message || precisionError).slice(0, 180) });
+      }
+    }
+
     extracted.validationWarnings = plausibilityWarnings;
 
     const resolvedDocType = resolveDocumentType(requestedDocType, extracted);
@@ -185,6 +216,44 @@ export async function onRequestPost(context) {
       : 'The AI scan is temporarily unavailable. Please try again shortly.';
     return json({ error: userMessage + (debug ? ' ' + message.slice(0, 250) : '') }, timedOut ? 504 : 502, headers);
   }
+}
+
+function shouldRunPrecisionPass(requestedDocType, extracted) {
+  if (!['auto', 'ticket'].includes(requestedDocType)) return false;
+  const core = ['citationNumber', 'violationCode', 'courtOrAgency', 'violationDate', 'courtDate', 'dueDate', 'bailAmount'];
+  const missingOrUncertain = core.filter((key) => {
+    const field = extracted && extracted[key];
+    return !(field && field.found === true && field.value && field.confident === true);
+  }).length;
+  const legibility = extracted && extracted.legibility;
+  return (legibility === 'good' || legibility === 'fair') && missingOrUncertain >= 2;
+}
+
+function extractionScore(extracted, warnings, requestedDocType) {
+  const type = requestedDocType === 'license' ? 'license' : requestedDocType === 'notice' ? 'notice' : 'ticket';
+  const keyGroups = type === 'license'
+    ? [['drivingLicenseNumber'], ['defendantName'], ['dateOfBirth'], ['drivingLicenseState']]
+    : type === 'notice'
+      ? [['courtOrAgency'], ['dueDate', 'courtDate'], ['citationNumber'], ['defendantName', 'mailingAddress']]
+      : [['citationNumber'], ['violationCode'], ['courtOrAgency'], ['dueDate', 'courtDate'], ['violationDate']];
+  let score = extracted && extracted.legibility === 'good' ? 3 : extracted && extracted.legibility === 'fair' ? 2 : 0;
+  for (const group of keyGroups) {
+    const fields = group.map((key) => extracted && extracted[key]).filter(Boolean);
+    if (fields.some((field) => field.found === true && field.value)) score += 2;
+    if (fields.some((field) => field.found === true && field.value && field.confident === true)) score += 1;
+  }
+  score -= Math.min(6, (Array.isArray(warnings) ? warnings.length : 0) * 0.5);
+  return score;
+}
+
+function preferExtraction(candidate, candidateWarnings, current, currentWarnings, requestedDocType) {
+  const candidateScore = extractionScore(candidate, candidateWarnings, requestedDocType);
+  const currentScore = extractionScore(current, currentWarnings, requestedDocType);
+  if (candidateScore > currentScore) return true;
+  if (candidateScore < currentScore) return false;
+  const candidateUnknown = Array.isArray(candidate && candidate.unknownFields) ? candidate.unknownFields.length : 99;
+  const currentUnknown = Array.isArray(current && current.unknownFields) ? current.unknownFields.length : 99;
+  return candidateUnknown < currentUnknown;
 }
 
 function buildNextSteps(documentType, assessment) {
@@ -452,4 +521,6 @@ export const __scannerTest = {
   buildScanAssessment,
   buildNextSteps,
   extractJson,
+  shouldRunPrecisionPass,
+  preferExtraction,
 };

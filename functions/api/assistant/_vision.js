@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.14-6';
+export const SCANNER_ENGINE_VERSION = '2026.09.15-7';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 26000;
 const MAX_PROVIDER_TIMEOUT_MS = 30000;
@@ -13,8 +13,8 @@ const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function providerTimeout(env) {
-  const configured = Number(env.SCANNER_PROVIDER_TIMEOUT_MS || DEFAULT_PROVIDER_TIMEOUT_MS);
+function providerTimeout(env, overrideMs) {
+  const configured = Number(overrideMs || env.SCANNER_PROVIDER_TIMEOUT_MS || DEFAULT_PROVIDER_TIMEOUT_MS);
   if (!Number.isFinite(configured)) return DEFAULT_PROVIDER_TIMEOUT_MS;
   return Math.max(MIN_PROVIDER_TIMEOUT_MS, Math.min(MAX_PROVIDER_TIMEOUT_MS, configured));
 }
@@ -328,7 +328,7 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
 }
 
 export async function extractVisionDocument(env, input) {
-  const timeoutMs = providerTimeout(env);
+  const timeoutMs = providerTimeout(env, input && input.timeoutMs);
   const preferred = String(env.SCANNER_VISION_PROVIDER || 'gemini').toLowerCase();
   const available = [];
   if (env.GEMINI_API_KEY) available.push('gemini');

@@ -206,3 +206,17 @@ test('invalid Gemini extraction automatically falls back to Anthropic', async (t
   assert.equal(result.attempts, 2);
   assert.equal(result.text, '{"legibility":"fair"}');
 });
+
+
+test('precision pass only triggers for ambiguous ticket reads', () => {
+  const weak = { legibility: 'good', citationNumber: { value: null, found: false, confident: false }, violationCode: { value: null, found: false, confident: false }, courtOrAgency: { value: 'Court', found: true, confident: true }, violationDate: { value: null, found: false, confident: false } };
+  const clear = { legibility: 'good', citationNumber: { value: 'ABC1234', found: true, confident: true }, violationCode: { value: '22350', found: true, confident: true }, courtOrAgency: { value: 'Court', found: true, confident: true }, violationDate: { value: '09/15/2026', found: true, confident: true }, courtDate: { value: '10/15/2026', found: true, confident: true }, dueDate: { value: '09/30/2026', found: true, confident: true }, bailAmount: { value: '$100', found: true, confident: true } };
+  assert.equal(__scannerTest.shouldRunPrecisionPass('ticket', weak), true);
+  assert.equal(__scannerTest.shouldRunPrecisionPass('ticket', clear), false);
+  assert.equal(__scannerTest.shouldRunPrecisionPass('license', weak), false);
+});
+
+test('precision pass prefers the extraction with more reliable key fields', () => {
+  const base = (cite, code) => ({ legibility: 'good', citationNumber: { value: cite, found: !!cite, confident: !!cite }, violationCode: { value: code, found: !!code, confident: !!code }, courtOrAgency: { value: 'Court', found: true, confident: true }, violationDate: { value: '09/15/2026', found: true, confident: true }, unknownFields: [] });
+  assert.equal(__scannerTest.preferExtraction(base('ABC1234','22350'), [], base(null,null), [], 'ticket'), true);
+});
