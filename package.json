@@ -1,29 +1,29 @@
-{
-  "name": "ticket-fighter",
-  "version": "1.0.0",
-  "private": true,
-  "description": "United Traffic Tickets defense website and Cloudflare Pages Functions",
-  "scripts": {
-    "start": "node server.js",
-    "build": "node scripts/build-vercel.js",
-    "test:scanner": "node --check functions/api/assistant/_schema.js && node --check functions/api/assistant/_vision.js && node --check functions/api/assistant/_plausibility.js && node --check functions/api/assistant/_assessment.js && node --check functions/api/assistant/_document-type.js && node --check functions/api/assistant/extract.js && node --check public/scanner-client.js && node --check public/app.js && node --check api/assistant/extract.js && node --check api/health.js && node --test tests/scanner-*.test.mjs",
-    "test": "npm run test:scanner && node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check functions/api/health.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js",
-    "check": "npm test"
-  },
-  "keywords": [
-    "traffic-tickets",
-    "cloudflare-pages",
-    "stripe"
-  ],
-  "author": "United Traffic Tickets",
-  "license": "ISC",
-  "type": "module",
-  "devDependencies": {
-    "wrangler": "^3.114.17"
-  },
-  "dependencies": {
-    "@vercel/oidc": "^3.8.7",
-    "@vercel/speed-insights": "^2.0.0",
-    "cloudflare": "^7.1.0"
-  }
+﻿{
+    "name":  "ticket-fighter",
+    "version":  "1.0.0",
+    "private":  true,
+    "description":  "United Traffic Tickets defense website and Cloudflare Pages Functions",
+    "scripts":  {
+                    "start":  "node server.js",
+                    "build":  "node scripts/build-vercel.js",
+                    "test:scanner":  "node --check functions/api/assistant/_schema.js \u0026\u0026 node --check functions/api/assistant/_vision.js \u0026\u0026 node --check functions/api/assistant/_plausibility.js \u0026\u0026 node --check functions/api/assistant/_assessment.js \u0026\u0026 node --check functions/api/assistant/_document-type.js \u0026\u0026 node --check functions/api/assistant/extract.js \u0026\u0026 node --check public/scanner-client.js \u0026\u0026 node --check public/app.js \u0026\u0026 node --check api/assistant/extract.js \u0026\u0026 node --check api/health.js \u0026\u0026 node --test tests/scanner-*.test.mjs",
+                    "test":  "npm run test:scanner; node --check functions/api/webhook.js; node --check functions/_middleware.js; node --check functions/api/health.js; node --check functions/api/cases/[code].js; node --check functions/api/cases/admin/index.js; node --check functions/api/_deadline-utils.js; node --check functions/api/deadlines/index.js; node --check functions/api/_google-calendar.js; node --check functions/api/_google-oauth.js; node --check functions/api/_welcome-email.js; node --check functions/api/cases/admin/sync.js; node --check functions/api/cases/admin/google/start.js; node --check functions/api/cases/admin/google/callback.js; node --test tests/deadline-utils.test.mjs",
+                    "check":  "npm test"
+                },
+    "keywords":  [
+                     "traffic-tickets",
+                     "cloudflare-pages",
+                     "stripe"
+                 ],
+    "author":  "United Traffic Tickets",
+    "license":  "ISC",
+    "type":  "module",
+    "devDependencies":  {
+                            "wrangler":  "^3.114.17"
+                        },
+    "dependencies":  {
+                         "@vercel/oidc":  "^3.8.7",
+                         "@vercel/speed-insights":  "^2.0.0",
+                         "cloudflare":  "^7.1.0"
+                     }
 }
