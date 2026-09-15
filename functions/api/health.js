@@ -1,4 +1,4 @@
-// /api/health — safe production configuration check.
+// /api/health - safe production configuration check.
 // Never returns secret values; it reports only whether required bindings exist.
 export async function onRequestGet(context) {
   const { env } = context;
@@ -15,6 +15,8 @@ export async function onRequestGet(context) {
   const scannerVisionReady = !!(env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
   const casesReady = !!env.CASES;
   const r2Ready = !!env.R2;
+  const googleCalendarConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REFRESH_TOKEN);
+  const googleAuthorizationConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
   const platform = env.VERCEL || env.VERCEL_ENV ? 'vercel' : 'cloudflare';
   const ok = missing.length === 0 && casesReady && r2Ready && scannerVisionReady;
   const safeMissing = [];
@@ -32,6 +34,11 @@ export async function onRequestGet(context) {
       cases: casesReady,
       r2: r2Ready,
       scannerVision: scannerVisionReady,
+    },
+    integrations: {
+      googleCalendar: googleCalendarConfigured,
+      googleAuthorization: googleAuthorizationConfigured,
+      clientWelcomeEmail: !!env.RESEND_API_KEY,
     },
     scanner: {
       ready: scannerVisionReady,
