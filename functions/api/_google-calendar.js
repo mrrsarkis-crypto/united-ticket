@@ -10,21 +10,25 @@ export async function addCaseDatesToGoogleCalendar(env, caseData, { now = new Da
   if (!hasGoogleCalendarConfig(env)) return { ok: false, skipped: true, reason: 'not_configured' };
 
   const dates = collectFutureDates(caseData, now);
-  if (!dates.length) return { ok: true, created: 0, dates: [] };
+  if (!dates.length) return { ok: true, created: 0, existing: 0, dates: [] };
 
   const accessToken = await getAccessToken(env);
   const calendarId = env.GOOGLE_CALENDAR_ID || 'primary';
   const created = [];
+  const existing = [];
 
   for (const item of dates) {
+    const eventId = await deterministicEventId(caseData.tracking_code || caseData.citation || caseData.name || 'case', item.date);
     const event = {
-      summary: 'Court date — ' + (caseData.name || caseData.tracking_code || 'Traffic ticket case'),
+      id: eventId,
+      summary: 'Court date - ' + (caseData.name || caseData.tracking_code || 'Traffic ticket case'),
       description: buildDescription(caseData),
       start: { date: item.date },
       end: { date: addOneDay(item.date) },
       extendedProperties: {
         private: {
           united_ticket_case: String(caseData.tracking_code || ''),
+          united_ticket_date: item.date,
         },
       },
     };
@@ -39,11 +43,16 @@ export async function addCaseDatesToGoogleCalendar(env, caseData, { now = new Da
       body: JSON.stringify(event),
     });
     const payload = await res.json().catch(() => ({}));
+
+    if (res.status === 409) {
+      existing.push({ date: item.date, event_id: eventId, existing: true });
+      continue;
+    }
     if (!res.ok) throw new Error('Google Calendar HTTP ' + res.status + ': ' + JSON.stringify(payload).slice(0, 500));
-    created.push({ date: item.date, event_id: payload.id || '', html_link: payload.htmlLink || '' });
+    created.push({ date: item.date, event_id: payload.id || eventId, html_link: payload.htmlLink || '' });
   }
 
-  return { ok: true, created: created.length, dates: created };
+  return { ok: true, created: created.length, existing: existing.length, dates: created.concat(existing) };
 }
 
 function collectFutureDates(caseData, now) {
@@ -97,6 +106,15 @@ function validDate(y, m, d) {
   return [String(y).padStart(4, '0'), String(m).padStart(2, '0'), String(d).padStart(2, '0')].join('-');
 }
 
+async function deterministicEventId(caseKey, date) {
+  const data = new TextEncoder().encode('united-ticket:' + String(caseKey) + ':' + date);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const bytes = new Uint8Array(digest);
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
+  return ('tf' + out).slice(0, 1024);
+}
+
 function addOneDay(date) {
   const d = new Date(date + 'T00:00:00');
   d.setDate(d.getDate() + 1);
@@ -106,10 +124,10 @@ function addOneDay(date) {
 function buildDescription(caseData) {
   return [
     'United Traffic Tickets Defense',
-    'Case: ' + (caseData.tracking_code || '—'),
-    'Client: ' + (caseData.name || '—'),
-    'Court: ' + (caseData.court || '—'),
-    'Citation: ' + (caseData.citation || '—'),
+    'Case: ' + (caseData.tracking_code || 'N/A'),
+    'Client: ' + (caseData.name || 'N/A'),
+    'Court: ' + (caseData.court || 'N/A'),
+    'Citation: ' + (caseData.citation || 'N/A'),
     'Please verify the court date against the source document before relying on this calendar entry.',
   ].join('\n');
 }
