@@ -33,22 +33,13 @@ jobs:
       - name: Validate JavaScript
         run: npm test
 
-      - name: Build production site
-        run: npm run build
-
-      - name: Verify AdSense injection
-        run: |
-          grep -F 'ca-pub-9943048295609395' dist/index.html
-          grep -F 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' dist/index.html
-          grep -F 'amp-auto-ads' dist/amp/index.html
-
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          command: pages deploy dist --project-name=ticket-fighter
+          command: pages deploy public --project-name=ticket-fighter
 
       - name: Verify production runtime configuration
         run: |
