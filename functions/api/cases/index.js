@@ -1,4 +1,6 @@
 // /api/cases — create a case (POST) and return a Stripe Checkout URL
+import { addCaseDatesToGoogleCalendar } from '../_google-calendar.js';
+import { sendClientWelcomeEmail } from '../_welcome-email.js';
 import { caseAccessToken, json, listRecords, priceFor, rand, sendBusinessNotification } from '../_shared.js';
 
 // GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
@@ -64,18 +66,21 @@ export async function onRequestPost(context) {
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
     address: body.address || '', phone: body.phone || '', notes: body.notes || '',
-    dlPhoto: dlPhoto || ''
+    dlPhoto: dlPhoto || '',
+    courtDate: body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || '',
   });
 
   let stored = false;
+  let record = null;
   if (env.CASES) {
     try {
       const now = new Date().toISOString();
-      const record = {
+      record = {
         ...(priorRecord || {}),
         tracking_code: trackingCode,
         name: fullName, email, court, citation, service,
         dob, dl,
+        court_date: body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || (priorRecord && priorRecord.court_date) || '',
         status: 'payment_pending',
         notes: JSON.parse(notes),
         session_id: sessionId || undefined,
@@ -87,6 +92,7 @@ export async function onRequestPost(context) {
         await env.CASES.put('sessioncase:' + sessionId, trackingCode, { expirationTtl: 60 * 60 * 24 * 14 });
       }
       stored = true;
+
       const n = record.notes || {};
       const info =
         'Name: ' + fullName + '\n' +
@@ -95,28 +101,53 @@ export async function onRequestPost(context) {
         'Driver license #: ' + dl + '\n' +
         'Court: ' + court + '\n' +
         'Citation #: ' + citation + '\n' +
-        'Violation date: ' + (n.date || '—') + '\n' +
-        'Code/section: ' + (n.code || '—') + '\n' +
-        'Bail amount: ' + (n.bail || '—') + '\n' +
-        'Address: ' + (n.address || '—') + '\n' +
-        'Phone: ' + (n.phone || '—') + '\n' +
-        'Extras/notes: ' + (n.notes || '—') + '\n' +
+        'Violation date: ' + (n.date || 'N/A') + '\n' +
+        'Code/section: ' + (n.code || 'N/A') + '\n' +
+        'Bail amount: ' + (n.bail || 'N/A') + '\n' +
+        'Court date: ' + (record.court_date || 'N/A') + '\n' +
+        'Address: ' + (n.address || 'N/A') + '\n' +
+        'Phone: ' + (n.phone || 'N/A') + '\n' +
+        'Extras/notes: ' + (n.notes || 'N/A') + '\n' +
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
-        'Assist. session: ' + (record.session_id || '—') + '\n' +
+        'Assist. session: ' + (record.session_id || 'N/A') + '\n' +
         'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
       const header = isClaimed
-        ? 'Existing quick-scan claim completed with full details (awaiting payment).\n\n— CLAIM —\nTracking code: ' + trackingCode + '\nClaimed at: ' + record.created_at + '\n\n'
-        : 'New "Fight My Ticket" submission received (awaiting payment — Checkout URL sent to customer).\n\n— CASE —\nTracking code: ' + trackingCode + '\nStatus: payment_pending\nTime: ' + record.created_at + '\n\n';
+        ? 'Existing quick-scan claim completed with full details (awaiting payment).\n\nCLAIM\nTracking code: ' + trackingCode + '\nClaimed at: ' + record.created_at + '\n\n'
+        : 'New "Fight My Ticket" submission received (awaiting payment - Checkout URL sent to customer).\n\nCASE\nTracking code: ' + trackingCode + '\nStatus: payment_pending\nTime: ' + record.created_at + '\n\n';
       await sendBusinessNotification(env, {
         subject: 'New ticket case: ' + trackingCode,
         text:
           header +
-          '— SUBMITTED ONLINE INFO —\n' +
+          'SUBMITTED ONLINE INFO\n' +
           info + '\n\n' +
           'View in dashboard: https://unitedtraffictickets.com/admin-cases\n' +
           'Case Center: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode) + '\n\n' +
           '(The prefilled TBD / TR-205 will be emailed here once payment clears.)',
       });
+
+      // These integrations are best-effort and never block Stripe checkout.
+      // Calendar creation is idempotent by deterministic event ID. Welcome
+      // email is stored as sent so retries do not repeatedly email the client.
+      try {
+        const calendarResult = await addCaseDatesToGoogleCalendar(env, record);
+        record.integrations = { ...(record.integrations || {}), calendar: calendarResult, calendar_synced_at: new Date().toISOString() };
+      } catch (e) {
+        console.error('Google Calendar sync failed', e);
+        record.integrations = { ...(record.integrations || {}), calendar: { ok: false, error: String(e && e.message || e) } };
+      }
+      if (!record.integrations || !record.integrations.welcome_email_sent) {
+        try {
+          const welcome = await sendClientWelcomeEmail(env, record);
+          if (welcome && welcome.sent) {
+            record.integrations = { ...(record.integrations || {}), welcome_email_sent: true, welcome_email_sent_at: new Date().toISOString() };
+          }
+        } catch (e) {
+          console.error('Client welcome email failed', e);
+          record.integrations = { ...(record.integrations || {}), welcome_email_error: String(e && e.message || e) };
+        }
+      }
+      record.updated_at = new Date().toISOString();
+      await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
     } catch (e) {
       console.error('KV insert failed', e);
     }
