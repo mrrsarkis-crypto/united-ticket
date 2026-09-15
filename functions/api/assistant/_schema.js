@@ -12,7 +12,8 @@ const fieldNames = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
   'citationNumber','violationDate','courtDate','violationCode','violationDescription',
   'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
-  'vehiclePlate','bailAmount','dueDate'
+  'vehiclePlate','bailAmount','dueDate','jurisdiction','courtDivision','filingMethod',
+  'procedureType','eligibilityNotes'
 ];
 
 const properties = {};
