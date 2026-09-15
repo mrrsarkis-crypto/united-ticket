@@ -8,6 +8,8 @@ const publisher = 'ca-pub-9943048295609395';
 const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}"
      crossorigin="anonymous"></script>`;
 const accountMeta = `<meta name="google-adsense-account" content="${publisher}">`;
+const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
+const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
 const scannerClientTag = '<script src="/scanner-client.js"></script>';
 
 async function walk(dir) {
@@ -40,6 +42,14 @@ for (const file of await walk(outDir)) {
   }
 
   if (isAmp) {
+    if (!html.includes('custom-element="amp-auto-ads"')) {
+      html = html.replace(/<head([^>]*)>/i, `$&\n${ampAdsenseScript}`);
+      changed = true;
+    }
+    if (!html.includes('<amp-auto-ads')) {
+      html = html.replace(/<body([^>]*)>/i, `$&\n${ampAdsenseUnit}`);
+      changed = true;
+    }
     if (changed) await writeFile(file, html, 'utf8');
     ampHtml++;
     continue;
@@ -60,7 +70,7 @@ for (const file of await walk(outDir)) {
 }
 
 // The static HTML now carries the AdSense tag. Remove the old runtime loader
-// from the Vercel build so no page requests the same AdSense library twice.
+// from the build so no page requests the same AdSense library twice.
 const navFile = path.join(outDir, 'nav.js');
 try {
   let nav = await readFile(navFile, 'utf8');
@@ -74,4 +84,4 @@ try {
   // nav.js is optional for the build step.
 }
 
-console.log(`Vercel static build complete: ${normalHtml} standard HTML pages with scanner optimizer + AdSense tags; ${ampHtml} AMP pages with account meta.`);
+console.log(`Static build complete: ${normalHtml} standard HTML pages with scanner optimizer + AdSense; ${ampHtml} AMP pages with AMP Auto ads.`);
