@@ -34,16 +34,17 @@ export async function onRequestPost(context) {
     const dueDate = record.due_date || record.court_date || n.dueDate || n.due_date || fieldValue('dueDate') || fieldValue('courtDate');
     const days = daysUntil(dueDate, now);
     const sent = { ...((record.workflow && record.workflow.emails) || {}) };
-    let emailEvent = null;
-    if (workflow.jurisdiction === 'california' && workflow.eligible === true && !sent.workflow_identified) emailEvent = 'workflow_identified';
-    if (days === 7 && !sent.deadline_7) emailEvent = 'deadline_7';
-    if (days === 3 && !sent.deadline_3) emailEvent = 'deadline_3';
+    const pendingEvents = [];
+    if (workflow.jurisdiction === 'california' && workflow.eligible === true && !sent.workflow_identified) pendingEvents.push('workflow_identified');
+    if (days === 7 && !sent.deadline_7) pendingEvents.push('deadline_7');
+    if (days === 3 && !sent.deadline_3) pendingEvents.push('deadline_3');
 
-    if (emailEvent) {
+    for (const emailEvent of pendingEvents) {
       const mail = await sendWorkflowEmail(env, record, emailEvent).catch(e => ({ sent: false, error: String(e?.message || e) }));
       if (mail.sent) sent[emailEvent] = now.toISOString();
       results.push({ code: record.tracking_code, event: emailEvent, ...mail });
     }
+
     const updated = {
       ...record,
       jurisdiction: fieldValue('jurisdiction') || record.jurisdiction || '',
