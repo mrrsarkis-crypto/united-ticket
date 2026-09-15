@@ -70,6 +70,17 @@ function plausibleOfficerId(value) {
   return text.length >= 1 && text.length <= 20 && /^[A-Za-z0-9\- ]+$/.test(text);
 }
 
+function dateValue(field) {
+  const text = valueOf(field);
+  if (!text || !plausibleDate(text)) return null;
+  const parts = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text) || /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/.exec(text);
+  if (!parts) return null;
+  const year = parts[1].length === 4 ? Number(parts[1]) : Number(parts[3]);
+  const month = parts[1].length === 4 ? Number(parts[2]) : Number(parts[1]);
+  const day = parts[1].length === 4 ? Number(parts[3]) : Number(parts[2]);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function plausiblePersonName(value) {
   const text = String(value || '').trim();
   return text.length >= 2 && text.length <= 80 && !/\d{3,}/.test(text) && /^[A-Za-zÀ-ÖØ-öø-ÿ .,'\-]+$/.test(text);
@@ -77,6 +88,7 @@ function plausiblePersonName(value) {
 
 export function applyFieldPlausibility(extracted) {
   const warnings = [];
+  const dates = ['violationDate', 'courtDate', 'dueDate', 'dateOfBirth'];
   if (!extracted || typeof extracted !== 'object') return warnings;
 
   const citation = valueOf(extracted.citationNumber);
@@ -85,9 +97,26 @@ export function applyFieldPlausibility(extracted) {
   const code = valueOf(extracted.violationCode);
   if (code && !plausibleViolationCode(code)) downgrade(extracted, 'violationCode', warnings, 'format');
 
-  for (const key of ['violationDate', 'courtDate', 'dueDate', 'dateOfBirth']) {
+  for (const key of dates) {
     const value = valueOf(extracted[key]);
     if (value && !plausibleDate(value)) downgrade(extracted, key, warnings, 'date_format');
+  }
+
+  const violationDate = dateValue(extracted.violationDate);
+  const courtDate = dateValue(extracted.courtDate);
+  const dueDate = dateValue(extracted.dueDate);
+  const dob = dateValue(extracted.dateOfBirth);
+  if (violationDate && courtDate && courtDate < violationDate) {
+    downgrade(extracted, 'courtDate', warnings, 'before_violation_date');
+  }
+  if (violationDate && dueDate && dueDate < violationDate) {
+    downgrade(extracted, 'dueDate', warnings, 'before_violation_date');
+  }
+  if (dob && violationDate && dob >= violationDate) {
+    downgrade(extracted, 'dateOfBirth', warnings, 'not_before_violation_date');
+  }
+  if (dob && courtDate && dob >= courtDate) {
+    downgrade(extracted, 'dateOfBirth', warnings, 'not_before_court_date');
   }
 
   const bail = valueOf(extracted.bailAmount);
@@ -112,6 +141,7 @@ export function applyFieldPlausibility(extracted) {
 }
 
 export const __plausibilityTest = {
+  dateValue,
   plausibleDate,
   plausibleCitation,
   plausibleViolationCode,

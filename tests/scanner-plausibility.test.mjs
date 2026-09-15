@@ -54,3 +54,25 @@ test('date parser rejects invalid calendar days and accepts leap day', () => {
   assert.equal(__plausibilityTest.plausibleDate('02/29/2027'), false);
   assert.equal(__plausibilityTest.plausibleDate('13/01/2026'), false);
 });
+
+test('cross-field date checks downgrade impossible chronology without changing text', () => {
+  const extracted = {
+    violationDate: field('09/20/2026'),
+    courtDate: field('09/19/2026'),
+    dueDate: field('09/18/2026'),
+    dateOfBirth: field('10/01/2026'),
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.courtDate.value, '09/19/2026');
+  assert.equal(extracted.dueDate.value, '09/18/2026');
+  assert.equal(extracted.dateOfBirth.value, '10/01/2026');
+  assert.equal(extracted.courtDate.confident, false);
+  assert.equal(extracted.dueDate.confident, false);
+  assert.equal(extracted.dateOfBirth.confident, false);
+  assert.deepEqual(warnings, [
+    { field: 'courtDate', reason: 'before_violation_date' },
+    { field: 'dueDate', reason: 'before_violation_date' },
+    { field: 'dateOfBirth', reason: 'not_before_violation_date' },
+    { field: 'dateOfBirth', reason: 'not_before_court_date' },
+  ]);
+});
