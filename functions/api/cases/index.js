@@ -63,11 +63,11 @@ export async function onRequestPost(context) {
   const isClaimed = !!claimedCode;
   const dlPhoto = (body.dlPhoto || '').trim();
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
+  const courtDate = body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || '';
   const notes = JSON.stringify({
     date: body.date || '', code: body.code || '', bail: body.bail || '',
     address: body.address || '', phone: body.phone || '', notes: body.notes || '',
-    dlPhoto: dlPhoto || '',
-    courtDate: body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || '',
+    dlPhoto: dlPhoto || '', courtDate,
   });
 
   let stored = false;
@@ -80,7 +80,7 @@ export async function onRequestPost(context) {
         tracking_code: trackingCode,
         name: fullName, email, court, citation, service,
         dob, dl,
-        court_date: body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || (priorRecord && priorRecord.court_date) || '',
+        court_date: courtDate || (priorRecord && priorRecord.court_date) || '',
         status: 'payment_pending',
         notes: JSON.parse(notes),
         session_id: sessionId || undefined,
@@ -125,29 +125,39 @@ export async function onRequestPost(context) {
           '(The prefilled TBD / TR-205 will be emailed here once payment clears.)',
       });
 
-      // These integrations are best-effort and never block Stripe checkout.
-      // Calendar creation is idempotent by deterministic event ID. Welcome
-      // email is stored as sent so retries do not repeatedly email the client.
-      try {
-        const calendarResult = await addCaseDatesToGoogleCalendar(env, record);
-        record.integrations = { ...(record.integrations || {}), calendar: calendarResult, calendar_synced_at: new Date().toISOString() };
-      } catch (e) {
-        console.error('Google Calendar sync failed', e);
-        record.integrations = { ...(record.integrations || {}), calendar: { ok: false, error: String(e && e.message || e) } };
-      }
-      if (!record.integrations || !record.integrations.welcome_email_sent) {
+      // Calendar and client email run after persistence and never delay checkout.
+      // waitUntil keeps the work alive after the response is ready when supported by Pages.
+      const runIntegrations = async () => {
+        const integrationPatch = {};
         try {
-          const welcome = await sendClientWelcomeEmail(env, record);
-          if (welcome && welcome.sent) {
-            record.integrations = { ...(record.integrations || {}), welcome_email_sent: true, welcome_email_sent_at: new Date().toISOString() };
-          }
+          const calendar = await addCaseDatesToGoogleCalendar(env, record);
+          integrationPatch.calendar = calendar;
+          integrationPatch.calendar_synced_at = new Date().toISOString();
         } catch (e) {
-          console.error('Client welcome email failed', e);
-          record.integrations = { ...(record.integrations || {}), welcome_email_error: String(e && e.message || e) };
+          console.error('Google Calendar sync failed', e);
+          integrationPatch.calendar = { ok: false, error: String(e && e.message || e) };
         }
-      }
-      record.updated_at = new Date().toISOString();
-      await env.CASES.put('case:' + trackingCode, JSON.stringify(record));
+        if (!(record.integrations && record.integrations.welcome_email_sent)) {
+          try {
+            const welcome = await sendClientWelcomeEmail(env, record);
+            if (welcome && welcome.sent) {
+              integrationPatch.welcome_email_sent = true;
+              integrationPatch.welcome_email_sent_at = new Date().toISOString();
+            }
+          } catch (e) {
+            console.error('Client welcome email failed', e);
+            integrationPatch.welcome_email_error = String(e && e.message || e);
+          }
+        }
+        const latest = await env.CASES.get('case:' + trackingCode, 'json').catch(() => null);
+        await env.CASES.put('case:' + trackingCode, JSON.stringify({
+          ...(latest || record),
+          integrations: { ...((latest && latest.integrations) || record.integrations || {}), ...integrationPatch },
+          updated_at: new Date().toISOString(),
+        }));
+      };
+      if (context && typeof context.waitUntil === 'function') context.waitUntil(runIntegrations().catch((e) => console.error('case integrations failed', e)));
+      else await runIntegrations();
     } catch (e) {
       console.error('KV insert failed', e);
     }
