@@ -6,6 +6,7 @@ const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_A
 const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
+const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
 export async function onRequest(context) {
   const response = await context.next();
@@ -70,6 +71,7 @@ export async function onRequest(context) {
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
         element.append(ADSENSE_META, { html: true });
         element.append(ADSENSE_SCRIPT, { html: true });
+        element.append(TRUST_BADGE_SCRIPT, { html: true });
       }
     }).transform(output);
   } else if (isAmp) {
