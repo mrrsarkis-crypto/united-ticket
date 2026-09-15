@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0033A0">
 <title>My Case Dashboard | United Traffic Tickets Defense</title>
-<meta name="description" content="View your United Traffic Tickets Defense case status, timeline, next steps, and document area.">
+<meta name="description" content="View your United Traffic Tickets Defense case status, timeline, next steps, ticket details, and document area.">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/pages.css">
 <link rel="stylesheet" href="/case.css">
@@ -52,6 +52,33 @@
       </article>
       <aside class="case-card case-ref"><p class="case-kicker">CASE REFERENCE</p><strong id="caseCodeOut">—</strong><span id="caseCreated">—</span><button type="button" class="copy-code" id="copyCode">Copy code</button></aside>
     </div>
+
+    <div class="case-grid case-details-grid">
+      <section class="case-card">
+        <div class="case-card-head simple"><div><p class="case-kicker">TICKET SNAPSHOT</p><h2>What we found</h2></div></div>
+        <dl class="case-facts">
+          <div><dt>Jurisdiction</dt><dd id="caseJurisdiction">Not identified</dd></div>
+          <div><dt>Court / agency</dt><dd id="caseCourt">Not identified</dd></div>
+          <div><dt>Violation</dt><dd id="caseViolation">Not identified</dd></div>
+          <div><dt>Violation date</dt><dd id="caseViolationDate">Not identified</dd></div>
+          <div><dt>Due / appearance date</dt><dd id="caseDueDate">Not identified</dd></div>
+        </dl>
+        <p class="case-microcopy">These details come from the information available in your submitted case record. Check the original citation for the authoritative date and court information.</p>
+      </section>
+
+      <section class="case-card" id="workflowCard">
+        <div class="case-card-head simple"><div><p class="case-kicker">WORKFLOW</p><h2 id="workflowTitle">Reviewing your next procedure</h2></div></div>
+        <div class="workflow-status" id="workflowStatus">Waiting for jurisdiction and procedure details.</div>
+        <p id="workflowReason" class="case-summary"></p>
+        <div class="workflow-meta">
+          <div><span>Procedure</span><strong id="workflowProcedure">Not selected</strong></div>
+          <div><span>Deadline</span><strong id="workflowDeadline">Not identified</strong></div>
+          <div><span>Time left</span><strong id="workflowDays">—</strong></div>
+        </div>
+        <p class="case-microcopy">UTTD workflow guidance is informational. Eligibility, filing rules, and deadlines are controlled by the applicable court or agency.</p>
+      </section>
+    </div>
+
     <div class="case-grid case-lower">
       <section class="case-card"><div class="case-card-head simple"><div><p class="case-kicker">TIMELINE</p><h2>Case activity</h2></div></div><ol class="case-timeline" id="caseTimeline"></ol></section>
       <section class="case-card"><div class="case-card-head simple"><div><p class="case-kicker">DOCUMENT CENTER</p><h2>Your case files</h2></div></div><div class="document-vault" id="documentVault"><div class="vault-icon">▣</div><h3>Your case documents</h3><p id="documentHelp">Prepared documents, receipts, court notices, and files you upload can live here.</p><div class="document-upload" id="documentUpload" hidden><label for="caseDocument">Add a document</label><input type="file" id="caseDocument" accept="application/pdf,image/jpeg,image/png,image/webp"><button type="button" class="btn btn-amber" id="uploadDocument">Upload document</button><div id="documentStatus" class="case-status" role="status" aria-live="polite"></div></div><div id="documentList" class="document-list"></div><a class="vault-link" href="/contact">Need help with a document →</a></div></section>
