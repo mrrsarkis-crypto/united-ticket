@@ -3,27 +3,17 @@
 const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
 const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
+const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
+const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
-
-function isMonetizedPath(pathname) {
-  const path = (pathname || '/').replace(/\/+$/, '') || '/';
-  return (
-    path === '/resources' || path === '/resources.html' ||
-    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
-    path === '/faq' || path === '/faq.html' ||
-    path === '/courthouses' || path === '/courthouses.html' ||
-    path === '/all-courthouses' || path === '/all-courthouses.html' ||
-    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path)
-  );
-}
 
 export async function onRequest(context) {
   const response = await context.next();
   const newHeaders = new Headers(response.headers);
   const url = new URL(context.request.url);
   const isAmp = url.pathname.startsWith('/amp/') || url.pathname === '/amp';
-  const isHtml = !isAmp && (newHeaders.get('content-type') || '').includes('text/html');
-  const monetized = isHtml && isMonetizedPath(url.pathname);
+  const isHtml = (newHeaders.get('content-type') || '').includes('text/html');
+  const isStandardHtml = isHtml && !isAmp;
   const isPrivateAdminApi = /^\/api\/cases\/admin(?:\.|$|\/)/.test(url.pathname);
   const isScannerApi = url.pathname === '/api/assistant/extract';
 
@@ -31,35 +21,21 @@ export async function onRequest(context) {
   newHeaders.set('X-Frame-Options', 'DENY');
   newHeaders.set('Referrer-Policy', 'no-referrer');
 
-  if (isHtml) {
-    // Keep conversion and case-workflow pages tightly locked down. AdSense pages
-    // get an HTTPS-only policy compatible with Google's current CSP guidance.
-    const csp = monetized ? [
+  if (isStandardHtml) {
+    // AdSense can load on every standard public HTML page. Keep the policy
+    // HTTPS-only while allowing Google/Stripe and other HTTPS dependencies.
+    const csp = [
       "default-src 'self' https: data:",
       "object-src 'none'",
       "base-uri 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
       "img-src 'self' data: https:",
       "style-src 'self' 'unsafe-inline' https:",
       "connect-src 'self' https:",
       "frame-src 'self' https:"
-    ] : [
-      "default-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'",
-      "img-src 'self' data:",
-      "style-src 'self' 'unsafe-inline'",
-      "connect-src 'self' https://api.stripe.com",
-      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com"
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
-    newHeaders.set(
-      'Permissions-Policy',
-      monetized
-        ? 'geolocation=(), microphone=(), camera=()'
-        : 'attribution-reporting=(), run-ad-auction=(), join-ad-interest-group=(), join-ads-conversion-measurement=()'
-    );
+    newHeaders.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   }
 
   // Public utility APIs can remain cross-origin. The scanner is deliberately
@@ -85,19 +61,34 @@ export async function onRequest(context) {
     headers: newHeaders
   });
 
-  if (isHtml) {
+  if (isStandardHtml) {
     output = new HTMLRewriter().on('head', {
       element(element) {
         // Load the scanner request optimizer before body scripts. It compresses
         // oversized phone photos, converts supported HEIC uploads, and bounds
         // request time without changing the visible page structure.
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
-        // Site ownership signal on every normal HTML page. This does not itself
-        // enable ads on protected customer-workflow pages.
         element.append(ADSENSE_META, { html: true });
-        if (monetized) element.append(ADSENSE_SCRIPT, { html: true });
+        element.append(ADSENSE_SCRIPT, { html: true });
       }
     }).transform(output);
+  } else if (isAmp) {
+    // AMP requires its dedicated Auto ads component instead of the standard
+    // AdSense loader. Google requires the script in <head> and the element
+    // immediately inside <body>.
+    output = new HTMLRewriter()
+      .on('head', {
+        element(element) {
+          element.append(ADSENSE_META, { html: true });
+          element.append(AMP_ADSENSE_SCRIPT, { html: true });
+        }
+      })
+      .on('body', {
+        element(element) {
+          element.prepend(AMP_ADSENSE_UNIT, { html: true });
+        }
+      })
+      .transform(output);
   }
 
   return output;
