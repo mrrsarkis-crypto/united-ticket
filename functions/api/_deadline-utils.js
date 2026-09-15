@@ -4,7 +4,7 @@ const DAY = 86400000;
 export function parseDate(value) {
   if (!value) return null;
   const s = String(value).trim();
-  const d = /^\\d{4}-\\d{2}-\\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
   return Number.isNaN(d.getTime()) ? null : startDay(d);
 }
 
@@ -15,7 +15,8 @@ export function addDays(value, days) {
 
 export function dateOnly(value) {
   const d = value instanceof Date ? value : parseDate(value);
-  return d ? d.toISOString().slice(0, 10) : null;
+  if (!d || Number.isNaN(d.getTime())) return null;
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 }
 
 export function daysUntil(value, now = new Date()) {
