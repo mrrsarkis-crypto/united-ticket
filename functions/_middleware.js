@@ -1,5 +1,10 @@
 // Cloudflare Pages Functions middleware
 
+const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
+const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
+const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
+const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
+const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
@@ -18,6 +23,8 @@ export async function onRequest(context) {
   newHeaders.set('Referrer-Policy', 'no-referrer');
 
   if (isStandardHtml) {
+    // AdSense can load on every standard public HTML page. Keep the policy
+    // HTTPS-only while allowing Google/Stripe and other HTTPS dependencies.
     const csp = [
       "default-src 'self' https: data:",
       "object-src 'none'",
@@ -62,9 +69,28 @@ export async function onRequest(context) {
         // oversized phone photos, converts supported HEIC uploads, and bounds
         // request time without changing the visible page structure.
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
+        element.append(ADSENSE_META, { html: true });
+        element.append(ADSENSE_SCRIPT, { html: true });
         element.append(TRUST_BADGE_SCRIPT, { html: true });
       }
     }).transform(output);
+  } else if (isAmp) {
+    // AMP requires its dedicated Auto ads component instead of the standard
+    // AdSense loader. Google requires the script in <head> and the element
+    // immediately inside <body>.
+    output = new HTMLRewriter()
+      .on('head', {
+        element(element) {
+          element.append(ADSENSE_META, { html: true });
+          element.append(AMP_ADSENSE_SCRIPT, { html: true });
+        }
+      })
+      .on('body', {
+        element(element) {
+          element.prepend(AMP_ADSENSE_UNIT, { html: true });
+        }
+      })
+      .transform(output);
   }
 
   return output;
