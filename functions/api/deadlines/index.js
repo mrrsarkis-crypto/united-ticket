@@ -1,4 +1,4 @@
-// /api/deadlines — calculate a case reminder schedule without exposing case data.
+// /api/deadlines - calculate a case reminder schedule without exposing case data.
 import { json } from '../_shared.js';
 import { addDays, dateOnly, daysUntil, reminderSchedule } from '../_deadline-utils.js';
 
@@ -12,14 +12,21 @@ export async function onRequestPost(context) {
   const deadline = body.deadline || body.dueDate;
   if (!deadline) return json({ error: 'deadline is required' }, 400);
 
+  const normalized = dateOnly(deadline);
+  if (!normalized) return json({ error: 'deadline must be a valid calendar date' }, 400);
+
   const offsets = Array.isArray(body.offsets)
     ? body.offsets.map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 365)
     : [14, 7, 3, 1, 0];
+  const followUpDays = Number(body.followUpDays == null ? 1 : body.followUpDays);
+  if (!Number.isFinite(followUpDays) || followUpDays < 0 || followUpDays > 365) {
+    return json({ error: 'followUpDays must be between 0 and 365' }, 400);
+  }
 
   return json({
-    deadline: dateOnly(deadline),
-    days_until_deadline: daysUntil(deadline),
-    reminders: reminderSchedule(deadline, offsets),
-    follow_up_date: dateOnly(addDays(deadline, Number(body.followUpDays || 1))),
+    deadline: normalized,
+    days_until_deadline: daysUntil(normalized),
+    reminders: reminderSchedule(normalized, offsets),
+    follow_up_date: dateOnly(addDays(normalized, followUpDays)),
   });
 }
