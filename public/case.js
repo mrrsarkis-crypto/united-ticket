@@ -23,6 +23,17 @@
   var documentStatus = document.getElementById('documentStatus');
   var documentList = document.getElementById('documentList');
   var documentHelp = document.getElementById('documentHelp');
+  var caseJurisdiction = document.getElementById('caseJurisdiction');
+  var caseCourt = document.getElementById('caseCourt');
+  var caseViolation = document.getElementById('caseViolation');
+  var caseViolationDate = document.getElementById('caseViolationDate');
+  var caseDueDate = document.getElementById('caseDueDate');
+  var workflowStatus = document.getElementById('workflowStatus');
+  var workflowTitle = document.getElementById('workflowTitle');
+  var workflowReason = document.getElementById('workflowReason');
+  var workflowProcedure = document.getElementById('workflowProcedure');
+  var workflowDeadline = document.getElementById('workflowDeadline');
+  var workflowDays = document.getElementById('workflowDays');
   var rememberedKey = 'utt_case_code';
   var accessToken = '';
   var currentCode = '';
@@ -43,19 +54,69 @@
     var key = String(raw || '').toLowerCase();
     return stages[key] || ['In progress', 'Your case is active. The latest available status is shown below.', 68, 'Need help?', 'Contact our team with your tracking code for the clearest next step.', '/contact'];
   }
+  function pretty(value) {
+    return String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); });
+  }
+  function displayDate(value) {
+    if (!value) return 'Not identified';
+    var date = new Date(String(value).length === 10 ? value + 'T12:00:00' : value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function procedureLabel(value) {
+    var map = {
+      trial_by_written_declaration: 'Trial by Written Declaration',
+      online_trial_by_written_declaration: 'Online Trial by Written Declaration',
+      court_review: 'Court-specific review',
+      jurisdiction_review: 'Jurisdiction review'
+    };
+    return map[String(value || '')] || pretty(value) || 'Not selected';
+  }
+
+  function renderTicketDetails(details) {
+    details = details || {};
+    if (caseJurisdiction) caseJurisdiction.textContent = details.jurisdiction || 'Not identified';
+    if (caseCourt) caseCourt.textContent = details.courtOrAgency || 'Not identified';
+    if (caseViolation) {
+      var violation = [details.violationCode, details.violationCode && details.violationDescription].filter(Boolean).join(' · ');
+      caseViolation.textContent = violation || 'Not identified';
+    }
+    if (caseViolationDate) caseViolationDate.textContent = displayDate(details.violationDate);
+    if (caseDueDate) caseDueDate.textContent = displayDate(details.dueDate);
+  }
+
+  function renderWorkflow(workflow) {
+    workflow = workflow || {};
+    var procedure = procedureLabel(workflow.procedure);
+    var eligible = workflow.eligible;
+    var jurisdiction = workflow.jurisdiction || '';
+    if (workflowTitle) workflowTitle.textContent = jurisdiction === 'california' && eligible === true ? 'Potential California filing path identified' : jurisdiction ? 'Procedure review' : 'Jurisdiction review';
+    if (workflowProcedure) workflowProcedure.textContent = procedure;
+    if (workflowDeadline) workflowDeadline.textContent = displayDate(workflow.dueDate);
+    if (workflowDays) {
+      if (typeof workflow.daysUntilDeadline === 'number') {
+        if (workflow.daysUntilDeadline < 0) workflowDays.textContent = 'Past due';
+        else if (workflow.daysUntilDeadline === 0) workflowDays.textContent = 'Due today';
+        else workflowDays.textContent = workflow.daysUntilDeadline + ' day' + (workflow.daysUntilDeadline === 1 ? '' : 's');
+      } else {
+        workflowDays.textContent = 'Not calculated';
+      }
+    }
+    if (workflowStatus) {
+      workflowStatus.className = 'workflow-status ' + (eligible === true ? 'positive' : eligible === false ? 'caution' : 'review');
+      workflowStatus.textContent = eligible === true ? 'Potentially eligible, subject to court verification' : eligible === false ? 'Not identified as eligible' : 'Needs jurisdiction or court review';
+    }
+    if (workflowReason) workflowReason.textContent = workflow.reason || 'We are still determining which procedure applies. The original citation and official court instructions control.';
+  }
 
   function renderTimeline(items, current) {
     timeline.innerHTML = '';
     var labels = items && items.length ? items : [current || 'in progress'];
-    labels.forEach(function (label, i) {
+    labels.forEach(function (label) {
       var li = document.createElement('li');
       li.className = 'case-timeline-item active';
       li.innerHTML = '<span class="timeline-dot" aria-hidden="true"></span><div><strong>' + esc(pretty(label)) + '</strong><small>Recorded in your case history</small></div>';
       timeline.appendChild(li);
     });
-  }
-  function pretty(value) {
-    return String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); });
   }
 
   function renderDocuments(docs) {
@@ -105,6 +166,8 @@
       nextText.textContent = stage[4];
       action.href = stage[5];
       created.textContent = data.createdAt ? 'Opened ' + new Date(data.createdAt).toLocaleDateString() : 'Case reference';
+      renderTicketDetails(data.caseDetails);
+      renderWorkflow(data.workflow);
       renderTimeline(data.statusHistory, data.status);
       content.hidden = false;
       status.textContent = 'Case loaded securely.';
@@ -117,9 +180,7 @@
       if (documentUpload) documentUpload.hidden = !accessToken;
       if (!accessToken && documentHelp) documentHelp.textContent = 'Use the secure Case Center link from your confirmation email to access your private document area.';
       loadDocuments();
-      try {
-        history.replaceState(null, '', '/case?code=' + encodeURIComponent(code));
-      } catch (_) {}
+      try { history.replaceState(null, '', '/case?code=' + encodeURIComponent(code)); } catch (_) {}
     } catch (err) {
       content.hidden = true;
       status.textContent = err.message || 'We could not load that case.';
@@ -140,10 +201,7 @@
       return;
     }
     var file = documentInput.files[0];
-    if (file.size > 10 * 1024 * 1024) {
-      documentStatus.textContent = 'Files must be 10 MB or smaller.';
-      return;
-    }
+    if (file.size > 10 * 1024 * 1024) { documentStatus.textContent = 'Files must be 10 MB or smaller.'; return; }
     documentStatus.textContent = 'Uploading securely…';
     uploadDocument.disabled = true;
     try {
@@ -157,15 +215,10 @@
       await loadDocuments();
     } catch (err) {
       documentStatus.textContent = err.message || 'Upload failed. Please try again.';
-    } finally {
-      uploadDocument.disabled = false;
-    }
+    } finally { uploadDocument.disabled = false; }
   });
   if (forget) forget.addEventListener('click', function () {
-    try {
-      localStorage.removeItem(rememberedKey);
-      if (currentCode) sessionStorage.removeItem('utt_case_token:' + currentCode.toUpperCase());
-    } catch (_) {}
+    try { localStorage.removeItem(rememberedKey); if (currentCode) sessionStorage.removeItem('utt_case_token:' + currentCode.toUpperCase()); } catch (_) {}
     accessToken = '';
     if (remember) remember.checked = false;
     if (documentUpload) documentUpload.hidden = true;
