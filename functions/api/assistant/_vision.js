@@ -212,6 +212,42 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
   throw lastError || new Error('Anthropic extraction failed');
 }
 
+async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
+  if (!env.GROQ_API_KEY) throw new Error('Groq is not configured');
+  if (mediaType === 'application/pdf') throw new Error('Groq vision input does not accept PDF in this scanner path');
+  const model = env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
+  const body = {
+    model,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: system + '\n\nTASK:\n' + prompt + '\n\nReturn only the required JSON object.' },
+        { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + base64 } },
+      ],
+    }],
+    max_completion_tokens: 1800,
+    temperature: 0,
+    response_format: { type: 'json_object' },
+  };
+
+  const res = await fetchWithDeadline('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + env.GROQ_API_KEY,
+    },
+    body: JSON.stringify(body),
+  }, timeoutMs);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error('Groq HTTP ' + res.status + ': ' + detail.slice(0, 180));
+  }
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (typeof text !== 'string' || !text.trim()) throw new Error('Groq returned an empty extraction');
+  return { text: text.trim(), attempts: 1 };
+}
+
 function gatewayContentText(content) {
   if (typeof content === 'string') return content.trim();
   if (!Array.isArray(content)) return '';
@@ -297,6 +333,7 @@ export async function extractVisionDocument(env, input) {
   const available = [];
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
+  if (env.GROQ_API_KEY && input.mediaType !== 'application/pdf') available.push('groq');
   if (gatewayToken(env)) available.push('gateway');
 
   if (!available.length) {
@@ -322,6 +359,7 @@ export async function extractVisionDocument(env, input) {
       let result;
       if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'anthropic') result = await callAnthropic(env, { ...input, timeoutMs: providerBudget });
+      else if (provider === 'groq') result = await callGroq(env, { ...input, timeoutMs: providerBudget });
       else result = await callGateway(env, { ...input, timeoutMs: providerBudget });
       totalAttempts += result.attempts;
 

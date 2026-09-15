@@ -543,11 +543,10 @@ export async function assistantChat(env, { system, messages, tools, resolveTool 
 }
 
 // Provider-agnostic single-shot vision extractor. Returns the raw model text
-// (the route parses the JSON contract itself). Only Anthropic and Gemini have
-// vision -- a Groq provider selection is clamped to Gemini.
+// (the route parses the JSON contract itself). Prefer Gemini when configured,
+// then fall back to Groq's active multimodal model when Gemini is unavailable.
 export async function assistantExtract(env, { system, base64, mediaType, prompt }) {
-  const provider = pickAiProvider(env) === 'groq' ? 'gemini' : pickAiProvider(env);
-  if (provider === 'anthropic') {
+  if (env.ANTHROPIC_API_KEY) {
     const data = await anthropic(env, {
       system,
       max_tokens: 1500,
@@ -565,17 +564,54 @@ export async function assistantExtract(env, { system, base64, mediaType, prompt 
     return anthropicText(data);
   }
 
-  if (provider === 'gemini') {
-    const data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, [
-      { role: 'user', parts: [{ inlineData: { mimeType: mediaType, data: base64 } }, { text: prompt }] },
-    ], {
-      system,
-      generationConfig: { maxOutputTokens: 1500, temperature: 0 },
-    });
-    return geminiReplyParts(data).text;
+  if (env.GEMINI_API_KEY) {
+    try {
+      const data = await geminiFetch(env, GEMINI_DEFAULT_MODEL, [
+        { role: 'user', parts: [{ inlineData: { mimeType: mediaType, data: base64 } }, { text: prompt }] },
+      ], {
+        system,
+        generationConfig: { maxOutputTokens: 1500, temperature: 0 },
+      });
+      return geminiReplyParts(data).text;
+    } catch (e) {
+      if (!env.GROQ_API_KEY) throw e;
+      console.warn('Gemini vision scan failed; trying Groq fallback:', e && e.message);
+    }
   }
 
-  throw new Error('No vision provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY)');
+  if (env.GROQ_API_KEY) {
+    const model = env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + env.GROQ_API_KEY,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: system + '\n\nTASK:\n' + prompt + '\n\nReturn only the required JSON object.' },
+            { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + base64 } },
+          ],
+        }],
+        max_completion_tokens: 1500,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error('Groq vision HTTP ' + res.status + ': ' + text.slice(0, 500));
+    }
+    const data = await res.json();
+    return data && data.choices && data.choices[0] && data.choices[0].message
+      ? String(data.choices[0].message.content || '')
+      : '';
+  }
+
+  throw new Error('No vision provider configured (set ANTHROPIC_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)');
 }
 
 // POST to Resend with retry-with-backoff on rate limits (429) and server errors (5xx).
