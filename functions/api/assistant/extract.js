@@ -29,6 +29,7 @@ const EXTRACT_SYSTEM = [
   'Do not confuse a court address with the defendant mailing address.',
   'Do not confuse an officer ID, case number, barcode, or vehicle plate with the citation number.',
   'For PDFs, inspect the supplied document content and extract only information actually visible.',
+  'Support traffic citations, driver licenses, and court/DMV notices from any jurisdiction. Do not assume California formatting, field labels, dates, currencies, agencies, or license numbering rules.',
   'Return ONLY one valid JSON object. No markdown, prose, code fences, or preamble.',
   'Every field below must be an object with exactly: {"value":string|null,"found":boolean,"confident":boolean}.',
   'Required fields: ' + FIELD_KEYS.join(', ') + '.',
@@ -92,17 +93,17 @@ export async function onRequestPost(context) {
     ? requestedDocTypeRaw
     : 'auto';
   const typeHint = requestedDocType === 'ticket'
-    ? 'Expected document: California traffic citation / Notice to Appear. Reject unrelated images. '
+    ? 'Expected document: a traffic citation, traffic ticket, or Notice to Appear from any country or jurisdiction. Reject unrelated images. '
     : requestedDocType === 'license'
-      ? 'Expected document: driver license card. Reject unrelated images. '
+      ? 'Expected document: a driver license or driving permit card from any jurisdiction. Reject unrelated images. '
       : requestedDocType === 'notice'
-        ? 'Expected document: court or DMV notice or letter related to a driving or traffic matter. Reject unrelated images. '
-        : 'Expected document: one of a California traffic citation / Notice to Appear, a driver license card, or a court/DMV notice related to a driving or traffic matter. Reject unrelated images, receipts, shopping pages, and other documents. ';
+        ? 'Expected document: a court, traffic authority, motor vehicle agency, or DMV notice or letter related to a driving or traffic matter. Reject unrelated images. '
+        : 'Expected document: one of a traffic citation/ticket, driver license/driving permit, or court/traffic-authority notice related to a driving or traffic matter. Reject unrelated images, receipts, shopping pages, and other documents. ';
 
   const prompt = typeHint +
     'Extract every requested field literally from the document. ' +
-    'For citation number, driver license number, violation code, dates, court/agency, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
-    'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
+    'For citation number, driver license number, violation code, dates, court or agency, bail/fine amount, officer ID, and vehicle plate, copy characters exactly as printed and preserve the printed format. ' +
+    'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading. Do not convert currencies, dates, or legal section numbers based on assumptions.';
 
   try {
     const vision = await extractVisionDocument(env, {
@@ -131,7 +132,7 @@ export async function onRequestPost(context) {
     if (!resolvedDocType) {
       return json({
         error: requestedDocType === 'auto'
-          ? 'This does not appear to be a supported traffic document. Please upload a traffic ticket, driver license, or court/DMV notice related to your driving matter.'
+          ? 'This does not appear to be a supported traffic document. Please upload a traffic ticket, driver license, or court/traffic-authority notice related to your driving matter.'
           : 'The scan did not find the expected document details. Please upload a clearer image of the selected document type.',
         code: 'unsupported_or_unreadable_document'
       }, 422, headers);
@@ -196,7 +197,7 @@ function buildNextSteps(documentType, assessment) {
   if (documentType === 'license') {
     return [
       verify,
-      { title: 'Identity details', body: 'Confirm the name, driver license number, state, and date of birth before using these details in your case intake.' },
+      { title: 'Identity details', body: 'Confirm the name, driver license number, state or jurisdiction, and date of birth before using these details in your case intake.' },
       { title: 'Continue your case', body: 'Your license can help prefill identity information, but the traffic citation or court notice is still needed for a complete case review.' },
     ];
   }
@@ -205,7 +206,7 @@ function buildNextSteps(documentType, assessment) {
     return [
       verify,
       { title: 'Deadlines matter', body: 'Check the response deadline and court date printed on the notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
-      { title: 'Professional review', body: 'A court or DMV notice can contain case references and deadlines that should be checked together with the underlying citation. This is general information, not legal advice.' },
+      { title: 'Professional review', body: 'A court or traffic-authority notice can contain case references and deadlines that should be checked together with the underlying citation. This is general information, not legal advice.' },
     ];
   }
 
@@ -213,243 +214,20 @@ function buildNextSteps(documentType, assessment) {
     verify,
     { title: 'Professional review', body: 'A scan can organize what is printed on the citation, but it cannot determine every issue that may matter. A professional review can check the ticket and available response options. This is general information, not legal advice.' },
     { title: 'Deadlines matter', body: 'Check the exact response deadline and court date printed on your citation or court notice. Missing a deadline can have additional consequences. This is general information, not legal advice.' },
-    { title: 'Trial by written declaration', body: 'California Courts explains that eligible traffic matters may be contested in writing using a trial by written declaration. Court-specific procedures and deadlines still apply. This is general information, not legal advice.' },
+    { title: 'California procedures', body: 'For California matters, eligible traffic cases may have a trial by written declaration option. Court-specific procedures and deadlines apply. For other jurisdictions, procedures differ. This is general information, not legal advice.' },
   ];
 }
 
-function isAllowedScannerRequest(request, env = {}) {
-  const fetchSite = String(request.headers.get('sec-fetch-site') || '').toLowerCase();
-  if (fetchSite === 'cross-site') return false;
-
-  const origin = request.headers.get('origin');
+function isAllowedScannerRequest(request, env = {}) { 
+  const origin = (request.headers.get('origin') || '').trim();
   if (!origin) return true;
-
-  let requestOrigin;
-  try { requestOrigin = new URL(request.url).origin; }
-  catch { return false; }
-
-  if (origin === requestOrigin) return true;
-  const extras = String(env.SCANNER_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return extras.includes(origin);
-}
-
-async function enforceScannerRateLimit(request, env = {}) {
-  const store = env.CASES;
-  if (!store || typeof store.get !== 'function' || typeof store.put !== 'function') {
-    return { allowed: true, enforced: false, limit: 0, remaining: 0, retryAfter: 0 };
-  }
-
-  const forwarded = String(request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
-  const identity = String(request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || forwarded || '').trim();
-  if (!identity) return { allowed: true, enforced: false, limit: 0, remaining: 0, retryAfter: 0 };
-
-  const configured = Number(env.SCANNER_RATE_LIMIT_PER_MINUTE || DEFAULT_RATE_LIMIT_PER_MINUTE);
-  const limit = Number.isFinite(configured) ? Math.max(5, Math.min(120, Math.floor(configured))) : DEFAULT_RATE_LIMIT_PER_MINUTE;
-  const bucket = Math.floor(Date.now() / 60000);
-  const retryAfter = Math.max(1, 60 - (Math.floor(Date.now() / 1000) % 60));
-
   try {
-    const salt = String(env.SCANNER_RATE_LIMIT_SALT || 'utt-scanner-rate-v1');
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity + '|' + salt));
-    const hash = Array.from(new Uint8Array(digest)).slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
-    const key = 'scanner-rate:' + bucket + ':' + hash;
-    const current = Math.max(0, Number(await store.get(key) || 0));
-    if (current >= limit) return { allowed: false, enforced: true, limit, remaining: 0, retryAfter };
-    await store.put(key, String(current + 1), { expirationTtl: 120 });
-    return { allowed: true, enforced: true, limit, remaining: Math.max(0, limit - current - 1), retryAfter };
-  } catch (error) {
-    console.warn('scanner rate limiter unavailable', String(error && error.message || error || '').slice(0, 160));
-    return { allowed: true, enforced: false, limit, remaining: limit, retryAfter: 0 };
+    const requestUrl = new URL(request.url);
+    const originUrl = new URL(origin);
+    if (originUrl.origin === requestUrl.origin) return true;
+    const extra = String(env.SCANNER_ALLOWED_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean);
+    return extra.includes(originUrl.origin);
+  } catch {
+    return false;
   }
 }
-
-function normalizeClientQuality(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const number = (value, min, max) => {
-    const n = Number(value);
-    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : null;
-  };
-  const width = number(raw.width, 0, 20000);
-  const height = number(raw.height, 0, 20000);
-  const brightness = number(raw.brightness, 0, 255);
-  const contrast = number(raw.contrast, 0, 255);
-  const sharpness = number(raw.sharpness, 0, 255);
-  const grade = ['good','fair','poor'].includes(raw.grade) ? raw.grade : 'fair';
-  const warnings = Array.isArray(raw.warnings)
-    ? raw.warnings.filter((v) => QUALITY_WARNING_KEYS.has(v)).slice(0, 5)
-    : [];
-  return {
-    width,
-    height,
-    brightness,
-    contrast,
-    sharpness,
-    grade,
-    hardReject: raw.hardReject === true,
-    warnings,
-  };
-}
-
-function parseDocumentInput(image) {
-  let base64;
-  let mediaType;
-
-  if (typeof image === 'string' && image.startsWith('data:')) {
-    const comma = image.indexOf(',');
-    if (comma < 0) return { error: 'Document data appears malformed.', status: 400 };
-    const meta = image.slice(5, comma);
-    mediaType = (meta.split(';')[0] || 'image/jpeg').toLowerCase();
-    base64 = image.slice(comma + 1);
-  } else if (image && typeof image === 'object' && image.data && image.mediaType) {
-    base64 = String(image.data);
-    mediaType = String(image.mediaType).toLowerCase();
-  } else {
-    return { error: 'A document image is required and must be base64-encoded.', status: 400 };
-  }
-
-  base64 = String(base64 || '').replace(/\s+/g, '');
-  if (base64.length < 64 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
-    return { error: 'Document data appears empty or invalid.', status: 400 };
-  }
-  if (!ALLOWED_MEDIA.has(mediaType)) {
-    return { error: 'Unsupported document type. Please upload a JPG, PNG, or PDF.', status: 415 };
-  }
-
-  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-  const fileBytes = Math.max(0, Math.floor(base64.length * 3 / 4) - padding);
-  if (fileBytes > MAX_FILE_BYTES) {
-    return { error: 'Document is too large. Please upload a file no larger than 10 MB.', status: 413 };
-  }
-
-  return { base64, mediaType, fileBytes };
-}
-
-function normalizeExtraction(input) {
-  const clean = {};
-  for (const key of FIELD_KEYS) clean[key] = normalizeField(input && input[key]);
-  clean.legibility = ['good','fair','poor'].includes(input && input.legibility) ? input.legibility : 'fair';
-  clean.unknownFields = Array.isArray(input && input.unknownFields)
-    ? input.unknownFields.filter((v) => typeof v === 'string' && !BLOCKED_TEXT.test(v)).map((v) => v.slice(0, 80)).slice(0, 30)
-    : [];
-  return clean;
-}
-
-function normalizeField(raw) {
-  let value = null;
-  let found = false;
-  let confident = false;
-
-  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    value = sanitizeValue(raw.value);
-    found = raw.found === true && value !== null;
-    confident = raw.confident === true && found;
-  } else if (typeof raw === 'string' || typeof raw === 'number') {
-    value = sanitizeValue(raw);
-    found = value !== null;
-  }
-
-  return { value, found, confident };
-}
-
-function sanitizeValue(value) {
-  if (value == null) return null;
-  const text = String(value).replace(/\s+/g, ' ').trim().slice(0, 500);
-  if (!text || BLOCKED_TEXT.test(text)) return null;
-  return text;
-}
-
-function usableField(field) {
-  return !!(field && field.found === true && field.value);
-}
-
-// Legacy ticket-only helper is retained for deterministic regression fixtures.
-// The live endpoint uses the document-type-aware assessment module above.
-function buildScanAssessment(extracted) {
-  const keyFields = [
-    ['citationNumber', 'citation number'],
-    ['violationCode', 'violation code'],
-    ['courtOrAgency', 'court/agency'],
-    ['dueDate', 'response deadline'],
-    ['violationDate', 'violation date'],
-  ];
-  const found = [];
-  const missing = [];
-  const verify = [];
-  let confidentCount = 0;
-
-  for (const [key, label] of keyFields) {
-    const field = extracted[key];
-    if (usableField(field)) {
-      found.push(label);
-      if (field.confident === true) confidentCount++;
-      else verify.push(label);
-    } else {
-      missing.push(label);
-    }
-  }
-
-  const legibilityPoints = extracted.legibility === 'good' ? 30 : extracted.legibility === 'fair' ? 18 : 5;
-  const scanConfidencePercent = Math.max(0, Math.min(100,
-    legibilityPoints + (found.length * 10) + (confidentCount * 4)
-  ));
-
-  let label = 'Needs review';
-  if (scanConfidencePercent >= 80 && extracted.legibility === 'good') label = 'Strong read';
-  else if (scanConfidencePercent >= 55 && extracted.legibility !== 'poor') label = 'Usable read';
-
-  const foundText = found.length ? 'Detected ' + found.join(', ') + '.' : 'Only limited ticket details were detected.';
-  const missingText = missing.length ? ' Double-check ' + missing.join(', ') + ' manually.' : ' All key ticket fields were detected.';
-  const verifyText = verify.length ? ' Verify ' + verify.join(', ') + ' because the scan was not fully confident.' : '';
-
-  return {
-    label,
-    legibility: extracted.legibility,
-    scanConfidencePercent,
-    keyFieldsDetected: found.length,
-    keyFieldsExpected: keyFields.length,
-    confidentKeyFields: confidentCount,
-    missingKeyFields: missing,
-    fieldsNeedingVerification: verify,
-    needsManualReview: label !== 'Strong read',
-    summary: foundText + missingText + verifyText,
-  };
-}
-
-function extractJson(text) {
-  if (!text) return '{}';
-  const start = text.indexOf('{');
-  if (start < 0) return '{}';
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < text.length; i++) {
-    const char = text[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (char === '\\') escaped = true;
-      else if (char === '"') inString = false;
-      continue;
-    }
-    if (char === '"') inString = true;
-    else if (char === '{') depth++;
-    else if (char === '}') {
-      depth--;
-      if (depth === 0) return text.slice(start, i + 1);
-    }
-  }
-  return '{}';
-}
-
-export const __scannerTest = {
-  isAllowedScannerRequest,
-  enforceScannerRateLimit,
-  normalizeClientQuality,
-  parseDocumentInput,
-  normalizeExtraction,
-  buildScanAssessment,
-  buildNextSteps,
-  extractJson,
-};
