@@ -16,6 +16,29 @@ function sha256Hex(s) {
   });
 }
 
+function scanField(extracted, name) {
+  const field = extracted && extracted[name];
+  return field && field.found === true && field.value ? String(field.value).trim() : '';
+}
+
+function workflowFieldsFromScan(extracted) {
+  return {
+    jurisdiction: scanField(extracted, 'jurisdiction'),
+    courtDivision: scanField(extracted, 'courtDivision'),
+    courtOrAgency: scanField(extracted, 'courtOrAgency'),
+    violationCode: scanField(extracted, 'violationCode'),
+    violationDescription: scanField(extracted, 'violationDescription'),
+    procedureType: scanField(extracted, 'procedureType'),
+    filingMethod: scanField(extracted, 'filingMethod'),
+    eligibilityNotes: scanField(extracted, 'eligibilityNotes'),
+    due_date: scanField(extracted, 'dueDate') || scanField(extracted, 'courtDate'),
+    court_date: scanField(extracted, 'courtDate'),
+    citation_number: scanField(extracted, 'citationNumber'),
+    violation_date: scanField(extracted, 'violationDate'),
+    bail_amount: scanField(extracted, 'bailAmount'),
+  };
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const contentType = request.headers.get('content-type') || '';
@@ -39,6 +62,9 @@ export async function onRequestPost(context) {
         ocr_text: typeof body.scan.ocrText === 'string' ? body.scan.ocrText.slice(0, 20000) : '',
       }
     : { extracted: null, ocr_text: '' };
+
+  const extracted = scan.extracted || {};
+  const scanWorkflow = workflowFieldsFromScan(extracted);
 
   let trackingCode = null;
   let existing = null;
@@ -66,6 +92,7 @@ export async function onRequestPost(context) {
 
       const record = {
         ...(existing || {}),
+        ...scanWorkflow,
         tracking_code: trackingCode,
         name: firstName,
         email,
@@ -91,6 +118,10 @@ export async function onRequestPost(context) {
             'Name: ' + firstName + '\n' +
             'Email: ' + email + '\n\n' +
             'Scan present: ' + (scan.ocr_text ? 'yes' : 'no') + '\n' +
+            'Jurisdiction: ' + (scanWorkflow.jurisdiction || 'not captured') + '\n' +
+            'Court/agency: ' + (scanWorkflow.courtOrAgency || 'not captured') + '\n' +
+            'Citation: ' + (scanWorkflow.citation_number || 'not captured') + '\n' +
+            'Due date: ' + (scanWorkflow.due_date || 'not captured') + '\n\n' +
             'Follow up with them if Step 3 is not completed within a day or two.\n' +
             'Case Center: https://unitedtraffictickets.com/case?code=' + encodeURIComponent(trackingCode),
         });
