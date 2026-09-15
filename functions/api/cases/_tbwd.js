@@ -7,12 +7,14 @@ export function classifyCaliforniaWorkflow(data = {}) {
   const jurisdiction = String(data.jurisdiction || '').toLowerCase();
   const court = String(data.court || data.courtOrAgency || '').toLowerCase();
   const code = String(data.violationCode || data.code || '').toLowerCase();
+  const procedureType = String(data.procedureType || '').toLowerCase();
+  const filingMethod = String(data.filingMethod || '').toLowerCase();
   const combined = jurisdiction + ' ' + court;
   const california = /california|\bca\b|superior court/.test(combined);
   const infractionHint = /\binfraction\b|traffic|vc\s*\d|vehicle code|speeding|stop sign|red light/.test((combined + ' ' + code).toLowerCase());
   if (!california) return { jurisdiction: 'unknown', procedure: 'jurisdiction_review', eligible: null, reason: 'California jurisdiction was not established.' };
   if (!infractionHint) return { jurisdiction: 'california', procedure: 'court_review', eligible: null, reason: 'The citation type needs court-specific review before a written-declaration path is selected.' };
-  const myCitationsHint = /mycitations|online trial|online declaration/.test(combined);
+  const myCitationsHint = /mycitations|online trial|online declaration/.test(combined + ' ' + procedureType + ' ' + filingMethod);
   return { jurisdiction: 'california', procedure: myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration', eligible: true, reason: myCitationsHint ? 'Online trial-by-declaration workflow indicated; verify that the citation and court are eligible.' : 'California traffic infraction appears compatible with a written-declaration workflow; verify eligibility with the court.' };
 }
 
