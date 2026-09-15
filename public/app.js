@@ -125,7 +125,12 @@
       serverScan(currentImageDataUrl).then(function (extracted) {
         applyServerExtract(extracted);
       }).catch(function (err) {
-        if (isPdf) {
+        // Do not turn a rejected screenshot/unreadable upload into a
+        // misleading default review score. Only use local OCR for temporary
+        // server failures; client errors need a better source image.
+        if (err && err.status >= 400 && err.status < 500) {
+          showScanError(err.message, progress, progressBar);
+        } else if (isPdf) {
           hideProgress(progress, progressBar);
           statusEl.textContent = (err && err.message ? err.message + ' ' : '') + 'Please upload a clear photo of the document or fill the fields below.';
           statusEl.className = 'status';
@@ -150,8 +155,25 @@
       body: JSON.stringify({ consent: true, docType: 'auto', image: dataUrl })
     });
     var data = await parseResponse(res);
-    if (!res.ok) throw new Error((data && data.error) || 'Scan failed');
+    if (!res.ok) {
+      var error = new Error((data && data.error) || 'Scan failed');
+      error.code = data && data.code || '';
+      error.status = res.status;
+      throw error;
+    }
     return data && data.extracted;
+  }
+
+  function showScanError(message, progress, progressBar) {
+    hideProgress(progress, progressBar);
+    window.__lastExtracted = null;
+    window.__lastOcrText = '';
+    if (window.__scorePanel) window.__scorePanel.style.display = 'none';
+    if (claimCtaWrap) claimCtaWrap.style.display = 'none';
+    if (caseForm) caseForm.style.display = 'block';
+    statusEl.textContent = (message || 'The document could not be read.') + ' Upload the original, clear ticket photo—not a browser screenshot.';
+    statusEl.className = 'status';
+    setIntakeStep(1, 'Upload the original document photo to continue.');
   }
 
   function setField(id, val) {
