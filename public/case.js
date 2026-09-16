@@ -77,7 +77,7 @@
     if (caseJurisdiction) caseJurisdiction.textContent = details.jurisdiction || 'Not identified';
     if (caseCourt) caseCourt.textContent = details.courtOrAgency || 'Not identified';
     if (caseViolation) {
-      var violation = [details.violationCode, details.violationCode && details.violationDescription].filter(Boolean).join(' · ');
+      var violation = [details.violationCode, details.violationDescription].filter(Boolean).join(' · ');
       caseViolation.textContent = violation || 'Not identified';
     }
     if (caseViolationDate) caseViolationDate.textContent = displayDate(details.violationDate);
@@ -152,7 +152,9 @@
     status.textContent = 'Loading your case…';
     status.className = 'case-status loading';
     try {
-      var res = await fetch('/api/cases/' + encodeURIComponent(code), { headers: { 'Accept': 'application/json' } });
+      var endpoint = '/api/cases/' + encodeURIComponent(code);
+      if (accessToken) endpoint += '?token=' + encodeURIComponent(accessToken);
+      var res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
       var data = await res.json();
       if (!res.ok) throw new Error(data && data.error || 'Case not found');
       var stage = stageFor(data.status);
@@ -166,12 +168,12 @@
       nextText.textContent = stage[4];
       action.href = stage[5];
       created.textContent = data.createdAt ? 'Opened ' + new Date(data.createdAt).toLocaleDateString() : 'Case reference';
-      renderTicketDetails(data.caseDetails);
-      renderWorkflow(data.workflow);
+      renderTicketDetails(data.caseDetails || {});
+      renderWorkflow(data.workflow || {});
       renderTimeline(data.statusHistory, data.status);
       content.hidden = false;
-      status.textContent = 'Case loaded securely.';
-      status.className = 'case-status ok';
+      status.textContent = data.access && data.access.authenticated ? 'Case loaded securely.' : 'Status loaded. Use your secure Case Center link for private case details and documents.';
+      status.className = data.access && data.access.authenticated ? 'case-status ok' : 'case-status loading';
       if (remember && remember.checked) {
         try { localStorage.setItem(rememberedKey, code); } catch (_) {}
       } else {
@@ -179,8 +181,8 @@
       }
       if (documentUpload) documentUpload.hidden = !accessToken;
       if (!accessToken && documentHelp) documentHelp.textContent = 'Use the secure Case Center link from your confirmation email to access your private document area.';
-      loadDocuments();
-      try { history.replaceState(null, '', '/case?code=' + encodeURIComponent(code)); } catch (_) {}
+      if (data.access && data.access.authenticated) loadDocuments();
+      try { history.replaceState(null, '', '/case?code=' + encodeURIComponent(code) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '')); } catch (_) {}
     } catch (err) {
       content.hidden = true;
       status.textContent = err.message || 'We could not load that case.';
