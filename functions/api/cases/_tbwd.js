@@ -1,5 +1,6 @@
 // California traffic workflow helpers. Informational routing only; official court instructions control.
 import { resendSend } from '../_shared.js';
+import { daysUntil } from '../_deadline-utils.js';
 
 export const CA_TBWD_VERSION = '2026.09.15';
 
@@ -18,11 +19,7 @@ export function classifyCaliforniaWorkflow(data = {}) {
   return { jurisdiction: 'california', procedure: myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration', eligible: true, reason: myCitationsHint ? 'Online trial-by-declaration workflow indicated; verify that the citation and court are eligible.' : 'California traffic infraction appears compatible with a written-declaration workflow; verify eligibility with the court.' };
 }
 
-export function daysUntil(dateValue, now = new Date()) {
-  const d = new Date(String(dateValue || '') + 'T23:59:59');
-  if (Number.isNaN(d.getTime())) return null;
-  return Math.ceil((d.getTime() - now.getTime()) / 86400000);
-}
+export { daysUntil };
 
 export async function sendWorkflowEmail(env, record, kind) {
   const email = String(record?.email || '').trim();
