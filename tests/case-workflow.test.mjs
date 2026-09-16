@@ -14,6 +14,26 @@ test('California traffic citation routes to written-declaration review', () => {
   assert.equal(result.eligible, true);
 });
 
+test('Known California county court signal identifies California', () => {
+  const result = classifyCaliforniaWorkflow({
+    jurisdiction: '',
+    courtOrAgency: 'Superior Court of Los Angeles County',
+    violationCode: 'VC 22350',
+  });
+  assert.equal(result.jurisdiction, 'california');
+  assert.equal(result.eligible, true);
+});
+
+test('Generic superior court does not auto-classify as California', () => {
+  const result = classifyCaliforniaWorkflow({
+    jurisdiction: '',
+    courtOrAgency: 'Superior Court of Another State',
+    violationCode: '123',
+  });
+  assert.equal(result.jurisdiction, 'unknown');
+  assert.equal(result.eligible, null);
+});
+
 test('Unknown jurisdiction stays in review', () => {
   const result = classifyCaliforniaWorkflow({
     jurisdiction: 'Ontario',
