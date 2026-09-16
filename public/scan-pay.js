@@ -1,7 +1,6 @@
 /* Scanner post-result conversion bridge. Reuses the existing case + Stripe checkout flow. */
 (function () {
   'use strict';
-
   var STYLE_ID = 'utt-scan-pay-style';
   var OFFER_ID = 'utt-scan-pay-offer';
   var inserted = false;
@@ -40,21 +39,18 @@
     var panel = document.getElementById('scorePanel');
     if (!panel || panel.style.display === 'none') return;
     var wrap = panel.parentNode;
-    if (!wrap) return;
-    if (document.getElementById(OFFER_ID)) { inserted = true; return; }
+    if (!wrap || document.getElementById(OFFER_ID)) return;
 
     var ctx = scanContext();
+    var tbd = ctx.california && ctx.traffic;
     var offer = document.createElement('section');
     offer.id = OFFER_ID;
-    offer.className = 'utt-scan-pay' + (ctx.california && ctx.traffic ? ' is-tbd' : '');
+    offer.className = 'utt-scan-pay' + (tbd ? ' is-tbd' : '');
     offer.setAttribute('aria-label', 'Next service option');
-    var tbd = ctx.california && ctx.traffic;
     offer.innerHTML = '<div class="utt-scan-pay-head">' +
       '<div><p class="utt-scan-pay-kicker">' + (tbd ? 'POTENTIAL TBD PATH DETECTED' : 'NEXT STEP') + '</p>' +
       '<h3 class="utt-scan-pay-title">' + (tbd ? 'Start your $199 TBD review' : 'Ready to start your case?') + '</h3>' +
-      '<p class="utt-scan-pay-copy">' + (tbd
-        ? 'Your scan contains California traffic-ticket signals that can fit a Trial by Written Declaration workflow. Eligibility is court-specific, so we verify the citation and court before any filing step.'
-        : 'Move from the free scan into the Standard Ticket service. Your submitted details are reviewed before anything is filed, and outcomes are never guaranteed.') + '</p></div>' +
+      '<p class="utt-scan-pay-copy">' + (tbd ? 'Your scan contains California traffic-ticket signals that can fit a Trial by Written Declaration workflow. Eligibility is court-specific, so we verify the citation and court before any filing step.' : 'Move from the free scan into the Standard Ticket service. Your submitted details are reviewed before anything is filed, and outcomes are never guaranteed.') + '</p></div>' +
       '<div class="utt-scan-pay-price"><strong>$199</strong><span>STANDARD TICKET</span></div>' +
       '</div>' +
       '<div class="utt-scan-pay-actions">' +
@@ -97,8 +93,7 @@
     if (!score) return;
     var observer = new MutationObserver(function () {
       var visible = score.style.display !== 'none' && score.offsetParent !== null;
-      if (visible) ensureOffer();
-      else reset();
+      if (visible) ensureOffer(); else reset();
     });
     observer.observe(score, { attributes: true, attributeFilter: ['style', 'class'] });
     ensureOffer();
