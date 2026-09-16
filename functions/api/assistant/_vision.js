@@ -231,6 +231,22 @@ async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
   if (!env.GROQ_API_KEY) throw new Error('Groq is not configured');
   if (mediaType === 'application/pdf') throw new Error('Groq vision input does not accept PDF in this scanner path');
   const model = env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
+  const groqProperties = {};
+  for (const name of EXTRACTION_FIELD_NAMES) {
+    groqProperties[name] = {
+      type: 'object',
+      properties: {
+        value: { type: ['string', 'null'] },
+        found: { type: 'boolean' },
+        confident: { type: 'boolean' },
+      },
+      required: ['value', 'found', 'confident'],
+      additionalProperties: false,
+    };
+  }
+  groqProperties.unknownFields = { type: 'array', items: { type: 'string' } };
+  groqProperties.legibility = { type: 'string', enum: ['good', 'fair', 'poor'] };
+  const groqRequired = [...EXTRACTION_FIELD_NAMES, 'unknownFields', 'legibility'];
   const body = {
     model,
     messages: [{
@@ -242,7 +258,19 @@ async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
     }],
     max_completion_tokens: 1800,
     temperature: 0,
-    response_format: { type: 'json_object' },
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'traffic_document_extraction',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: groqProperties,
+          required: groqRequired,
+          additionalProperties: false,
+        },
+      },
+    },
   };
 
   const res = await fetchWithDeadline('https://api.groq.com/openai/v1/chat/completions', {
