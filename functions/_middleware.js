@@ -7,6 +7,7 @@ const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="htt
 const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
+const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
 export async function onRequest(context) {
@@ -24,8 +25,6 @@ export async function onRequest(context) {
   newHeaders.set('Referrer-Policy', 'no-referrer');
 
   if (isStandardHtml) {
-    // AdSense can load on every standard public HTML page. Keep the policy
-    // HTTPS-only while allowing Google/Stripe and other HTTPS dependencies.
     const csp = [
       "default-src 'self' https: data:",
       "object-src 'none'",
@@ -40,9 +39,6 @@ export async function onRequest(context) {
     newHeaders.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   }
 
-  // Public utility APIs can remain cross-origin. The scanner is deliberately
-  // excluded because each call consumes paid vision capacity and processes a
-  // user document; same-origin browser calls do not need CORS headers.
   if (!isPrivateAdminApi && !isScannerApi) {
     newHeaders.set('Access-Control-Allow-Origin', '*');
     newHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -66,20 +62,15 @@ export async function onRequest(context) {
   if (isStandardHtml) {
     output = new HTMLRewriter().on('head', {
       element(element) {
-        // Load the scanner request optimizer before body scripts. It compresses
-        // oversized phone photos, converts supported HEIC uploads, and bounds
-        // request time without changing the visible page structure.
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
         element.append(SCORE_UI_SCRIPT, { html: true });
+        element.append(SCAN_STAGE_SCRIPT, { html: true });
         element.append(ADSENSE_META, { html: true });
         element.append(ADSENSE_SCRIPT, { html: true });
         element.append(TRUST_BADGE_SCRIPT, { html: true });
       }
     }).transform(output);
   } else if (isAmp) {
-    // AMP requires its dedicated Auto ads component instead of the standard
-    // AdSense loader. Google requires the script in <head> and the element
-    // immediately inside <body>.
     output = new HTMLRewriter()
       .on('head', {
         element(element) {
