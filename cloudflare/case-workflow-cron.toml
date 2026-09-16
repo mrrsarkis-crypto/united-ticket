@@ -1,0 +1,7 @@
+name = "ticket-fighter-case-cron"
+main = "case-workflow-cron.js"
+compatibility_date = "2026-09-16"
+workers_dev = false
+
+[triggers]
+crons = ["*/30 * * * *"]
