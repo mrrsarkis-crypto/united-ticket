@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { caseAccessToken, hasCaseAccess } from '../functions/api/_shared.js';
 import { classifyCaliforniaWorkflow, daysUntil } from '../functions/api/cases/_tbwd.js';
 import { customerDocuments } from '../functions/api/cases/_package.js';
 
@@ -59,4 +60,15 @@ test('Customer document filter excludes internal work product', () => {
     ],
   });
   assert.deepEqual(docs.map((d) => d.id), ['client', 'upload']);
+});
+
+test('Case Center access token scopes private data to the case', async () => {
+  const env = { CASE_ACCESS_SECRET: 'test-secret' };
+  const code = 'ABC123';
+  const token = await caseAccessToken(env, code);
+  assert.ok(token);
+  assert.equal(await hasCaseAccess(new Request('https://example.test/case?token=' + encodeURIComponent(token)), env, code), true);
+  assert.equal(await hasCaseAccess(new Request('https://example.test/case?token=wrong'), env, code), false);
+  assert.equal(await hasCaseAccess(new Request('https://example.test/case'), env, code), false);
+  assert.notEqual(token, await caseAccessToken(env, 'XYZ789'));
 });
