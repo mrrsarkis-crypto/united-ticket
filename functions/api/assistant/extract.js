@@ -35,6 +35,31 @@ const EXTRACT_SYSTEM = [
   'Also return "unknownFields" as an array of field names that could not be read and "legibility" as good, fair, or poor.',
 ].join('\n');
 
+async function readScannerJson(request) {
+  const reader = request.body?.getReader();
+  if (!reader) throw new SyntaxError('Missing JSON body');
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BODY_BYTES) {
+        void reader.cancel().catch(() => {});
+        const error = new Error('Document request is too large.');
+        error.status = 413;
+        throw error;
+      }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const scanId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'scan-' + Date.now();
@@ -67,8 +92,15 @@ export async function onRequestPost(context) {
   }
 
   let body;
-  try { body = await request.json(); }
-  catch { return json({ error: 'Invalid JSON' }, 400, headers); }
+  try { body = await readScannerJson(request); }
+  catch (error) {
+    return json({ error: error.status === 413
+      ? 'Document request is too large. Please upload a file no larger than 10 MB.'
+      : 'Invalid JSON' }, error.status === 413 ? 413 : 400, headers);
+  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return json({ error: 'Expected a JSON object' }, 400, headers);
+  }
 
   if (body.consent !== true) {
     return json({ error: 'You must consent to AI processing of your document before it can be scanned.' }, 403, headers);
