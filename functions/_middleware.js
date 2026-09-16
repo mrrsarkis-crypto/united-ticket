@@ -12,7 +12,9 @@ const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
 function isMonetizedPath(pathname) {
-  const path = (pathname || '/').replace(/\/+$/, '') || '/';
+  let path = (pathname || '/').replace(/\/+$/, '') || '/';
+  if (path === '/amp') return false;
+  if (path.startsWith('/amp/')) path = path.slice(4) || '/';
   return path === '/resources' || path === '/resources.html' ||
     /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
     path === '/faq' || path === '/faq.html' ||
