@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const app = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
+const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.js'), 'utf8');
+const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+
+test('customer scanner source never renders a numeric score or scan confidence', () => {
+  assert.doesNotMatch(app, /\+\s*['\"]\/100['\"]/i);
+  assert.doesNotMatch(app, /\+\s*['\"]% scan confidence['\"]/i);
+  assert.doesNotMatch(app, /More review signals|Some review signals|Few review signals/i);
+  assert.doesNotMatch(scannerClient, /renderScanConfidence|scan confidence/i);
+});
+
+test('scanner result is framed as a review reveal', () => {
+  assert.match(app, /SCAN COMPLETE/);
+  assert.match(app, /REVIEW SIGNAL/);
+  assert.match(app, /case-outcome score, win probability, legal assessment, or court-result prediction/i);
+  assert.match(app, /review the findings above/i);
+  assert.match(scoreUi, /THE RESULTS ARE IN/);
+  assert.match(scoreUi, /utt-lights/);
+  assert.match(scoreUi, /NEXT MOVE/);
+  assert.match(scoreUi, /SAVE MY RESULTS & START MY CASE/);
+});
+
+test('scanner page retains a conversion CTA and honest result disclaimer', () => {
+  assert.match(index, /id="scorePanel"/);
+  assert.match(index, /id="claimCta"/);
+  assert.match(index, /not a legal assessment, outcome prediction, or promise of any court result/i);
+});
