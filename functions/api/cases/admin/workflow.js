@@ -31,6 +31,7 @@ export async function onRequestPost(context) {
       violationCode: fieldValue('violationCode') || n.code || record.violationCode,
       procedureType: fieldValue('procedureType'),
       filingMethod: fieldValue('filingMethod'),
+      eligibilityConfirmed: record.workflow?.eligibility_confirmed === true,
     });
     const dueDate = record.due_date || record.court_date || n.dueDate || n.due_date || fieldValue('dueDate') || fieldValue('courtDate');
     const days = daysUntil(dueDate, now);
@@ -51,7 +52,7 @@ export async function onRequestPost(context) {
     }
 
     const pendingEvents = [];
-    if (workflow.jurisdiction === 'california' && workflow.eligible === true && !sent.workflow_identified) pendingEvents.push('workflow_identified');
+    if (workflow.jurisdiction === 'california' && workflow.procedure !== 'court_review' && !sent.workflow_identified) pendingEvents.push('workflow_identified');
     if (days === 7 && !sent.deadline_7) pendingEvents.push('deadline_7');
     if (days === 3 && !sent.deadline_3) pendingEvents.push('deadline_3');
     if (packageResult.ready && !sent.package_ready && ['payment_complete', 'submitted', 'awaiting_court', 'decided'].includes(record.status)) pendingEvents.push('package_ready');
@@ -71,7 +72,7 @@ export async function onRequestPost(context) {
       due_date: dueDate || record.due_date || '',
       documents: packageResult.documents.slice(0, 100),
       package: currentPackage,
-      workflow: { ...(record.workflow || {}), california_version: CA_TBWD_VERSION, ...workflow, due_date: dueDate || '', days_until_deadline: days, emails: sent, client_documents_ready: packageResult.ready },
+      workflow: { ...(record.workflow || {}), california_version: CA_TBWD_VERSION, ...workflow, due_date: dueDate || '', days_until_deadline: days, emails: sent, client_documents_ready: packageResult.ready, eligibility_confirmed: record.workflow?.eligibility_confirmed === true },
       updated_at: now.toISOString(),
     };
     await env.CASES.put(key, JSON.stringify(updated));
