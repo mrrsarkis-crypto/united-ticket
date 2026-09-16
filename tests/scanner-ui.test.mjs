@@ -8,8 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
 const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.js'), 'utf8');
 const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
+const scanStage = fs.readFileSync(path.join(root, 'public', 'scan-stage.js'), 'utf8');
 const scanPay = fs.readFileSync(path.join(root, 'public', 'scan-pay.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'), 'utf8');
+const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'), 'utf8');
+const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
 
 test('customer scanner source never renders a numeric score or scan confidence', () => {
   assert.doesNotMatch(app, /\+\s*['\"]\/100['\"]/i);
@@ -27,6 +31,8 @@ test('scanner result is framed as a review reveal', () => {
   assert.match(scoreUi, /utt-lights/);
   assert.match(scoreUi, /NEXT MOVE/);
   assert.match(scoreUi, /SAVE MY RESULTS & START MY CASE/);
+  assert.match(scanStage, /UNITED AI INTELLIGENCE/);
+  assert.match(scanStage, /prefers-reduced-motion/);
 });
 
 test('scanner post-result payment bridge preserves the TBD path', () => {
@@ -37,10 +43,28 @@ test('scanner post-result payment bridge preserves the TBD path', () => {
   assert.match(scanPay, /bot-courthouse\?path=tbd/);
   assert.match(scanPay, /claimCta/);
   assert.match(scanPay, /service\.value = '199'/);
+  assert.match(scanPay, /CA_COUNTIES/);
 });
 
 test('scanner page retains a conversion CTA and honest result disclaimer', () => {
   assert.match(index, /id="scorePanel"/);
   assert.match(index, /id="claimCta"/);
   assert.match(index, /not a legal assessment, outcome prediction, or promise of any court result/i);
+});
+
+test('AdSense is restricted to designated informational pages', () => {
+  assert.match(middleware, /function isMonetizedPath\(pathname\)/);
+  assert.match(middleware, /if \(monetized\) \{/);
+  assert.match(middleware, /else if \(isAmp && monetized\)/);
+  assert.doesNotMatch(middleware, /element\.append\(ADSENSE_META, \{ html: true \}\);\s*element\.append\(ADSENSE_SCRIPT, \{ html: true \}\);/);
+  assert.match(buildScript, /function isMonetizedPath\(pathname\)/);
+  assert.match(buildScript, /if \(monetized && !html\.includes\('google-adsense-account'\)\)/);
+  assert.match(buildScript, /if \(monetized && !html\.includes\(`pagead2\.googlesyndication\.com/);
+});
+
+test('test command syntax-checks the scanner bridge scripts', () => {
+  assert.match(packageJson, /node --check public\/score-ui\.js/);
+  assert.match(packageJson, /node --check public\/scan-stage\.js/);
+  assert.match(packageJson, /node --check public\/scan-pay\.js/);
+  assert.match(packageJson, /node --check scripts\/build-vercel\.js/);
 });
