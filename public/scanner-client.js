@@ -185,19 +185,7 @@
     var extracted = {
       legibility: 'poor',
       unknownFields: [],
-      validationWarnings: [],
-      scanAssessment: {
-        label: 'Needs review',
-        legibility: 'poor',
-        scanConfidencePercent: 0,
-        keyFieldsDetected: 0,
-        keyFieldsExpected: 0,
-        confidentKeyFields: 0,
-        missingKeyFields: [],
-        fieldsNeedingVerification: [],
-        needsManualReview: true,
-        summary: 'The photo quality is too weak for a reliable automated read.'
-      },
+      validationWarnings: ['The uploaded photo is too weak for dependable automated reading.'],
       scanMeta: {
         engineVersion: 'client-preflight',
         scanId: 'preflight-' + Date.now().toString(36),
@@ -209,7 +197,7 @@
         providerAttempts: 0,
         durationMs: 0,
         clientQuality: quality,
-        validationWarningCount: 0,
+        validationWarningCount: 1,
         preflightRejected: true,
         requiresHumanVerification: true
       },
@@ -223,167 +211,6 @@
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
     });
   }
-
-  function localFallbackAssessment() {
-    var text = String(window.__lastOcrText || '').trim();
-    if (!text) return null;
-    var ids = ['f_citation', 'f_code', 'f_court', 'f_date', 'f_bail'];
-    var detected = 0;
-    ids.forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el && String(el.value || '').trim()) detected++;
-    });
-    var quality = window.__UTTD_LAST_CLIENT_QUALITY__ || null;
-    var qualityGrade = quality && quality.grade || null;
-    var confidence = Math.min(50, 20 + detected * 6 + (text.length >= 120 ? 4 : 0));
-    if (qualityGrade === 'fair') confidence = Math.min(44, confidence);
-    if (qualityGrade === 'poor') confidence = Math.min(29, confidence);
-    var missing = [];
-    var labels = ['citation number', 'violation code', 'court/agency', 'violation/court date', 'fine/bail amount'];
-    ids.forEach(function (id, index) {
-      var el = document.getElementById(id);
-      if (!el || !String(el.value || '').trim()) missing.push(labels[index]);
-    });
-    return {
-      label: 'Needs review',
-      confidence: confidence,
-      qualityGrade: qualityGrade,
-      documentType: 'ticket',
-      preflightRejected: false,
-      missing: missing,
-      verify: labels.filter(function (label) { return missing.indexOf(label) === -1; }),
-      summary: 'The primary AI scan was unavailable, so this result came from a lower-confidence on-device OCR fallback. Verify every captured field against the original document.',
-      validationWarningCount: 0,
-      scanId: 'local-' + text.length + '-' + detected
-    };
-  }
-
-  function adjustedAssessment(ext) {
-    if (!ext || !ext.scanAssessment) return localFallbackAssessment();
-    var source = ext.scanAssessment;
-    var confidence = Number(source.scanConfidencePercent);
-    if (!Number.isFinite(confidence)) return null;
-    confidence = Math.max(0, Math.min(100, Math.round(confidence)));
-
-    var meta = ext.scanMeta || {};
-    var quality = meta.clientQuality;
-    var qualityGrade = quality && quality.grade;
-    var serverAlreadyAdjusted = source.qualityAdjusted === true;
-    if (!serverAlreadyAdjusted) {
-      if (qualityGrade === 'fair') confidence = Math.min(79, Math.max(0, confidence - 10));
-      if (qualityGrade === 'poor') confidence = Math.min(54, Math.max(0, confidence - 25));
-    }
-
-    var label = 'Needs review';
-    if (meta.preflightRejected) label = 'Retake photo';
-    else if (serverAlreadyAdjusted && source.label) label = source.label;
-    else if (confidence >= 80 && source.legibility === 'good' && qualityGrade !== 'fair' && qualityGrade !== 'poor') label = 'Strong read';
-    else if (confidence >= 55 && source.legibility !== 'poor' && qualityGrade !== 'poor') label = 'Usable read';
-
-    return {
-      label: label,
-      confidence: confidence,
-      qualityGrade: qualityGrade || source.imageQualityGrade || null,
-      documentType: source.documentType || meta.documentType || 'ticket',
-      preflightRejected: meta.preflightRejected === true,
-      missing: Array.isArray(source.missingKeyFields) ? source.missingKeyFields : [],
-      verify: Array.isArray(source.fieldsNeedingVerification) ? source.fieldsNeedingVerification : [],
-      summary: source.summary || '',
-      validationWarningCount: Number(source.validationWarningCount != null ? source.validationWarningCount : meta.validationWarningCount || 0),
-      scanId: meta.scanId || null
-    };
-  }
-
-  function renderScanConfidence() {
-    var panel = document.getElementById('scorePanel');
-    var rankEl = document.getElementById('scoreRank');
-    var numEl = document.getElementById('scoreNum');
-    var listEl = document.getElementById('scoreList');
-    if (!panel || !rankEl || !numEl || !listEl) return;
-
-    var ext = window.__lastExtracted || null;
-    var result = adjustedAssessment(ext);
-    if (!result) return;
-
-    var scanId = result.scanId || ext && ext.scanMeta && ext.scanMeta.scanId || 'local';
-    var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.documentType + '|' + result.missing.join(',') + '|' + result.verify.join(',');
-    var targetNum = result.preflightRejected ? 'New photo needed' : result.confidence + '% scan confidence';
-    if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
-
-    panel.setAttribute('data-utt-scan-signature', signature);
-    rankEl.textContent = result.label;
-    rankEl.className = 'score-rank ' + (result.label === 'Strong read' ? 'rank-low' : result.label === 'Usable read' ? 'rank-med' : 'rank-high');
-    numEl.textContent = targetNum;
-
-    var tag = panel.querySelector('.score-tag');
-    if (tag) tag.textContent = result.preflightRejected
-      ? 'We stopped before AI/OCR because this image was not clear enough for a dependable scan.'
-      : 'Scan confidence measures how clearly the document and key fields were read. It is not a win probability, legal assessment, or prediction of a court result.';
-
-    var messages = [];
-    if (result.preflightRejected) {
-      messages.push('Retake the photo in good light with the full document filling most of the frame.');
-      messages.push('Keep the camera steady, avoid glare and shadows, and make sure the printed text looks sharp before uploading.');
-      messages.push('No AI scan was charged or relied on for this unreadable image.');
-    } else {
-      if (result.summary) messages.push(result.summary);
-      if (result.qualityGrade === 'fair') messages.push('The photo quality was usable but not ideal. Verify the extracted details carefully before continuing.');
-      if (result.qualityGrade === 'poor') messages.push('The photo quality was weak. A clearer photo is recommended before relying on the extracted details.');
-      if (result.validationWarningCount > 0) messages.push('One or more captured values failed a format check and were marked for human verification.');
-      if (result.verify.length) messages.push('Please verify: ' + result.verify.join(', ') + '.');
-      if (result.missing.length) messages.push('Not confidently captured: ' + result.missing.join(', ') + '.');
-      if (result.documentType === 'license') {
-        messages.push('The license scan helps prefill identity information. Your ticket or court notice is still needed for a complete case review.');
-      } else {
-        messages.push('Why professional review can still matter: an automated scan can organize what is printed, but it cannot reliably evaluate every factual, procedural, or court-specific issue in a traffic matter.');
-      }
-    }
-
-    listEl.innerHTML = '';
-    messages.slice(0, 6).forEach(function (message) {
-      var li = document.createElement('li');
-      li.textContent = message;
-      listEl.appendChild(li);
-    });
-    panel.style.display = 'block';
-
-    var statusEl = document.getElementById('status');
-    var claimCta = document.getElementById('claimCta');
-    var claimManual = document.getElementById('claimManual');
-    if (result.preflightRejected) {
-      if (statusEl) {
-        statusEl.textContent = 'Photo needs to be retaken before we can scan it reliably.';
-        statusEl.className = 'status';
-      }
-      if (claimCta) claimCta.style.display = 'none';
-      if (claimManual) {
-        claimManual.style.display = '';
-        claimManual.textContent = 'Skip the scan — enter details manually';
-      }
-    } else {
-      if (claimCta) claimCta.style.display = '';
-    }
-  }
-
-  function installResultAdapter() {
-    var panel = document.getElementById('scorePanel');
-    if (!panel || panel.__uttScanObserver) return;
-    var queued = false;
-    var observer = new MutationObserver(function () {
-      if (queued) return;
-      queued = true;
-      setTimeout(function () {
-        queued = false;
-        renderScanConfidence();
-      }, 0);
-    });
-    observer.observe(panel, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
-    panel.__uttScanObserver = observer;
-    renderScanConfidence();
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installResultAdapter);
-  else installResultAdapter();
 
   window.fetch = async function (input, init) {
     if (!isExtractRequest(input)) return originalFetch(input, init);
