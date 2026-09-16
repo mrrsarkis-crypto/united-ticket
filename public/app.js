@@ -224,7 +224,7 @@
     setField('f_address', ext.mailingAddress && ext.mailingAddress.value);
 
     // Build a readable text blob from extracted values so the client-side
-    // defect scoring still has something genuine to check against.
+    // review rules still have something genuine to check against.
     window.__lastOcrText = [];
     Object.keys(ext).forEach(function (k) {
       var v = ext[k];
@@ -338,71 +338,75 @@
     }
   }
 
-  // ---- Defect scoring engine (rules-based, client-side, no API key) ----
-  // Produces a defensive "defect score" (0-100) + a High/Medium/Low rank and a
-  // list of specific dismissible issues. Explicitly NOT a court-outcome probability.
+  // ---- Review-signal engine (rules-based, client-side, no API key) ----
+  // Keeps the internal weighted detection logic for ranking findings, but never
+  // exposes a grade, score, probability, or court-outcome prediction to customers.
   function scoreTicket(d) {
     var defects = [];
     var text = (d.ocrText || '').toUpperCase();
 
-    // Citation number present?
     if (!d.citation || !d.citation.trim()) {
-      defects.push({ s: 'No citation number captured — may be illegible or missing.', w: 18 });
+      defects.push({ s: 'No citation number was clearly captured. Verify it against the original document.', w: 18 });
     }
-    // Missing court date
     if (!d.date) {
-      defects.push({ s: 'Violation or court date was not captured. Verify the date before proceeding.', w: 14 });
+      defects.push({ s: 'No violation or court date was clearly captured. Verify the date before proceeding.', w: 14 });
     }
-    // Courthouse / city
     if (!d.court || !d.court.trim()) {
-      defects.push({ s: 'No court / city captured.', w: 8 });
+      defects.push({ s: 'No court or city was clearly captured. Verify the issuing court before proceeding.', w: 8 });
     }
-    // Radar/calibration: look for calibration or certification language on the slip
     if (text && !/(CALIBRAT|CERTIF|TEST DATE|RADAR|LASER|UNIT)/.test(text)) {
       defects.push({ s: 'No obvious radar, laser, unit, or calibration language was captured. A professional review may be useful.', w: 16 });
     }
-    // Officer ID / badge / traffic unit
     if (text && !/(BADGE|ID|OFFICER|UNIT|EMPLOYEE #|SIGNATURE)/.test(text)) {
       defects.push({ s: 'Officer identification or signature information was not clearly captured. Verify the citation image.', w: 12 });
     }
-    // Fine / bail vs. posted amount: flag if bail suspiciously low (common "clearance requested" error)
     var bailNum = parseFloat(String(d.bail || '').replace(/[^0-9.]/g, ''));
     if (!isNaN(bailNum) && bailNum > 0 && bailNum < 50) {
-      defects.push({ s: 'The fine/bail amount looks unusual. Verify it against the court notice before relying on it.', w: 10 });
+      defects.push({ s: 'The fine or bail amount looks unusual. Verify it against the court notice before relying on it.', w: 10 });
     }
-    // VC code section present?
     if (d.code && !/^\s*[0-9]/.test(d.code)) {
-      defects.push({ s: 'Violation code section looks incomplete or non-numeric — check for a typo.', w: 8 });
+      defects.push({ s: 'The violation code or section looks incomplete. Check the original ticket for the exact code.', w: 8 });
     }
 
-    // Review-signal score only. This is not a probability, prediction, or legal assessment.
-    var score = 0;
-    defects.forEach(function (df) { score += df.w; });
-    if (score > 100) score = 100;
-
-    var rank;
-    if (score >= 45) rank = { label: 'More review signals', cls: 'rank-high' };
-    else if (score >= 20) rank = { label: 'Some review signals', cls: 'rank-med' };
-    else rank = { label: 'Few review signals', cls: 'rank-low' };
-
-    return { score: score, rank: rank, defects: defects };
+    var internalWeight = 0;
+    defects.forEach(function (df) { internalWeight += df.w; });
+    return { defects: defects, internalWeight: Math.min(100, internalWeight) };
   }
 
   function renderScore(result, panel) {
     var rankEl = document.getElementById('scoreRank');
     var numEl = document.getElementById('scoreNum');
     var listEl = document.getElementById('scoreList');
-    rankEl.textContent = result.rank.label;
-    rankEl.className = 'score-rank ' + result.rank.cls;
-    numEl.textContent = result.score + '/100';
+    if (!rankEl || !numEl || !listEl || !panel) return;
+
+    var count = Array.isArray(result.defects) ? result.defects.length : 0;
+    rankEl.textContent = 'SCAN COMPLETE';
+    rankEl.className = 'review-kicker';
+    numEl.textContent = count ? (count + ' ' + (count === 1 ? 'REVIEW SIGNAL' : 'REVIEW SIGNALS')) : 'READY TO REVIEW';
+    numEl.className = 'review-count';
+
+    var tag = panel.querySelector('.score-tag');
+    if (tag) {
+      tag.textContent = count
+        ? 'We found specific items worth checking in the original document. This is not a case-outcome score, win probability, legal assessment, or court-result prediction.'
+        : 'We did not find obvious review signals in the captured fields. That does not mean the ticket has no issues, so the original document should still be reviewed.';
+    }
+
     listEl.innerHTML = '';
-    var items = result.defects.length ? result.defects : [{ s: 'No obvious review signals were captured from the available document data. A professional review may still identify issues the scan cannot assess.', w: 0 }];
-    items.forEach(function (df) {
+    var items = result.defects.length ? result.defects : [{ s: 'No obvious review signals were captured from the available document data. A professional review can still identify issues the scan cannot assess.', w: 0 }];
+    items.forEach(function (df, index) {
       var li = document.createElement('li');
-      li.textContent = df.s;
+      li.className = 'review-item';
+      li.innerHTML = '<span class="review-light" aria-hidden="true">' + String(index + 1).padStart(2, '0') + '</span><span class="review-copy"></span>';
+      li.querySelector('.review-copy').textContent = df.s;
       listEl.appendChild(li);
     });
+
+    panel.classList.remove('is-revealed');
+    panel.classList.toggle('utt-empty', count === 0);
+    panel.classList.toggle('utt-hot', count > 0);
     panel.style.display = 'block';
+    requestAnimationFrame(function () { panel.classList.add('is-revealed'); });
   }
 
   function collectTicketData() {
@@ -442,7 +446,7 @@
   }
 
   function showClaimCta() {
-    setIntakeStep(1, 'Scan complete — review the scan confidence above.');
+    setIntakeStep(1, 'Scan complete — review the findings above.');
     if (claimCtaWrap) claimCtaWrap.style.display = 'block';
   }
 
