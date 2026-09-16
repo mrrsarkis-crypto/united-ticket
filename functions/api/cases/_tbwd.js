@@ -21,6 +21,7 @@ export function classifyCaliforniaWorkflow(data = {}) {
   const code = String(data.violationCode || data.code || '').toLowerCase();
   const procedureType = String(data.procedureType || '').toLowerCase();
   const filingMethod = String(data.filingMethod || '').toLowerCase();
+  const eligibilityConfirmed = data.eligibilityConfirmed === true;
   const combined = jurisdiction + ' ' + court;
   const explicitCalifornia = /\bcalifornia\b|\bca\b|state of california/.test(combined);
   const californiaCountyCourt = /\bsuperior court\b/.test(court) && CALIFORNIA_COUNTIES.some((county) => {
@@ -32,13 +33,16 @@ export function classifyCaliforniaWorkflow(data = {}) {
   if (!california) return { jurisdiction: 'unknown', procedure: 'jurisdiction_review', eligible: null, reason: 'California jurisdiction was not established.' };
   if (!infractionHint) return { jurisdiction: 'california', procedure: 'court_review', eligible: null, reason: 'The citation type needs court-specific review before a written-declaration path is selected.' };
   const myCitationsHint = /mycitations|online trial|online declaration/.test(combined + ' ' + procedureType + ' ' + filingMethod);
+  const procedure = myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration';
   return {
     jurisdiction: 'california',
-    procedure: myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration',
-    eligible: null,
-    reason: myCitationsHint
-      ? 'A potential online trial-by-declaration workflow was identified; verify citation eligibility and the court\'s current procedure.'
-      : 'A potential California written-declaration workflow was identified; verify infraction-only status, mandatory-appearance restrictions, prior default history, deadlines, bail requirements, and current court procedures before filing.',
+    procedure,
+    eligible: eligibilityConfirmed ? true : null,
+    reason: eligibilityConfirmed
+      ? 'Eligibility was explicitly confirmed; continue to follow the court\'s current filing instructions and deadlines.'
+      : myCitationsHint
+        ? 'A potential online trial-by-declaration workflow was identified; verify citation eligibility and the court\'s current procedure.'
+        : 'A potential California written-declaration workflow was identified; verify infraction-only status, mandatory-appearance restrictions, prior default history, deadlines, bail requirements, and current court procedures before filing.',
   };
 }
 
