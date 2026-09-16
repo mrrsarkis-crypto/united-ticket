@@ -137,11 +137,16 @@ export async function onRequestPost(context) {
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {
+    const visionBudget = Math.min(17000, 25000 - (Date.now() - startedAt));
+    if (visionBudget < 8000) {
+      return json({ error: 'The scan took too long to start. Please try again with the document ready to upload.' }, 504, headers);
+    }
     const vision = await extractVisionDocument(env, {
       system: EXTRACT_SYSTEM,
       base64,
       mediaType,
       prompt,
+      timeoutMs: visionBudget,
     });
 
     let modelJson;
@@ -166,21 +171,24 @@ export async function onRequestPost(context) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
-        const precisionVision = await extractVisionDocument(env, {
-          system: EXTRACT_SYSTEM,
-          base64,
-          mediaType,
-          prompt: precisionPrompt,
-          timeoutMs: Math.min(14000, Number(env.SCANNER_PRECISION_TIMEOUT_MS || 14000)),
-        });
+        const remainingHandlerMs = 25000 - (Date.now() - startedAt);
+        if (remainingHandlerMs >= 9000) {
+          const precisionVision = await extractVisionDocument(env, {
+            system: EXTRACT_SYSTEM,
+            base64,
+            mediaType,
+            prompt: precisionPrompt,
+            timeoutMs: Math.min(8000, Number(env.SCANNER_PRECISION_TIMEOUT_MS || 8000), remainingHandlerMs - 1000),
+          });
         let precisionJson;
         try { precisionJson = JSON.parse(extractJson(precisionVision.text)); } catch { precisionJson = null; }
-        if (precisionJson) {
-          const precisionExtracted = normalizeExtraction(precisionJson);
-          const precisionWarnings = applyFieldPlausibility(precisionExtracted);
-          if (preferExtraction(precisionExtracted, precisionWarnings, extracted, plausibilityWarnings, requestedDocType)) {
-            extracted = precisionExtracted;
-            plausibilityWarnings = precisionWarnings;
+          if (precisionJson) {
+            const precisionExtracted = normalizeExtraction(precisionJson);
+            const precisionWarnings = applyFieldPlausibility(precisionExtracted);
+            if (preferExtraction(precisionExtracted, precisionWarnings, extracted, plausibilityWarnings, requestedDocType)) {
+              extracted = precisionExtracted;
+              plausibilityWarnings = precisionWarnings;
+            }
           }
         }
       } catch (precisionError) {
