@@ -1,6 +1,6 @@
 import { json, unauthorizedIfNotAdmin } from '../../_shared.js';
 import { classifyCaliforniaWorkflow, daysUntil, sendWorkflowEmail, CA_TBWD_VERSION } from '../_tbwd.js';
-import { buildRetainer, buildReceipt } from '../../_tr205.js';
+import { ensureClientPackage } from '../_package.js';
 
 // Admin-triggerable workflow pass. Safe to call from a scheduler/cron service.
 // Each reminder is persisted so repeated scheduler calls do not duplicate email.
@@ -36,15 +36,25 @@ export async function onRequestPost(context) {
     const days = daysUntil(dueDate, now);
     const sent = { ...((record.workflow && record.workflow.emails) || {}) };
 
-    let clientDocs = Array.isArray(record.documents) ? record.documents.slice() : [];
-    const clientDocResult = await ensureClientDocuments(env, record, clientDocs, now, results);
-    clientDocs = clientDocResult.documents;
+    let packageResult = { ready: false, documents: Array.isArray(record.documents) ? record.documents.slice() : [] };
+    if (['payment_complete', 'submitted', 'awaiting_court', 'decided'].includes(record.status) && env.R2) {
+      const fee = record.payment_meta && record.payment_meta.amount_total
+        ? (Number(record.payment_meta.amount_total) / 100).toFixed(2)
+        : record.paid_amount || '0.00';
+      const result = await ensureClientPackage(env, record, { fee, now });
+      packageResult = {
+        ...result,
+        documents: result.documents || packageResult.documents,
+        ready: !!(result.package?.clientDocumentsReady),
+      };
+      results.push({ code: record.tracking_code, event: 'package_sync', generated: result.generated || 0, ok: result.ok !== false });
+    }
 
     const pendingEvents = [];
     if (workflow.jurisdiction === 'california' && workflow.eligible === true && !sent.workflow_identified) pendingEvents.push('workflow_identified');
     if (days === 7 && !sent.deadline_7) pendingEvents.push('deadline_7');
     if (days === 3 && !sent.deadline_3) pendingEvents.push('deadline_3');
-    if (clientDocResult.ready && !sent.package_ready && ['payment_complete', 'submitted', 'awaiting_court', 'decided'].includes(record.status)) pendingEvents.push('package_ready');
+    if (packageResult.ready && !sent.package_ready && ['payment_complete', 'submitted', 'awaiting_court', 'decided'].includes(record.status)) pendingEvents.push('package_ready');
 
     for (const emailEvent of pendingEvents) {
       const mail = await sendWorkflowEmail(env, record, emailEvent).catch(e => ({ sent: false, error: String(e?.message || e) }));
@@ -52,60 +62,21 @@ export async function onRequestPost(context) {
       results.push({ code: record.tracking_code, event: emailEvent, ...mail });
     }
 
+    const currentPackage = packageResult.package || record.package || {};
     const updated = {
       ...record,
       jurisdiction: fieldValue('jurisdiction') || record.jurisdiction || '',
       courtOrAgency: fieldValue('courtOrAgency') || record.courtOrAgency || record.court || '',
       violationCode: fieldValue('violationCode') || record.violationCode || n.code || '',
       due_date: dueDate || record.due_date || '',
-      documents: clientDocs.slice(0, 100),
-      workflow: { ...(record.workflow || {}), california_version: CA_TBWD_VERSION, ...workflow, due_date: dueDate || '', days_until_deadline: days, emails: sent, client_documents_ready: clientDocResult.ready },
+      documents: packageResult.documents.slice(0, 100),
+      package: currentPackage,
+      workflow: { ...(record.workflow || {}), california_version: CA_TBWD_VERSION, ...workflow, due_date: dueDate || '', days_until_deadline: days, emails: sent, client_documents_ready: packageResult.ready },
       updated_at: now.toISOString(),
     };
     await env.CASES.put(key, JSON.stringify(updated));
   }
   return json({ ok: true, processed: keys.length, results });
-}
-
-async function ensureClientDocuments(env, record, existing, now, results) {
-  if (record.status !== 'payment_complete' && record.status !== 'submitted' && record.status !== 'awaiting_court' && record.status !== 'decided') {
-    return { documents: existing, ready: existing.some(d => d && d.id === 'client-retainer') && existing.some(d => d && d.id === 'client-receipt') };
-  }
-  if (!env.R2) return { documents: existing, ready: false };
-
-  const code = String(record.tracking_code || '').trim();
-  if (!code) return { documents: existing, ready: false };
-  const email = String(record.email || '').trim();
-  const fee = record.payment_meta && record.payment_meta.amount_total
-    ? (Number(record.payment_meta.amount_total) / 100).toFixed(2)
-    : '';
-  const date = record.paid_at ? new Date(record.paid_at).toISOString().slice(0, 10) : now.toISOString().slice(0, 10);
-  const wanted = [
-    { id: 'client-retainer', name: 'Retainer_Agreement_' + code + '.pdf', builder: () => buildRetainer({ name: record.name, email, tracking: code, service: 'Traffic ticket defense', fee, date }) },
-    { id: 'client-receipt', name: 'Receipt_' + code + '.pdf', builder: () => buildReceipt({ name: record.name, email, tracking: code, fee, date }) },
-  ];
-
-  let ready = true;
-  let documents = existing.slice();
-  for (const item of wanted) {
-    const found = documents.find(d => d && d.id === item.id);
-    if (found) continue;
-    try {
-      const bytes = item.builder();
-      const key = 'cases/' + code + '/' + item.id + '.pdf';
-      await env.R2.put(key, bytes, {
-        httpMetadata: { contentType: 'application/pdf', contentDisposition: 'attachment; filename="' + item.name.replace(/"/g, '') + '"' },
-        customMetadata: { tracking_code: code, document_id: item.id, original_name: item.name, source: 'system', visibility: 'customer' },
-      });
-      documents.unshift({ id: item.id, name: item.name, type: 'application/pdf', size: bytes.length, uploadedAt: now.toISOString(), source: 'system', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(item.id) });
-      results.push({ code, event: 'client_document_created', document: item.id, sent: true });
-    } catch (e) {
-      ready = false;
-      results.push({ code, event: 'client_document_create_failed', document: item.id, error: String(e?.message || e) });
-    }
-  }
-  const complete = wanted.every(item => documents.some(d => d && d.id === item.id));
-  return { documents, ready: ready && complete };
 }
 
 async function listCaseKeys(env) {
