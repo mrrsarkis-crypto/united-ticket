@@ -29,6 +29,8 @@ jobs:
           node --check functions/api/_tr205.js
           node --check functions/api/cases/[code].js
           node --check functions/api/cases/_tbwd.js
+          node --check functions/api/cases/_package.js
+          node --check functions/api/cases/admin/package.js
           node --check functions/api/cases/admin/workflow.js
           node --check functions/api/cases/admin/sync.js
           node --check functions/api/case-documents.js
