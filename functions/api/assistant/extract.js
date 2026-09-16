@@ -137,7 +137,7 @@ export async function onRequestPost(context) {
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {
-    const visionBudget = Math.min(17000, 25000 - (Date.now() - startedAt));
+    const visionBudget = Math.min(12000, 15000 - (Date.now() - startedAt));
     if (visionBudget < 8000) {
       return json({ error: 'The scan took too long to start. Please try again with the document ready to upload.' }, 504, headers);
     }
@@ -171,7 +171,7 @@ export async function onRequestPost(context) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
-        const remainingHandlerMs = 25000 - (Date.now() - startedAt);
+        const remainingHandlerMs = 15000 - (Date.now() - startedAt);
         if (remainingHandlerMs >= 9000) {
           const precisionVision = await extractVisionDocument(env, {
             system: EXTRACT_SYSTEM,
