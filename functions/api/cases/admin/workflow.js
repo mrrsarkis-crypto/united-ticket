@@ -93,9 +93,9 @@ async function ensureClientDocuments(env, record, existing, now, results) {
       const key = 'cases/' + code + '/' + item.id + '.pdf';
       await env.R2.put(key, bytes, {
         httpMetadata: { contentType: 'application/pdf', contentDisposition: 'attachment; filename="' + item.name.replace(/"/g, '') + '"' },
-        customMetadata: { tracking_code: code, document_id: item.id, original_name: item.name, source: 'system' },
+        customMetadata: { tracking_code: code, document_id: item.id, original_name: item.name, source: 'system', visibility: 'customer' },
       });
-      documents.unshift({ id: item.id, name: item.name, type: 'application/pdf', size: bytes.length, uploadedAt: now.toISOString(), source: 'system', downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(item.id) });
+      documents.unshift({ id: item.id, name: item.name, type: 'application/pdf', size: bytes.length, uploadedAt: now.toISOString(), source: 'system', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(item.id) });
       results.push({ code, event: 'client_document_created', document: item.id, sent: true });
     } catch (e) {
       ready = false;
