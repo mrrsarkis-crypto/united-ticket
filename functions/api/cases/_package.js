@@ -1,5 +1,7 @@
 import { buildRetainer, buildReceipt, buildTR205 } from '../_tr205.js';
 
+const PACKAGE_VERSION = '2026.09.15-2';
+
 function safeCode(value) {
   return String(value || 'case').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80) || 'case';
 }
@@ -12,11 +14,11 @@ export async function ensureClientPackage(env, record, options = {}) {
   const code = String(record.tracking_code).trim();
   const now = new Date().toISOString();
   const existing = Array.isArray(record.documents) ? record.documents.slice() : [];
-  const has = (name) => existing.some((doc) => doc && doc.name === name && doc.source === 'system');
   const fee = options.fee || record.paid_amount || '0.00';
   const date = options.date || (record.paid_at ? String(record.paid_at).slice(0, 10) : now.slice(0, 10));
   const safe = safeCode(code);
   const additions = [];
+  let changedMetadata = false;
 
   const putPdf = async (id, filename, bytes, customerVisible) => {
     if (!bytes || !filename) return;
@@ -28,17 +30,25 @@ export async function ensureClientPackage(env, record, options = {}) {
       },
       customMetadata: { tracking_code: code, document_id: id, original_name: filename, visibility: customerVisible ? 'customer' : 'internal' },
     });
-    if (!existing.some((doc) => doc && doc.id === id)) {
-      additions.push({
-        id,
-        name: filename,
-        type: 'application/pdf',
-        size: bytes.byteLength || 0,
-        uploadedAt: now,
-        source: 'system',
-        customerVisible,
-        downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id),
-      });
+    const existingIndex = existing.findIndex((doc) => doc && doc.id === id);
+    const normalized = {
+      id,
+      name: filename,
+      type: 'application/pdf',
+      size: bytes.byteLength || 0,
+      uploadedAt: existingIndex >= 0 && existing[existingIndex].uploadedAt ? existing[existingIndex].uploadedAt : now,
+      source: 'system',
+      customerVisible,
+      downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id),
+    };
+    if (existingIndex >= 0) {
+      const prior = existing[existingIndex];
+      if (JSON.stringify({ ...prior, downloadPath: normalized.downloadPath }) !== JSON.stringify(normalized)) {
+        existing[existingIndex] = { ...prior, ...normalized };
+        changedMetadata = true;
+      }
+    } else {
+      additions.push(normalized);
     }
   };
 
@@ -47,27 +57,43 @@ export async function ensureClientPackage(env, record, options = {}) {
   const tracking = code;
   const dollars = typeof fee === 'number' ? fee.toFixed(2) : String(fee);
 
-  if (!has('Retainer_Agreement_' + safe + '.pdf')) {
+  const retainerName = 'Retainer_Agreement_' + safe + '.pdf';
+  if (!existing.some((doc) => doc && doc.name === retainerName && doc.source === 'system' && doc.customerVisible === true)) {
     const bytes = buildRetainer({ name, email, tracking, service: record.service || 'Traffic ticket defense', fee: dollars, date });
-    await putPdf('system-retainer-' + safe, 'Retainer_Agreement_' + safe + '.pdf', bytes, true);
+    await putPdf('system-retainer-' + safe, retainerName, bytes, true);
   }
 
-  if (!has('Receipt_' + safe + '.pdf')) {
+  const receiptName = 'Receipt_' + safe + '.pdf';
+  if (!existing.some((doc) => doc && doc.name === receiptName && doc.source === 'system' && doc.customerVisible === true)) {
     const bytes = buildReceipt({ name, email, tracking, fee: dollars, date });
-    await putPdf('system-receipt-' + safe, 'Receipt_' + safe + '.pdf', bytes, true);
+    await putPdf('system-receipt-' + safe, receiptName, bytes, true);
   }
 
-  if (!has('Internal_TR205_' + safe + '.pdf')) {
+  const internalName = 'Internal_TR205_' + safe + '.pdf';
+  if (!existing.some((doc) => doc && doc.name === internalName && doc.source === 'system' && doc.customerVisible === false)) {
     const notes = record.notes && typeof record.notes === 'object' ? record.notes : {};
     const bytes = buildTR205({ name, citation: record.citation, court: record.court, dob: record.dob, dl: record.dl, notes: { ...notes, created_at: record.paid_at || record.created_at } });
-    await putPdf('system-tr205-' + safe, 'Internal_TR205_' + safe + '.pdf', bytes, false);
+    await putPdf('system-tr205-' + safe, internalName, bytes, false);
   }
 
-  if (!additions.length) return { ok: true, unchanged: true, documents: existing };
   const documents = existing.concat(additions).slice(0, 100);
-  const updated = { ...record, documents, package: { ...(record.package || {}), version: '2026.09.15-1', generatedAt: now, clientDocumentsReady: documents.some((d) => d.customerVisible === true), internalDraftReady: documents.some((d) => d.customerVisible === false) }, updated_at: now };
+  const clientDocumentsReady = [retainerName, receiptName].every((filename) => documents.some((doc) => doc && doc.name === filename && (doc.source === 'customer' || doc.customerVisible === true)));
+  const internalDraftReady = documents.some((doc) => doc && doc.name === internalName && doc.source === 'system' && doc.customerVisible === false);
+  const priorPackage = record.package && typeof record.package === 'object' ? record.package : {};
+  const packageData = {
+    ...priorPackage,
+    version: PACKAGE_VERSION,
+    generatedAt: additions.length || changedMetadata ? now : (priorPackage.generatedAt || null),
+    clientDocumentsReady,
+    internalDraftReady,
+  };
+
+  const needsPersist = additions.length || changedMetadata || JSON.stringify(priorPackage) !== JSON.stringify(packageData);
+  if (!needsPersist) return { ok: true, unchanged: true, documents, package: packageData };
+
+  const updated = { ...record, documents, package: packageData, updated_at: now };
   await env.CASES.put('case:' + code, JSON.stringify(updated));
-  return { ok: true, generated: additions.length, documents };
+  return { ok: true, generated: additions.length, documents, package: packageData };
 }
 
 export function customerDocuments(record) {
