@@ -8,6 +8,7 @@ const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSEN
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js"></script>';
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
 const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
+const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
 export async function onRequest(context) {
@@ -65,6 +66,7 @@ export async function onRequest(context) {
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
         element.append(SCORE_UI_SCRIPT, { html: true });
         element.append(SCAN_STAGE_SCRIPT, { html: true });
+        element.append(SCAN_PAY_SCRIPT, { html: true });
         element.append(ADSENSE_META, { html: true });
         element.append(ADSENSE_SCRIPT, { html: true });
         element.append(TRUST_BADGE_SCRIPT, { html: true });
