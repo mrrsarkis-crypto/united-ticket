@@ -17,6 +17,11 @@ async function loadCase(env, code) {
   return await env.CASES.get('case:' + code, 'json');
 }
 
+function customerVisibleDocuments(record) {
+  const docs = Array.isArray(record?.documents) ? record.documents : [];
+  return docs.filter((doc) => doc && (doc.source === 'customer' || doc.customerVisible === true));
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -24,7 +29,7 @@ export async function onRequestGet(context) {
   if (!code || !await hasCaseAccess(request, env, code)) return json({ error: 'Case access denied' }, 403);
   const record = await loadCase(env, code);
   if (!record) return json({ error: 'Case not found' }, 404);
-  return json({ documents: Array.isArray(record.documents) ? record.documents : [] }, 200);
+  return json({ documents: customerVisibleDocuments(record) }, 200);
 }
 
 export async function onRequestPost(context) {
@@ -52,11 +57,11 @@ export async function onRequestPost(context) {
   const key = 'cases/' + code + '/' + id + '.' + ext;
   await env.R2.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: mime, contentDisposition: 'attachment; filename="' + originalName.replace(/"/g, '') + '"' },
-    customMetadata: { tracking_code: code, document_id: id, original_name: originalName },
+    customMetadata: { tracking_code: code, document_id: id, original_name: originalName, visibility: 'customer' },
   });
 
   const now = new Date().toISOString();
-  const doc = { id, name: originalName, type: mime, size, uploadedAt: now, source: 'customer', downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id) };
+  const doc = { id, name: originalName, type: mime, size, uploadedAt: now, source: 'customer', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id) };
   const documents = Array.isArray(record.documents) ? record.documents.slice() : [];
   documents.unshift(doc);
   await env.CASES.put('case:' + code, JSON.stringify({ ...record, documents: documents.slice(0, 100), updated_at: now }));
