@@ -171,6 +171,28 @@ test('Gemini transport response is returned with provider metadata', async (t) =
   assert.equal(result.text, '{"legibility":"good"}');
 });
 
+test('Groq fallback requests strict schema output', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestBody;
+  globalThis.fetch = async (_url, init) => {
+    requestBody = JSON.parse(init.body);
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"legibility":"good"}' } }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  const result = await extractVisionDocument(
+    { GROQ_API_KEY: 'test-groq', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', validateText: () => true }
+  );
+  assert.equal(result.provider, 'groq');
+  assert.equal(requestBody.response_format.type, 'json_schema');
+  assert.equal(requestBody.response_format.json_schema.strict, true);
+  assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
+});
+
 test('invalid Gemini extraction automatically falls back to Anthropic', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
