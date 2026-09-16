@@ -12,6 +12,18 @@ const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https
 const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
 const scannerClientTag = '<script src="/scanner-client.js"></script>';
 
+function isMonetizedPath(pathname) {
+  let path = (pathname || '/').replace(/\/+$/, '') || '/';
+  if (path === '/amp') return false;
+  if (path.startsWith('/amp/')) path = path.slice(4) || '/';
+  return path === '/resources' || path === '/resources.html' ||
+    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
+    path === '/faq' || path === '/faq.html' ||
+    path === '/courthouses' || path === '/courthouses.html' ||
+    path === '/all-courthouses' || path === '/all-courthouses.html' ||
+    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+}
+
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
@@ -34,19 +46,20 @@ for (const file of await walk(outDir)) {
   let html = await readFile(file, 'utf8');
   const rel = path.relative(outDir, file).replaceAll('\\', '/');
   const isAmp = rel.startsWith('amp/');
+  const monetized = isMonetizedPath('/' + rel.replace(/\.html$/i, ''));
   let changed = false;
 
-  if (!html.includes('google-adsense-account')) {
+  if (monetized && !html.includes('google-adsense-account')) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${accountMeta}`);
     changed = true;
   }
 
   if (isAmp) {
-    if (!html.includes('custom-element="amp-auto-ads"')) {
+    if (monetized && !html.includes('custom-element="amp-auto-ads"')) {
       html = html.replace(/<head([^>]*)>/i, `$&\n${ampAdsenseScript}`);
       changed = true;
     }
-    if (!html.includes('<amp-auto-ads')) {
+    if (monetized && !html.includes('<amp-auto-ads')) {
       html = html.replace(/<body([^>]*)>/i, `$&\n${ampAdsenseUnit}`);
       changed = true;
     }
@@ -60,7 +73,7 @@ for (const file of await walk(outDir)) {
     changed = true;
   }
 
-  if (!html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
+  if (monetized && !html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${adsenseTag}`);
     changed = true;
   }
@@ -69,8 +82,8 @@ for (const file of await walk(outDir)) {
   normalHtml++;
 }
 
-// The static HTML now carries the AdSense tag. Remove the old runtime loader
-// from the build so no page requests the same AdSense library twice.
+// The static output carries AdSense only on designated informational pages.
+// Keep the old runtime loader removed so monetized pages make one request.
 const navFile = path.join(outDir, 'nav.js');
 try {
   let nav = await readFile(navFile, 'utf8');
@@ -84,4 +97,4 @@ try {
   // nav.js is optional for the build step.
 }
 
-console.log(`Static build complete: ${normalHtml} standard HTML pages with scanner optimizer + AdSense; ${ampHtml} AMP pages with AMP Auto ads.`);
+console.log(`Static build complete: ${normalHtml} standard HTML pages (${publisher} on designated informational pages); ${ampHtml} AMP pages with the same informational-only boundary.`);
