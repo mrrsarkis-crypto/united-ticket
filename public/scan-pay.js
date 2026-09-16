@@ -32,8 +32,7 @@
     var combined = [jurisdiction, court, code, procedure, filing, description].join(' ');
     var california = /\bcalifornia\b|\bca\b|superior court.*\bcounty\b/.test(combined);
     var traffic = /\binfraction\b|traffic|vehicle code|\bvc\s*\d|speeding|stop sign|red light/.test(combined);
-    var written = /written declaration|trial by written|tr-205|40902|mycitations|online trial|online declaration/.test(combined);
-    return { california: california, traffic: traffic, written: written };
+    return { california: california, traffic: traffic };
   }
 
   function ensureOffer() {
@@ -59,7 +58,7 @@
       '<div class="utt-scan-pay-price"><strong>$199</strong><span>STANDARD TICKET</span></div>' +
       '</div>' +
       '<div class="utt-scan-pay-actions">' +
-      '<button type="button" class="utt-scan-pay-btn" id="uttScanPayBtn">' + (tbd ? 'PAY NOW • START TBD REVIEW →' : 'PAY NOW • START MY CASE →') + '</button>' +
+      '<button type="button" class="utt-scan-pay-btn" id="uttScanPayBtn">' + (tbd ? 'PAY NOW • $199 • START TBD REVIEW →' : 'PAY NOW • $199 • START MY CASE →') + '</button>' +
       '<a class="utt-scan-pay-secondary" href="/bot-courthouse?path=tbd">See the TBD workflow</a>' +
       '</div>' +
       '<p class="utt-scan-pay-legal">Secure checkout follows your existing case flow. This is document preparation and case tracking, not a law firm or court. No court-result promise is made.</p>';
@@ -102,9 +101,6 @@
       else reset();
     });
     observer.observe(score, { attributes: true, attributeFilter: ['style', 'class'] });
-    document.addEventListener('click', function (e) {
-      if (e.target && e.target.id === 'fileInput') reset();
-    });
     ensureOffer();
   }
 
