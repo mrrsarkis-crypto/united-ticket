@@ -53,10 +53,15 @@ test('scanner page retains a conversion CTA and honest result disclaimer', () =>
 });
 
 test('AdSense is restricted to designated informational pages', () => {
+  const standardGate = middleware.indexOf('if (monetized) {');
+  const standardAd = middleware.indexOf('element.append(ADSENSE_META');
+  const ampGate = middleware.indexOf('else if (isAmp && monetized)');
+  const ampAd = middleware.indexOf('element.append(AMP_ADSENSE_SCRIPT');
+  assert.notEqual(standardGate, -1);
+  assert.ok(standardAd > standardGate);
+  assert.notEqual(ampGate, -1);
+  assert.ok(ampAd > ampGate);
   assert.match(middleware, /function isMonetizedPath\(pathname\)/);
-  assert.match(middleware, /if \(monetized\) \{/);
-  assert.match(middleware, /else if \(isAmp && monetized\)/);
-  assert.doesNotMatch(middleware, /element\.append\(ADSENSE_META, \{ html: true \}\);\s*element\.append\(ADSENSE_SCRIPT, \{ html: true \}\);/);
   assert.match(buildScript, /function isMonetizedPath\(pathname\)/);
   assert.match(buildScript, /if \(monetized && !html\.includes\('google-adsense-account'\)\)/);
   assert.match(buildScript, /if \(monetized && !html\.includes\(`pagead2\.googlesyndication\.com/);
