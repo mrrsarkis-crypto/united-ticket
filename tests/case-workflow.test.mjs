@@ -4,7 +4,7 @@ import { caseAccessToken, hasCaseAccess } from '../functions/api/_shared.js';
 import { classifyCaliforniaWorkflow, daysUntil } from '../functions/api/cases/_tbwd.js';
 import { customerDocuments } from '../functions/api/cases/_package.js';
 
-test('California traffic citation routes to written-declaration review', () => {
+test('California traffic citation routes to potential written-declaration review', () => {
   const result = classifyCaliforniaWorkflow({
     jurisdiction: 'California',
     courtOrAgency: 'Superior Court of Los Angeles County',
@@ -12,16 +12,29 @@ test('California traffic citation routes to written-declaration review', () => {
   });
   assert.equal(result.jurisdiction, 'california');
   assert.equal(result.procedure, 'trial_by_written_declaration');
-  assert.equal(result.eligible, true);
+  assert.equal(result.eligible, null);
+  assert.match(result.reason, /verify/i);
 });
 
-test('Known California county court signal identifies California', () => {
+test('Known California county court signal identifies California without claiming eligibility', () => {
   const result = classifyCaliforniaWorkflow({
     jurisdiction: '',
     courtOrAgency: 'Superior Court of Los Angeles County',
     violationCode: 'VC 22350',
   });
   assert.equal(result.jurisdiction, 'california');
+  assert.equal(result.eligible, null);
+});
+
+test('Explicitly confirmed California written-declaration path can be marked eligible', () => {
+  const result = classifyCaliforniaWorkflow({
+    jurisdiction: 'California',
+    courtOrAgency: 'Superior Court of Los Angeles County',
+    violationCode: 'VC 22350',
+    eligibilityConfirmed: true,
+  });
+  assert.equal(result.jurisdiction, 'california');
+  assert.equal(result.procedure, 'trial_by_written_declaration');
   assert.equal(result.eligible, true);
 });
 
