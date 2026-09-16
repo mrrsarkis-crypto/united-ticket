@@ -2,7 +2,7 @@
 import { resendSend, caseAccessToken } from '../_shared.js';
 import { daysUntil } from '../_deadline-utils.js';
 
-export const CA_TBWD_VERSION = '2026.09.15';
+export const CA_TBWD_VERSION = '2026.09.16';
 
 const CALIFORNIA_COUNTIES = [
   'alameda', 'alpine', 'amador', 'butte', 'calaveras', 'colusa', 'contra costa', 'del norte',
@@ -32,7 +32,14 @@ export function classifyCaliforniaWorkflow(data = {}) {
   if (!california) return { jurisdiction: 'unknown', procedure: 'jurisdiction_review', eligible: null, reason: 'California jurisdiction was not established.' };
   if (!infractionHint) return { jurisdiction: 'california', procedure: 'court_review', eligible: null, reason: 'The citation type needs court-specific review before a written-declaration path is selected.' };
   const myCitationsHint = /mycitations|online trial|online declaration/.test(combined + ' ' + procedureType + ' ' + filingMethod);
-  return { jurisdiction: 'california', procedure: myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration', eligible: true, reason: myCitationsHint ? 'Online trial-by-declaration workflow indicated; verify that the citation and court are eligible.' : 'California traffic infraction appears compatible with a written-declaration workflow; verify eligibility with the court.' };
+  return {
+    jurisdiction: 'california',
+    procedure: myCitationsHint ? 'online_trial_by_written_declaration' : 'trial_by_written_declaration',
+    eligible: null,
+    reason: myCitationsHint
+      ? 'A potential online trial-by-declaration workflow was identified; verify citation eligibility and the court\'s current procedure.'
+      : 'A potential California written-declaration workflow was identified; verify infraction-only status, mandatory-appearance restrictions, prior default history, deadlines, bail requirements, and current court procedures before filing.',
+  };
 }
 
 export { daysUntil };
