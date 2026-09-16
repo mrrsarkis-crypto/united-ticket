@@ -88,15 +88,28 @@ function validExtractionText(text) {
 
 async function fetchWithDeadline(url, init, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('vision provider timed out'));
+    }, timeoutMs);
+  });
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await Promise.race([
+      (async () => {
+        const response = await fetch(url, { ...init, signal: controller.signal });
+        // Keep the deadline active while the provider streams its body.
+        const body = await response.text();
+        return { ok: response.ok, status: response.status,
+          text: async () => body, json: async () => JSON.parse(body) };
+      })(),
+      timeout,
+    ]);
   } catch (error) {
     if (error && error.name === 'AbortError') throw new Error('vision provider timed out');
     throw error;
-  } finally {
-    clearTimeout(timer);
-  }
+  } finally { clearTimeout(timer); }
 }
 
 async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs }) {
@@ -137,7 +150,8 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
         const error = new Error('Gemini HTTP ' + res.status + ': ' + detail.slice(0, 180));
-        if (!retryable(res.status) || attempt === MAX_ATTEMPTS) throw error;
+        error.retryable = retryable(res.status);
+        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -148,7 +162,7 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
       }
     } catch (error) {
       lastError = error;
-      if (attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
@@ -193,7 +207,8 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
         const error = new Error('Anthropic HTTP ' + res.status + ': ' + detail.slice(0, 180));
-        if (!retryable(res.status) || attempt === MAX_ATTEMPTS) throw error;
+        error.retryable = retryable(res.status);
+        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -205,7 +220,7 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
       }
     } catch (error) {
       lastError = error;
-      if (attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
@@ -310,7 +325,8 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
         const error = new Error('Vercel AI Gateway HTTP ' + res.status + ': ' + detail.slice(0, 180));
-        if (!retryable(res.status) || attempt === MAX_ATTEMPTS) throw error;
+        error.retryable = retryable(res.status);
+        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -320,7 +336,7 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
       }
     } catch (error) {
       lastError = error;
-      if (attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
@@ -381,6 +397,7 @@ export async function extractVisionDocument(env, input) {
 }
 
 export const __visionTest = {
+  fetchWithDeadline,
   firstJsonObject,
   validFieldContract,
   validExtractionObject,
