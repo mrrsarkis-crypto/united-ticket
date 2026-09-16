@@ -1048,7 +1048,7 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 @media(max-width:560px){.ai-strip{padding:16px 0 14px;}.ai-tiles{justify-content:center;}.ai-tile{flex:1 1 100%;justify-content:flex-start;}}
 
 /* hero AI quick chips */
-.hero-ai-chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px;}
+.hero-ai-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:22px;}
 .hero-ai-chips a{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;text-decoration:none;
   font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;border:1px solid rgba(255,199,71,.4);background:rgba(0,51,160,.25);
   transition:transform .15s,background .15s;backdrop-filter:blur(3px);}
