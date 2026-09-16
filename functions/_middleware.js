@@ -11,6 +11,16 @@ const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
 const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
 
+function isMonetizedPath(pathname) {
+  const path = (pathname || '/').replace(/\/+$/, '') || '/';
+  return path === '/resources' || path === '/resources.html' ||
+    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
+    path === '/faq' || path === '/faq.html' ||
+    path === '/courthouses' || path === '/courthouses.html' ||
+    path === '/all-courthouses' || path === '/all-courthouses.html' ||
+    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+}
+
 export async function onRequest(context) {
   const response = await context.next();
   const newHeaders = new Headers(response.headers);
@@ -20,6 +30,7 @@ export async function onRequest(context) {
   const isStandardHtml = isHtml && !isAmp;
   const isPrivateAdminApi = /^\/api\/cases\/admin(?:\.|$|\/)/.test(url.pathname);
   const isScannerApi = url.pathname === '/api/assistant/extract';
+  const monetized = isMonetizedPath(url.pathname);
 
   newHeaders.set('X-Content-Type-Options', 'nosniff');
   newHeaders.set('X-Frame-Options', 'DENY');
@@ -67,12 +78,14 @@ export async function onRequest(context) {
         element.append(SCORE_UI_SCRIPT, { html: true });
         element.append(SCAN_STAGE_SCRIPT, { html: true });
         element.append(SCAN_PAY_SCRIPT, { html: true });
-        element.append(ADSENSE_META, { html: true });
-        element.append(ADSENSE_SCRIPT, { html: true });
+        if (monetized) {
+          element.append(ADSENSE_META, { html: true });
+          element.append(ADSENSE_SCRIPT, { html: true });
+        }
         element.append(TRUST_BADGE_SCRIPT, { html: true });
       }
     }).transform(output);
-  } else if (isAmp) {
+  } else if (isAmp && monetized) {
     output = new HTMLRewriter()
       .on('head', {
         element(element) {
