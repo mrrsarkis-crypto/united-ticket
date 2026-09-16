@@ -4,6 +4,7 @@
   var STYLE_ID = 'utt-scan-pay-style';
   var OFFER_ID = 'utt-scan-pay-offer';
   var inserted = false;
+  var CA_COUNTIES = ['alameda','alpine','amador','butte','calaveras','colusa','contra costa','del norte','el dorado','fresno','glenn','humboldt','imperial','inyo','kern','kings','lake','lassen','los angeles','madera','marin','mariposa','mendocino','merced','modoc','mono','monterey','napa','nevada','orange','placer','plumas','riverside','sacramento','san benito','san bernardino','san diego','san francisco','san joaquin','san luis obispo','san mateo','santa barbara','santa clara','santa cruz','shasta','sierra','siskiyou','solano','sonoma','stanislaus','sutter','tehama','trinity','tulare','tuolumne','ventura','yolo','yuba'];
   function styles() {
     if (document.getElementById(STYLE_ID)) return;
     var style = document.createElement('style');
@@ -24,11 +25,17 @@
     var code = valueOf(ext.violationCode).toLowerCase();
     var procedure = valueOf(ext.procedureType).toLowerCase();
     var filing = valueOf(ext.filingMethod).toLowerCase();
+    var eligibility = valueOf(ext.eligibilityNotes).toLowerCase();
     var description = valueOf(ext.violationDescription).toLowerCase();
-    var combined = [jurisdiction, court, code, procedure, filing, description].join(' ');
-    var california = /\bcalifornia\b|\bca\b|superior court.*\bcounty\b/.test(combined);
+    var combined = [jurisdiction, court, code, procedure, filing, eligibility, description].join(' ');
+    var explicitCalifornia = /\bcalifornia\b|\bca\b|state of california/.test(jurisdiction + ' ' + court);
+    var countyCourt = /\bsuperior court\b/.test(court) && CA_COUNTIES.some(function (county) {
+      return new RegExp('\\b' + county.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '(?: county)?\\b').test(court);
+    });
+    var california = explicitCalifornia || countyCourt;
     var traffic = /\binfraction\b|traffic|vehicle code|\bvc\s*\d|speeding|stop sign|red light/.test(combined);
-    return { california: california, traffic: traffic };
+    var writtenDeclaration = /trial by written declaration|written declaration|tbwd|tr-205|mycitations|online trial|online declaration/.test(combined);
+    return { california: california, traffic: traffic, writtenDeclaration: writtenDeclaration };
   }
   function ensureOffer() {
     if (inserted) return;
@@ -37,12 +44,12 @@
     var wrap = panel.parentNode;
     if (!wrap || document.getElementById(OFFER_ID)) return;
     var ctx = scanContext();
-    var tbd = ctx.california && ctx.traffic;
+    var tbd = ctx.california && ctx.traffic && (ctx.writtenDeclaration || ctx.traffic);
     var offer = document.createElement('section');
     offer.id = OFFER_ID;
     offer.className = 'utt-scan-pay' + (tbd ? ' is-tbd' : '');
     offer.setAttribute('aria-label', 'Next service option');
-    offer.innerHTML = '<div class="utt-scan-pay-head"><div><p class="utt-scan-pay-kicker">' + (tbd ? 'POTENTIAL TBD PATH DETECTED' : 'NEXT STEP') + '</p><h3 class="utt-scan-pay-title">' + (tbd ? 'Start your $199 TBD review' : 'Ready to start your case?') + '</h3><p class="utt-scan-pay-copy">' + (tbd ? 'Your scan contains California traffic-ticket signals that can fit a Trial by Written Declaration workflow. Eligibility is court-specific, so we verify the citation and court before any filing step.' : 'Move from the free scan into the Standard Ticket service. Your submitted details are reviewed before anything is filed, and outcomes are never guaranteed.') + '</p></div><div class="utt-scan-pay-price"><strong>$199</strong><span>STANDARD TICKET</span></div></div><div class="utt-scan-pay-actions"><button type="button" class="utt-scan-pay-btn" id="uttScanPayBtn">' + (tbd ? 'PAY NOW • $199 • START TBD REVIEW →' : 'PAY NOW • $199 • START MY CASE →') + '</button><a class="utt-scan-pay-secondary" href="/bot-courthouse?path=tbd">See the TBD workflow</a></div><p class="utt-scan-pay-legal">Secure checkout follows your existing case flow. This is document preparation and case tracking, not a law firm or court. No court-result promise is made.</p>';
+    offer.innerHTML = '<div class="utt-scan-pay-head"><div><p class="utt-scan-pay-kicker">' + (tbd ? 'POTENTIAL TBD PATH DETECTED' : 'NEXT STEP') + '</p><h3 class="utt-scan-pay-title">' + (tbd ? 'Start your $199 TBD review' : 'Ready to start your case?') + '</h3><p class="utt-scan-pay-copy">' + (tbd ? 'Your scan contains California traffic-ticket signals that can fit a Trial by Written Declaration workflow. Eligibility is court-specific, so we verify the citation and court before any filing step.' : 'Move from the free scan into the Standard Ticket service. Your submitted details are reviewed before anything is filed, and outcomes are never guaranteed.') + '</p></div><div class="utt-scan-pay-price"><strong>$199</strong><span>' + (tbd ? 'TBD REVIEW' : 'STANDARD TICKET') + '</span></div></div><div class="utt-scan-pay-actions"><button type="button" class="utt-scan-pay-btn" id="uttScanPayBtn">' + (tbd ? 'PAY NOW • $199 • START TBD REVIEW →' : 'PAY NOW • $199 • START MY CASE →') + '</button>' + (tbd ? '<a class="utt-scan-pay-secondary" href="/bot-courthouse?path=tbd">See the TBD workflow</a>' : '') + '</div><p class="utt-scan-pay-legal">Secure checkout follows your existing case flow. This is document preparation and case tracking, not a law firm or court. No court-result promise is made.</p>';
     wrap.insertBefore(offer, panel.nextSibling);
     inserted = true;
     var button = document.getElementById('uttScanPayBtn');
