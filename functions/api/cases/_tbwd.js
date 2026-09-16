@@ -1,5 +1,5 @@
 // California traffic workflow helpers. Informational routing only; official court instructions control.
-import { resendSend } from '../_shared.js';
+import { resendSend, caseAccessToken } from '../_shared.js';
 import { daysUntil } from '../_deadline-utils.js';
 
 export const CA_TBWD_VERSION = '2026.09.15';
@@ -41,7 +41,8 @@ export async function sendWorkflowEmail(env, record, kind) {
   const email = String(record?.email || '').trim();
   if (!email || !env.RESEND_API_KEY) return { sent: false, skipped: true };
   const code = String(record.tracking_code || '').trim();
-  const caseUrl = 'https://unitedtraffictickets.com/case?code=' + encodeURIComponent(code);
+  const token = await caseAccessToken(env, code);
+  const caseUrl = 'https://unitedtraffictickets.com/case?code=' + encodeURIComponent(code) + (token ? '&token=' + encodeURIComponent(token) : '');
   const firstName = String(record.name || '').trim().split(/\s+/)[0] || 'there';
   const templates = {
     workflow_identified: ['Potential California ticket workflow identified ' + code, 'Our system identified a potential California written-declaration path from the citation information on file. Court eligibility and current court instructions still need to be verified.'],
@@ -51,7 +52,7 @@ export async function sendWorkflowEmail(env, record, kind) {
   };
   const t = templates[kind];
   if (!t) return { sent: false, error: 'Unknown workflow email' };
-  const text = 'Hi ' + firstName + ',\n\n' + t[1] + '\n\nCase code: ' + code + '\nCase Center: ' + caseUrl + '\n\nThese messages are informational. Court notices, orders, and filing confirmations are the authoritative record. United Traffic Tickets Defense is not the court and does not guarantee an outcome.';
+  const text = 'Hi ' + firstName + ',\n\n' + t[1] + '\n\nCase code: ' + code + '\nSecure Case Center: ' + caseUrl + '\n\nThese messages are informational. Court notices, orders, and filing confirmations are the authoritative record. United Traffic Tickets Defense is not the court and does not guarantee an outcome.';
   await resendSend(env, { to: email, subject: t[0], text, html: text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') });
   return { sent: true };
 }
