@@ -8,6 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
 const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.js'), 'utf8');
 const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
+const scanPay = fs.readFileSync(path.join(root, 'public', 'scan-pay.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
 
 test('customer scanner source never renders a numeric score or scan confidence', () => {
@@ -26,6 +27,16 @@ test('scanner result is framed as a review reveal', () => {
   assert.match(scoreUi, /utt-lights/);
   assert.match(scoreUi, /NEXT MOVE/);
   assert.match(scoreUi, /SAVE MY RESULTS & START MY CASE/);
+});
+
+test('scanner post-result payment bridge preserves the TBD path', () => {
+  assert.match(scanPay, /PAY NOW/);
+  assert.match(scanPay, /\$199/);
+  assert.match(scanPay, /POTENTIAL TBD PATH DETECTED/);
+  assert.match(scanPay, /Trial by Written Declaration/);
+  assert.match(scanPay, /bot-courthouse\?path=tbd/);
+  assert.match(scanPay, /claimCta/);
+  assert.match(scanPay, /service\.value = '199'/);
 });
 
 test('scanner page retains a conversion CTA and honest result disclaimer', () => {
