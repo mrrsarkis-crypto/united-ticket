@@ -13,7 +13,7 @@ export async function onRequestGet(context) {
   if (!record) return json({ error: 'Case not found' }, 404);
   const docs = Array.isArray(record.documents) ? record.documents : [];
   const doc = docs.find((item) => item && item.id === id);
-  if (!doc) return json({ error: 'Document not found' }, 404);
+  if (!doc || (doc.customerVisible !== true && doc.source !== 'customer')) return json({ error: 'Document not available in the customer vault' }, 404);
 
   const name = String(doc.name || 'document');
   const ext = name.split('.').pop().toLowerCase();
