@@ -57,8 +57,6 @@ export async function ensureClientPackage(env, record, options = {}) {
     await putPdf('system-receipt-' + safe, 'Receipt_' + safe + '.pdf', bytes, true);
   }
 
-  // Internal work product stays in the same private R2 vault but is explicitly
-  // marked customerVisible=false and is filtered from the customer-facing API.
   if (!has('Internal_TR205_' + safe + '.pdf')) {
     const notes = record.notes && typeof record.notes === 'object' ? record.notes : {};
     const bytes = buildTR205({ name, citation: record.citation, court: record.court, dob: record.dob, dl: record.dl, notes: { ...notes, created_at: record.paid_at || record.created_at } });
@@ -67,12 +65,12 @@ export async function ensureClientPackage(env, record, options = {}) {
 
   if (!additions.length) return { ok: true, unchanged: true, documents: existing };
   const documents = existing.concat(additions).slice(0, 100);
-  const updated = { ...record, documents, package: { ...(record.package || {}), version: '2026.09.15-1', generatedAt: now, clientDocumentsReady: additions.some((d) => d.customerVisible === true), internalDraftReady: additions.some((d) => d.customerVisible === false) }, updated_at: now };
+  const updated = { ...record, documents, package: { ...(record.package || {}), version: '2026.09.15-1', generatedAt: now, clientDocumentsReady: documents.some((d) => d.customerVisible === true), internalDraftReady: documents.some((d) => d.customerVisible === false) }, updated_at: now };
   await env.CASES.put('case:' + code, JSON.stringify(updated));
   return { ok: true, generated: additions.length, documents };
 }
 
 export function customerDocuments(record) {
   const docs = Array.isArray(record?.documents) ? record.documents : [];
-  return docs.filter((doc) => doc && doc.customerVisible !== false && doc.source === 'system' || doc && doc.customerVisible === true || doc && doc.source === 'customer');
+  return docs.filter((doc) => doc && (doc.source === 'customer' || doc.customerVisible === true));
 }
