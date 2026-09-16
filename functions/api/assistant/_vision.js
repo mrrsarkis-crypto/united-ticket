@@ -7,7 +7,7 @@ export const SCANNER_ENGINE_VERSION = '2026.09.15-7';
 const DEFAULT_PROVIDER_TIMEOUT_MS = 17000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
 const MIN_PROVIDER_TIMEOUT_MS = 8000;
-const MAX_TOTAL_VISION_MS = 50000;
+const MAX_TOTAL_VISION_MS = 24000;
 const MAX_ATTEMPTS = 2;
 const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 
