@@ -15,7 +15,8 @@ const FIELD_KEYS = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
   'citationNumber','violationDate','courtDate','violationCode','violationDescription',
   'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
-  'vehiclePlate','bailAmount','dueDate'
+  'vehiclePlate','bailAmount','dueDate','jurisdiction','courtDivision','filingMethod',
+  'procedureType','eligibilityNotes'
 ];
 const BLOCKED_TEXT = /aliexpress|dsers|dropshipping|shopify product|shopping catalog/i;
 const QUALITY_WARNING_KEYS = new Set(['low_resolution','too_dark','too_bright','low_contrast','possible_blur']);

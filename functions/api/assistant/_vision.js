@@ -6,7 +6,7 @@ export const SCANNER_ENGINE_VERSION = '2026.09.15-7';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 10000;
 const MAX_PROVIDER_TIMEOUT_MS = 12000;
-const MIN_PROVIDER_TIMEOUT_MS = 8000;
+const MIN_PROVIDER_TIMEOUT_MS = 2000;
 const MAX_TOTAL_VISION_MS = 15000;
 const MAX_ATTEMPTS = 2;
 const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
@@ -114,7 +114,7 @@ async function fetchWithDeadline(url, init, timeoutMs) {
 
 async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs }) {
   if (!env.GEMINI_API_KEY) throw new Error('Gemini is not configured');
-  const model = env.SCANNER_GEMINI_MODEL || env.GEMINI_MODEL || 'gemini-flash-latest';
+  const model = env.SCANNER_GEMINI_MODEL || env.GEMINI_MODEL || 'gemini-3.8-flash';
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
   const body = {
     systemInstruction: { parts: [{ text: system }] },
