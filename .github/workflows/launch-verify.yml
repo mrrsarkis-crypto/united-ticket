@@ -1,4 +1,5 @@
 name: Launch verification
+# Triggered from main after scanner gallery/camera upload update.
 
 on:
   push:
