@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions middleware
+import { ADSENSE_ACCOUNT, isAdsenseEligiblePath } from '../public/adsense-policy.js';
 
-const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
-const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
+const ADSENSE_BOOTSTRAP = '<script type="module" src="/adsense.js" data-utt-adsense-bootstrap></script>';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
 const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
@@ -14,17 +14,24 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const isAmp = url.pathname.startsWith('/amp/') || url.pathname === '/amp';
   const isHtml = (newHeaders.get('content-type') || '').includes('text/html');
+  const isAdsenseEligible = response.ok && isHtml && isAdsenseEligiblePath(url.pathname);
   const isStandardHtml = isHtml && !isAmp;
+  const isAmpHtml = isHtml && isAmp;
   const isPrivateAdminApi = /^\/api\/cases\/admin(?:\.|$|\/)/.test(url.pathname);
   const isScannerApi = url.pathname === '/api/assistant/extract';
+  const isPrivateHtml = /^\/(?:case|admin-cases|admin-funnel)(?:\.html)?\/?$/.test(url.pathname);
 
   newHeaders.set('X-Content-Type-Options', 'nosniff');
   newHeaders.set('X-Frame-Options', 'DENY');
   newHeaders.set('Referrer-Policy', 'no-referrer');
+  if (isPrivateHtml) {
+    newHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+    newHeaders.set('Cache-Control', 'private, no-store, max-age=0');
+  }
 
   if (isStandardHtml) {
-    // AdSense can load on every standard public HTML page. Keep the policy
-    // HTTPS-only while allowing Google/Stripe and other HTTPS dependencies.
+    // Keep the policy HTTPS-only while allowing Google/Stripe and other HTTPS
+    // dependencies used by the existing public application.
     const csp = [
       "default-src 'self' https: data:",
       "object-src 'none'",
@@ -63,31 +70,46 @@ export async function onRequest(context) {
   });
 
   if (isStandardHtml) {
-    output = new HTMLRewriter().on('head', {
-      element(element) {
-        // Load the scanner request optimizer before body scripts. It compresses
-        // oversized phone photos, converts supported HEIC uploads, and bounds
-        // request time without changing the visible page structure.
-        element.append(SCANNER_CLIENT_SCRIPT, { html: true });
-        element.append(ADSENSE_META, { html: true });
-        element.append(ADSENSE_SCRIPT, { html: true });
-        element.append(TRUST_BADGE_SCRIPT, { html: true });
-      }
-    }).transform(output);
-  } else if (isAmp) {
-    // AMP requires its dedicated Auto ads component instead of the standard
-    // AdSense loader. Google requires the script in <head> and the element
-    // immediately inside <body>.
     output = new HTMLRewriter()
+      // Remove stale/manual tags first. Only the policy-controlled tags below
+      // may survive, preventing duplicate requests if source HTML drifts.
+      .on('meta[name="google-adsense-account"]', { element(element) { element.remove(); } })
+      .on('script[data-utt-adsense-bootstrap]', { element(element) { element.remove(); } })
+      .on('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]', { element(element) { element.remove(); } })
+      .on('script[custom-element="amp-auto-ads"]', { element(element) { element.remove(); } })
+      .on('amp-auto-ads', { element(element) { element.remove(); } })
       .on('head', {
         element(element) {
-          element.append(ADSENSE_META, { html: true });
-          element.append(AMP_ADSENSE_SCRIPT, { html: true });
+          // Load the scanner request optimizer before body scripts. It compresses
+          // oversized phone photos, converts supported HEIC uploads, and bounds
+          // request time without changing the visible page structure.
+          element.append(SCANNER_CLIENT_SCRIPT, { html: true });
+          if (isAdsenseEligible) {
+            element.append(ADSENSE_META, { html: true });
+            element.append(ADSENSE_BOOTSTRAP, { html: true });
+          }
+          element.append(TRUST_BADGE_SCRIPT, { html: true });
+        }
+      }).transform(output);
+  } else if (isAmpHtml) {
+    // Sanitize every AMP document, including ineligible/fallback responses.
+    // AMP requires its dedicated component and unit only on approved pages.
+    output = new HTMLRewriter()
+      .on('meta[name="google-adsense-account"]', { element(element) { element.remove(); } })
+      .on('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]', { element(element) { element.remove(); } })
+      .on('script[custom-element="amp-auto-ads"]', { element(element) { element.remove(); } })
+      .on('amp-auto-ads', { element(element) { element.remove(); } })
+      .on('head', {
+        element(element) {
+          if (isAdsenseEligible) {
+            element.append(ADSENSE_META, { html: true });
+            element.append(AMP_ADSENSE_SCRIPT, { html: true });
+          }
         }
       })
       .on('body', {
         element(element) {
-          element.prepend(AMP_ADSENSE_UNIT, { html: true });
+          if (isAdsenseEligible) element.prepend(AMP_ADSENSE_UNIT, { html: true });
         }
       })
       .transform(output);

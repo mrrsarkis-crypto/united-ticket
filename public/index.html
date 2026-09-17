@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="UTTD">
+<link rel="alternate" hreflang="en-US" href="https://unitedtraffictickets.com/">
+<link rel="alternate" hreflang="es-US" href="https://unitedtraffictickets.com/es">
+<link rel="alternate" hreflang="x-default" href="https://unitedtraffictickets.com/">
 <link rel="manifest" href="/manifest.webmanifest">
 
 <title>Traffic Ticket Scanner & Defense Help | Los Angeles & California</title>
@@ -427,17 +430,31 @@
           </div>
           <div class="status" id="status"></div>
 
-          <div class="score-panel" id="scorePanel" style="display:none;">
-            <div class="score-head">
-              <span class="score-rank" id="scoreRank">—</span>
-              <span class="score-num" id="scoreNum">—</span>
+          <div class="scan-stage" id="scanStage" hidden aria-live="polite">
+            <p class="scan-stage-brand">United AI Intelligence</p>
+            <ol class="scan-stage-steps" aria-label="Scan progress">
+              <li data-scan-step="1"><span>01</span>Capture</li>
+              <li data-scan-step="2"><span>02</span>Check</li>
+              <li data-scan-step="3"><span>03</span>Reveal</li>
+            </ol>
+            <p class="scan-stage-phrase" id="scanStagePhrase">Reading your ticket…</p>
+            <p class="scan-stage-note">We check readable fields and review signals. We do not predict a court result.</p>
+          </div>
+
+          <div class="review-panel" id="reviewPanel" style="display:none;" aria-live="polite">
+            <div class="review-bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="review-complete">Scan complete</p>
+            <div class="review-head">
+              <span class="review-title" id="reviewSignalTitle">Review signals</span>
+              <span class="review-status" id="reviewSignalStatus">Some items to verify</span>
             </div>
-            <p class="score-tag">Automated review signals found in the document data. This is a screening aid, not a legal assessment, outcome prediction, or promise of any court result.</p>
-            <ul class="score-list" id="scoreList"></ul>
+            <p class="review-disclaimer">This scan identifies items worth checking. It is not a case-outcome score, win probability, legal assessment, or prediction of a court result.</p>
+            <h4 class="review-findings-title">What we found</h4>
+            <ul class="review-findings" id="reviewFindings"></ul>
           </div>
 
           <div class="claim-cta-wrap" id="claimCtaWrap" style="display:none;">
-            <button type="button" class="btn btn-amber btn-block claim-cta" id="claimCta">Save your results and start your case &rarr;</button>
+            <button type="button" class="btn btn-amber btn-block claim-cta" id="claimCta">Review your ticket details &rarr;</button>
             <button type="button" class="claim-manual" id="claimManual">Skip the scan &mdash; enter details manually</button>
           </div>
         </div>
@@ -657,6 +674,10 @@
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="/scan-guard.js" defer></script>
 <script src="/app.js"></script>
+<script src="/scanner-client.js" defer></script>
+<script src="/scan-stage.js" defer></script>
+<script src="/score-ui.js" defer></script>
+<script src="/scan-pay.js" defer></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {

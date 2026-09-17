@@ -175,7 +175,7 @@
     hideProgress(progress, progressBar);
     window.__lastExtracted = null;
     window.__lastOcrText = '';
-    if (window.__scorePanel) window.__scorePanel.style.display = 'none';
+    if (window.__reviewPanel) window.__reviewPanel.style.display = 'none';
     if (claimCtaWrap) claimCtaWrap.style.display = 'none';
     if (caseForm) caseForm.style.display = 'block';
     statusEl.textContent = (message || 'The document could not be read.') + ' Upload the original, clear ticket photo—not a browser screenshot.';
@@ -339,8 +339,8 @@
   }
 
   // ---- Defect scoring engine (rules-based, client-side, no API key) ----
-  // Produces a defensive "defect score" (0-100) + a High/Medium/Low rank and a
-  // list of specific dismissible issues. Explicitly NOT a court-outcome probability.
+  // Produces an internal review-signal score and a list of specific items to
+  // verify. The number is never customer-facing and is not an outcome prediction.
   function scoreTicket(d) {
     var defects = [];
     var text = (d.ocrText || '').toUpperCase();
@@ -380,23 +380,27 @@
     defects.forEach(function (df) { score += df.w; });
     if (score > 100) score = 100;
 
-    var rank;
-    if (score >= 45) rank = { label: 'More review signals', cls: 'rank-high' };
-    else if (score >= 20) rank = { label: 'Some review signals', cls: 'rank-med' };
-    else rank = { label: 'Few review signals', cls: 'rank-low' };
-
-    return { score: score, rank: rank, defects: defects };
+    return { score: score, defects: defects };
   }
 
-  function renderScore(result, panel) {
-    var rankEl = document.getElementById('scoreRank');
-    var numEl = document.getElementById('scoreNum');
-    var listEl = document.getElementById('scoreList');
-    rankEl.textContent = result.rank.label;
-    rankEl.className = 'score-rank ' + result.rank.cls;
-    numEl.textContent = result.score + '/100';
+  function renderScore(result, panel, ticket) {
+    var titleEl = document.getElementById('reviewSignalTitle');
+    var statusEl = document.getElementById('reviewSignalStatus');
+    var listEl = document.getElementById('reviewFindings');
+    if (!titleEl || !statusEl || !listEl) return;
+    titleEl.textContent = 'Review signals';
+    titleEl.className = 'review-title';
+    statusEl.textContent = result.defects.length ? 'Some items to verify' : 'Details captured — verify before continuing';
     listEl.innerHTML = '';
-    var items = result.defects.length ? result.defects : [{ s: 'No obvious review signals were captured from the available document data. A professional review may still identify issues the scan cannot assess.', w: 0 }];
+    var items = [];
+    if (ticket.citation && ticket.citation.trim()) items.push({ s: 'Citation number captured.', w: 0 });
+    if (ticket.court && ticket.court.trim() && ticket.date) items.push({ s: 'Court and date captured.', w: 0 });
+    else {
+      if (ticket.court && ticket.court.trim()) items.push({ s: 'Court information captured; the date should be verified.', w: 0 });
+      if (ticket.date) items.push({ s: 'Date captured; the court information should be verified.', w: 0 });
+    }
+    items = items.concat(result.defects);
+    if (!items.length) items.push({ s: 'No document details were confidently captured. Review the image and ticket details before continuing.', w: 0 });
     items.forEach(function (df) {
       var li = document.createElement('li');
       li.textContent = df.s;
@@ -414,10 +418,11 @@
   }
 
   function refreshScore() {
-    if (!window.__scorePanel) window.__scorePanel = document.getElementById('scorePanel');
-    if (!window.__scorePanel) return;
-    var res = scoreTicket(collectTicketData());
-    renderScore(res, window.__scorePanel);
+    if (!window.__reviewPanel) window.__reviewPanel = document.getElementById('reviewPanel');
+    if (!window.__reviewPanel) return;
+    var ticket = collectTicketData();
+    var res = scoreTicket(ticket);
+    renderScore(res, window.__reviewPanel, ticket);
   }
 
   ['f_citation', 'f_date', 'f_court', 'f_code', 'f_bail'].forEach(function (id) {
@@ -442,7 +447,7 @@
   }
 
   function showClaimCta() {
-    setIntakeStep(1, 'Scan complete — review the scan confidence above.');
+    setIntakeStep(1, 'Scan complete — review the captured details and items to verify above.');
     if (claimCtaWrap) claimCtaWrap.style.display = 'block';
   }
 

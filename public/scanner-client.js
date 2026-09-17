@@ -294,12 +294,12 @@
     };
   }
 
-  function renderScanConfidence() {
-    var panel = document.getElementById('scorePanel');
-    var rankEl = document.getElementById('scoreRank');
-    var numEl = document.getElementById('scoreNum');
-    var listEl = document.getElementById('scoreList');
-    if (!panel || !rankEl || !numEl || !listEl) return;
+  function renderReviewSignals() {
+    var panel = document.getElementById('reviewPanel');
+    var titleEl = document.getElementById('reviewSignalTitle');
+    var statusEl = document.getElementById('reviewSignalStatus');
+    var listEl = document.getElementById('reviewFindings');
+    if (!panel || !titleEl || !statusEl || !listEl) return;
 
     var ext = window.__lastExtracted || null;
     var result = adjustedAssessment(ext);
@@ -307,18 +307,18 @@
 
     var scanId = result.scanId || ext && ext.scanMeta && ext.scanMeta.scanId || 'local';
     var signature = scanId + '|' + result.label + '|' + result.confidence + '|' + result.documentType + '|' + result.missing.join(',') + '|' + result.verify.join(',');
-    var targetNum = result.preflightRejected ? 'New photo needed' : result.confidence + '% scan confidence';
-    if (panel.getAttribute('data-utt-scan-signature') === signature && numEl.textContent === targetNum) return;
+    var targetStatus = result.preflightRejected ? 'New photo needed' : 'Some items to verify';
+    if (panel.getAttribute('data-utt-scan-signature') === signature && statusEl.textContent === targetStatus) return;
 
     panel.setAttribute('data-utt-scan-signature', signature);
-    rankEl.textContent = result.label;
-    rankEl.className = 'score-rank ' + (result.label === 'Strong read' ? 'rank-low' : result.label === 'Usable read' ? 'rank-med' : 'rank-high');
-    numEl.textContent = targetNum;
+    titleEl.textContent = 'Review signals';
+    titleEl.className = 'review-title';
+    statusEl.textContent = targetStatus;
 
-    var tag = panel.querySelector('.score-tag');
+    var tag = panel.querySelector('.review-disclaimer');
     if (tag) tag.textContent = result.preflightRejected
       ? 'We stopped before AI/OCR because this image was not clear enough for a dependable scan.'
-      : 'Scan confidence measures how clearly the document and key fields were read. It is not a win probability, legal assessment, or prediction of a court result.';
+      : 'This scan identifies items worth checking. It is not a case-outcome score, win probability, legal assessment, or prediction of a court result.';
 
     var messages = [];
     if (result.preflightRejected) {
@@ -347,13 +347,13 @@
     });
     panel.style.display = 'block';
 
-    var statusEl = document.getElementById('status');
+    var pageStatusEl = document.getElementById('status');
     var claimCta = document.getElementById('claimCta');
     var claimManual = document.getElementById('claimManual');
     if (result.preflightRejected) {
-      if (statusEl) {
-        statusEl.textContent = 'Photo needs to be retaken before we can scan it reliably.';
-        statusEl.className = 'status';
+      if (pageStatusEl) {
+        pageStatusEl.textContent = 'Photo needs to be retaken before we can scan it reliably.';
+        pageStatusEl.className = 'status';
       }
       if (claimCta) claimCta.style.display = 'none';
       if (claimManual) {
@@ -366,7 +366,7 @@
   }
 
   function installResultAdapter() {
-    var panel = document.getElementById('scorePanel');
+    var panel = document.getElementById('reviewPanel');
     if (!panel || panel.__uttScanObserver) return;
     var queued = false;
     var observer = new MutationObserver(function () {
@@ -374,12 +374,12 @@
       queued = true;
       setTimeout(function () {
         queued = false;
-        renderScanConfidence();
+        renderReviewSignals();
       }, 0);
     });
     observer.observe(panel, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
     panel.__uttScanObserver = observer;
-    renderScanConfidence();
+    renderReviewSignals();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installResultAdapter);
@@ -390,7 +390,7 @@
 
     window.__lastExtracted = null;
     window.__lastOcrText = '';
-    var previousPanel = document.getElementById('scorePanel');
+    var previousPanel = document.getElementById('reviewPanel');
     if (previousPanel) {
       previousPanel.removeAttribute('data-utt-scan-signature');
       previousPanel.style.display = 'none';
