@@ -1,0 +1,48 @@
+name: Launch verification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build static pages
+        run: npm run build
+
+      - name: Compile Cloudflare Pages Functions
+        run: npx wrangler pages functions build --outdir .wrangler-functions-build
+
+      - name: Verify production health
+        run: |
+          set -euo pipefail
+          body="$(curl -fsSL --max-time 20 https://unitedtraffictickets.com/api/health)"
+          echo "$body"
+          echo "$body" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'
+          echo "$body" | grep -Eq '"missing"[[:space:]]*:[[:space:]]*\[\]'
+
+      - name: Verify ads.txt
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 20 https://unitedtraffictickets.com/ads.txt | grep -Fx 'google.com, pub-9943048295609395, DIRECT, f08c47fec0942fa0'
