@@ -150,9 +150,18 @@ android {
 
         
     }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('UTTD_KEYSTORE') ?: '../android.keystore')
+            storePassword System.getenv('UTTD_KEYSTORE_PASSWORD')
+            keyAlias 'uttd-release'
+            keyPassword System.getenv('UTTD_KEYSTORE_PASSWORD')
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
