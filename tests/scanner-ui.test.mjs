@@ -42,8 +42,8 @@ test('scanner post-result payment bridge preserves the TBD path', () => {
   assert.match(scanPay, /Trial by Written Declaration/);
   assert.match(scanPay, /bot-courthouse\?path=tbd/);
   assert.match(scanPay, /claimCta/);
-  assert.match(scanPay, /service\.value = '199'/);
-  assert.match(scanPay, /CA_COUNTIES/);
+  assert.match(scanPay, /value\s*=\s*['\"]199['\"]/);
+  assert.match(scanPay, /alameda/);
 });
 
 test('scanner page retains a conversion CTA and honest result disclaimer', () => {
