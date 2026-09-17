@@ -197,8 +197,8 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
     ? [{ filename, bytes: pdfBytes, type: 'application/pdf' }]
     : [];
   await sendBusinessNotification(env, {
-    subject: 'PAID CASE + TBD: ' + trackingCode + ' (' + dollars + ')',
-    text: 'Payment cleared. The prefilled Trial by Written Declaration (TR-205 / TBD) is attached, and here is the information the customer submitted online.\n\n' +
+    subject: (pdfBytes ? 'PAID CASE + TBD: ' : 'PAID CASE: ') + trackingCode + ' (' + dollars + ')',
+    text: 'Payment cleared.' + (pdfBytes ? ' The prefilled Trial by Written Declaration (TR-205 / TBD) is attached.' : '') + ' Here is the information the customer submitted online.\n\n' +
       '— CASE —\n' +
       'Tracking code: ' + trackingCode + '\n' +
       'Amount: ' + dollars + '\n' +
@@ -223,15 +223,18 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   const raw = session && session.amount_total;
   const dollars = raw ? (raw / 100).toFixed(2) : '0.00';
 
-  // Confidential TR-205 (TBD) — goes ONLY to the business, never the client.
+  // Confidential TR-205 (TBD) is only appropriate for the $199/TBWD service.
+  const isTbwd = String(base.service || '199') === '199';
   let tr205Bytes = null;
-  try {
-    tr205Bytes = buildTR205({
-      name: base.name, citation: base.citation, court: base.court,
-      dob: base.dob, dl: base.dl,
-      notes: Object.assign({}, base.notes, { created_at: (base.paid_at || base.created_at) }),
-    });
-  } catch (e) { console.error('TR-205 build failed', e); }
+  if (isTbwd) {
+    try {
+      tr205Bytes = buildTR205({
+        name: base.name, citation: base.citation, court: base.court,
+        dob: base.dob, dl: base.dl,
+        notes: Object.assign({}, base.notes, { created_at: (base.paid_at || base.created_at) }),
+      });
+    } catch (e) { console.error('TR-205 build failed', e); }
+  }
 
   // Client docs: retainer (to sign) + receipt. No work product.
   let retainerBytes = null, receiptBytes = null;
@@ -248,13 +251,13 @@ async function fulfillCase(env, session, trackingCode, caseData) {
     });
   } catch (e) { console.error('Receipt build failed', e); }
 
-  const r2Tr205File = stamp + '_' + safeCode + '_TR205.pdf';
+  const r2Tr205File = isTbwd && tr205Bytes ? stamp + '_' + safeCode + '_TR205.pdf' : '';
 
-  // 1) Notify the business: TBD (TR-205) + online info + R2 path.
+  // 1) Notify the business with the appropriate paid-case document.
   await notifyPaid(env, session, trackingCode, base, tr205Bytes, r2Tr205File);
 
-  // 2) Store the TR-205 in R2 under a dated folder.
-  if (env.R2 && tr205Bytes) {
+  // 2) Store the TR-205 in R2 only for the TBWD service.
+  if (isTbwd && env.R2 && tr205Bytes) {
     try {
       await env.R2.put(stamp + '/' + r2Tr205File, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
     } catch (e) { console.error('R2 store failed', e); }
