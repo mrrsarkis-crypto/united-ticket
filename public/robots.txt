@@ -3,3 +3,7 @@ Allow: /
 Disallow: /admin-cases
 
 Sitemap: https://unitedtraffictickets.com/sitemap.xml
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin-cases
