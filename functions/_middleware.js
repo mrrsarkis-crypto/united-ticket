@@ -10,7 +10,7 @@ const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
 const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
 const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js" defer></script>';
-const CONTRAST_STYLE = '<style id="utt-contrast-fix">.price .amount{color:#FFD166}.vs-card{color:#21304A}.vs-note{color:#3D4A61}.footer-legal{color:#C7CED8}.footer-legal a{color:#E4E9F1;font-weight:600;text-decoration:underline}</style>';
+const CONTRAST_STYLE = '<style id="utt-contrast-fix">.price .amount{color:#9A6900}.vs-card{color:#21304A}.vs-note{color:#3D4A61}.footer-legal{color:#C7CED8}.footer-legal a{color:#E4E9F1;font-weight:600;text-decoration:underline}</style>';
 
 function isMonetizedPath(pathname) {
   let path = (pathname || '/').replace(/\/+$/, '') || '/';
