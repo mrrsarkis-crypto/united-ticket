@@ -52,6 +52,12 @@ test('scanner page retains a conversion CTA and honest result disclaimer', () =>
   assert.match(index, /not a legal assessment, outcome prediction, or promise of any court result/i);
 });
 
+test('scanner bridge scripts stay off the critical render path', () => {
+  assert.match(middleware, /const SCANNER_CLIENT_SCRIPT = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
+  assert.match(buildScript, /const scannerClientTag = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
+  assert.match(index, /<script src=\"\/app\.js\" defer><\/script>/);
+});
+
 test('AdSense is restricted to designated informational pages', () => {
   const standardGate = middleware.indexOf('if (monetized) {');
   const standardAd = middleware.indexOf('element.append(ADSENSE_META');

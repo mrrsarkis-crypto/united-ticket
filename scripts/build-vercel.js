@@ -10,7 +10,7 @@ const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pag
 const accountMeta = `<meta name="google-adsense-account" content="${publisher}">`;
 const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
-const scannerClientTag = '<script src="/scanner-client.js"></script>';
+const scannerClientTag = '<script src="/scanner-client.js" defer></script>';
 
 function isMonetizedPath(pathname) {
   let path = (pathname || '/').replace(/\/+$/, '') || '/';
