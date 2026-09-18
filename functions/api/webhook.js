@@ -196,9 +196,9 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
   const atts = (pdfBytes && filename)
     ? [{ filename, bytes: pdfBytes, type: 'application/pdf' }]
     : [];
-  await sendBusinessNotification(env, {
+  const delivered = await sendBusinessNotification(env, {
     subject: (pdfBytes ? 'PAID CASE + TBD: ' : 'PAID CASE: ') + trackingCode + ' (' + dollars + ')',
-    text: 'Payment cleared.' + (pdfBytes ? ' The prefilled Trial by Written Declaration (TR-205 / TBD) is attached.' : '') + ' Here is the information the customer submitted online.\n\n' +
+    text: 'Payment cleared.' + (pdfBytes ? ' A TR-205 preparation draft is attached. It is not the official Judicial Council form. Verify the current form, eligibility, deadline, bail requirements, and local court filing instructions before filing. Official form: https://courts.ca.gov/documents/tr205.pdf' : '') + ' Here is the information the customer submitted online.\n\n' +
       '— CASE —\n' +
       'Tracking code: ' + trackingCode + '\n' +
       'Amount: ' + dollars + '\n' +
@@ -210,6 +210,9 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
       'R2 file: ' + (filename ? 'stored as ' + (base.paid_at ? new Date(base.paid_at).toISOString().slice(0, 10).replace(/-/g, '') + '/' : '') + filename : 'n/a'),
     attachments: atts,
   });
+  if (!delivered) {
+    throw new Error('Paid-case business notification was not delivered; Stripe should retry the webhook.');
+  }
 }
 
 async function fulfillCase(env, session, trackingCode, caseData) {

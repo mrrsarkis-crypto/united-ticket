@@ -668,18 +668,25 @@ export async function resendSend(env, { from, to, subject, text, html, attachmen
 // Used to notify on new form submissions and other events. Non-fatal on failure.
 // Optional attachments: [{ filename, bytes, type }]
 export async function sendBusinessNotification(env, { subject, text, html, attachments }) {
-  if (!env.RESEND_API_KEY) return;
+  if (!env.RESEND_API_KEY) {
+    console.error('Business notification skipped: RESEND_API_KEY is not configured');
+    return false;
+  }
   const to = env.ADMIN_EMAIL || env.RESEND_FROM_TO || '';
-  if (!to) return;
+  if (!to) {
+    console.error('Business notification skipped: ADMIN_EMAIL/RESEND_FROM_TO is not configured');
+    return false;
+  }
   try {
-    await resendSend(env, {
+    return !!(await resendSend(env, {
       to,
       subject,
       text,
       html,
       attachments,
-    });
+    }));
   } catch (e) {
     console.error('Business notification email failed', e);
+    return false;
   }
 }

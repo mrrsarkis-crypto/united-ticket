@@ -40,7 +40,7 @@ export function buildTR205(data) {
   // Header
   push(M, H - 22, 'REQUEST FOR TRIAL BY WRITTEN DECLARATION', 13, 'Helvetica-Bold');
   push(M, H - 28, '(Trial by Written Declaration - Traffic)  Vehicle Code, sec. 40902', 9, 'Helvetica');
-  push(M, H - 34, 'Form TR-205  -  prefilled draft for your review', 8, 'Helvetica-Oblique');
+  push(M, H - 34, 'TR-205 preparation draft for professional review - verify against the current Judicial Council form before filing', 7.5, 'Helvetica-Oblique');
 
   // Court-use block
   push(M, H - 48, 'NAME OF COURT:', 9, 'Helvetica-Bold');
