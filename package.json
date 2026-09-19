@@ -7,7 +7,7 @@
                     "start":  "node server.js",
                     "build":  "node scripts/build-vercel.js",
                     "test:scanner":  "node --check functions/api/assistant/_schema.js && node --check functions/api/assistant/_vision.js && node --check functions/api/assistant/_plausibility.js && node --check functions/api/assistant/_assessment.js && node --check functions/api/assistant/_document-type.js && node --check functions/api/assistant/extract.js && node --check public/scanner-client.js && node --check public/app.js && node --check public/score-ui.js && node --check public/scan-stage.js && node --check public/scan-pay.js && node --check public/nav.js && node --check api/assistant/extract.js && node --check api/health.js && node --test tests/scanner-*.test.mjs",
-                    "test":  "npm run test:scanner && node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check scripts/build-vercel.js && node --check functions/api/health.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js && node --check functions/api/cases/_tbwd.js && node --check functions/api/cases/_package.js && node --check functions/api/cases/admin/package.js && node --check functions/api/cases/admin/workflow.js && node --check functions/api/_deadline-utils.js && node --check functions/api/deadlines/index.js && node --check functions/api/_google-calendar.js && node --check functions/api/_google-oauth.js && node --check functions/api/_welcome-email.js && node --check functions/api/cases/admin/sync.js && node --check functions/api/cases/admin/google/start.js && node --check functions/api/cases/admin/google/callback.js && node --check functions/api/case-documents.js && node --check functions/api/case-document.js && node --test tests/deadline-utils.test.mjs tests/case-workflow.test.mjs",
+                    "test":  "npm run test:scanner && node --check functions/api/webhook.js && node --check functions/_middleware.js && node --check scripts/build-vercel.js && node --check functions/api/health.js && node --check functions/api/cases/[code].js && node --check functions/api/cases/admin/index.js && node --check functions/api/cases/_tbwd.js && node --check functions/api/cases/_package.js && node --check functions/api/cases/admin/package.js && node --check functions/api/cases/admin/workflow.js && node --check functions/api/_deadline-utils.js && node --check functions/api/deadlines/index.js && node --check functions/api/_google-calendar.js && node --check functions/api/_google-oauth.js && node --check functions/api/_welcome-email.js && node --check functions/api/cases/admin/sync.js && node --check functions/api/cases/admin/google/start.js && node --check functions/api/cases/admin/google/callback.js && node --check functions/api/case-documents.js && node --check functions/api/case-document.js && node --test tests/deadline-utils.test.mjs tests/case-workflow.test.mjs tests/tr205.test.mjs",
                     "check":  "npm test"
                 },
     "keywords":  [
@@ -24,6 +24,7 @@
     "dependencies":  {
                          "@vercel/oidc":  "^3.8.7",
                          "@vercel/speed-insights":  "^2.0.0",
-                         "cloudflare":  "^7.1.0"
+                         "cloudflare":  "^7.1.0",
+                         "pdf-lib":  "^1.17.1"
                      }
 }

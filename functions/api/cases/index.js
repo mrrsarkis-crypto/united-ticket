@@ -32,6 +32,13 @@ export async function onRequestPost(context) {
   const email = (body.email || '').trim();
   const court = (body.court || '').trim();
   const citation = (body.citation || '').trim();
+  const caseNumber = (body.caseNumber || body.case_number || '').trim();
+  const courtStreetAddress = (body.courtStreetAddress || body.court_street_address || '').trim();
+  const courtMailingAddress = (body.courtMailingAddress || body.court_mailing_address || '').trim();
+  const courtCityStateZip = (body.courtCityStateZip || body.court_city_state_zip || '').trim();
+  const courtBranchName = (body.courtBranchName || body.court_branch_name || '').trim();
+  const bailDepositedAmount = (body.bailDepositedAmount || body.bail_deposited_amount || '').trim();
+  const clerkMailedOrDeliveredDate = (body.clerkMailedOrDeliveredDate || body.clerk_mailed_or_delivered_date || '').trim();
   const service = String(body.service || '199');
   const dob = (body.dob || '').trim();
   const dl = (body.dl || '').trim();
@@ -65,9 +72,11 @@ export async function onRequestPost(context) {
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || '')) ? String(body.sessionId) : '';
   const courtDate = body.courtDate || body.court_date || body.appearanceDate || body.appearance_date || body.hearingDate || body.hearing_date || '';
   const notes = JSON.stringify({
-    date: body.date || '', code: body.code || '', bail: body.bail || '',
+    date: body.date || '', code: body.code || '', bail: body.bail || '', dueDate: body.dueDate || '',
     address: body.address || '', phone: body.phone || '', notes: body.notes || '',
     dlPhoto: dlPhoto || '', courtDate,
+    bailDepositedAmount,
+    clerkMailedOrDeliveredDate,
   });
 
   let stored = false;
@@ -80,6 +89,11 @@ export async function onRequestPost(context) {
         tracking_code: trackingCode,
         name: fullName, email, court, citation, service,
         dob, dl,
+        case_number: caseNumber,
+        court_street_address: courtStreetAddress,
+        court_mailing_address: courtMailingAddress,
+        court_city_state_zip: courtCityStateZip,
+        court_branch_name: courtBranchName,
         court_date: courtDate || (priorRecord && priorRecord.court_date) || '',
         status: 'payment_pending',
         notes: JSON.parse(notes),
@@ -100,6 +114,11 @@ export async function onRequestPost(context) {
         'DOB: ' + dob + '\n' +
         'Driver license #: ' + dl + '\n' +
         'Court: ' + court + '\n' +
+        'Court street address: ' + (courtStreetAddress || 'N/A') + '\n' +
+        'Court mailing address: ' + (courtMailingAddress || 'N/A') + '\n' +
+        'Court city/state/ZIP: ' + (courtCityStateZip || 'N/A') + '\n' +
+        'Court branch: ' + (courtBranchName || 'N/A') + '\n' +
+        'Case #: ' + (caseNumber || 'N/A') + '\n' +
         'Citation #: ' + citation + '\n' +
         'Violation date: ' + (n.date || 'N/A') + '\n' +
         'Code/section: ' + (n.code || 'N/A') + '\n' +

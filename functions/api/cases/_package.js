@@ -1,6 +1,6 @@
 import { buildRetainer, buildReceipt, buildTR205 } from '../_tr205.js';
 
-const PACKAGE_VERSION = '2026.09.15-2';
+const PACKAGE_VERSION = '2026.09.19-1';
 
 function safeCode(value) {
   return String(value || 'case').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80) || 'case';
@@ -72,7 +72,19 @@ export async function ensureClientPackage(env, record, options = {}) {
   const internalName = 'Internal_TR205_' + safe + '.pdf';
   if (!existing.some((doc) => doc && doc.name === internalName && doc.source === 'system' && doc.customerVisible === false)) {
     const notes = record.notes && typeof record.notes === 'object' ? record.notes : {};
-    const bytes = buildTR205({ name, citation: record.citation, court: record.court, dob: record.dob, dl: record.dl, notes: { ...notes, created_at: record.paid_at || record.created_at } });
+    const bytes = await buildTR205({
+      name,
+      citation: record.citation,
+      court: record.court,
+      caseNumber: record.case_number,
+      courtStreetAddress: record.court_street_address,
+      courtMailingAddress: record.court_mailing_address,
+      courtCityStateZip: record.court_city_state_zip,
+      courtBranchName: record.court_branch_name,
+      dob: record.dob,
+      dl: record.dl,
+      notes: { ...notes, created_at: record.paid_at || record.created_at },
+    });
     await putPdf('system-tr205-' + safe, internalName, bytes, false);
   }
 

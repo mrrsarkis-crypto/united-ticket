@@ -1,7 +1,9 @@
-// _tr205.js — build a prefilled California TR-205 "Request for Trial by Written
-// Declaration (Traffic)" document as a PDF, pure Workers JS (no external deps).
-// Uses Helvetica (built-in base-14 font) with uncompressed content streams so no
-// deflate is required. Produces a clean, printable, prefilled declaration.
+// _tr205.js - official California Judicial Council TR-205 template filler.
+// The repository stores a normalized copy of the current official form so the
+// Worker can safely populate its real form fields with pdf-lib.
+import { PDFDocument } from 'pdf-lib';
+
+const TR205_TEMPLATE_URL = 'https://unitedtraffictickets.com/assets/tr205-template.pdf';
 
 function escapePdfText(s) {
   return String(s == null ? '' : s)
@@ -12,70 +14,74 @@ function escapePdfText(s) {
 
 function mm2pdf(x) { return Math.round(x * 72 / 25.4); }
 
-// Build a single-page (or multi-page) PDF given page content blocks.
-// Each block: { y_baseline_mm, font, size, lines:[{text, x_mm}] }
-// For simplicity we render text lines onto a Helvetica canvas per page.
-export function buildTR205(data) {
+export async function buildTR205(data, options = {}) {
   data = data || {};
-  const name = data.name || '';
-  const citation = data.citation || '';
-  const court = data.court || '';
-  const dob = data.dob || '';
-  const dl = data.dl || '';
-  const notes = data.notes || {};
-  const date = notes.date || '';
-  const code = notes.code || '';
-  const today = notes.created_at ? new Date(notes.created_at).toISOString().slice(0, 10) : '';
+  const notes = data.notes && typeof data.notes === 'object' ? data.notes : {};
+  const templateUrl = options.templateUrl || data.templateUrl || TR205_TEMPLATE_URL;
+  let templateBytes = options.templateBytes || data.templateBytes || null;
 
-  // MM/dd/yyyy military-style file date for filename is handled by caller.
-  const rows = [];
-  const push = (x, y, text, size, font) => {
-    rows.push({ x, y, text: escapePdfText(text), size: size || 10, font: font || 'Helvetica' });
+  if (!templateBytes) {
+    const response = await fetch(templateUrl, { cf: { cacheTtl: 86400, cacheEverything: true } });
+    if (!response.ok) throw new Error('TR-205 official template fetch failed: HTTP ' + response.status);
+    templateBytes = new Uint8Array(await response.arrayBuffer());
+  }
+
+  const pdfDoc = await PDFDocument.load(templateBytes);
+  const form = pdfDoc.getForm();
+
+  const prefix = 'TR-205[0].';
+  const field = (path) => prefix + path;
+  const values = {
+    citation: ['Page1[0].P1Caption[0].CitationNumber[0].CitationNumber[0]', data.citation],
+    caseNumber: ['Page1[0].P1Caption[0].CaseNumber[0].CaseNumber[0]', data.caseNumber],
+    courtName: ['Page1[0].P1Caption[0].AttyPartyInfo[0].Name[0]', data.court],
+    courtStreetAddress: ['Page1[0].P1Caption[0].AttyPartyInfo[0].CrtStreet[0]', data.courtStreetAddress],
+    courtMailingAddress: ['Page1[0].P1Caption[0].AttyPartyInfo[0].CrtMailingAdd[0]', data.courtMailingAddress],
+    courtCityStateZip: ['Page1[0].P1Caption[0].AttyPartyInfo[0].CityZip_ft[0]', data.courtCityStateZip],
+    courtBranchName: ['Page1[0].P1Caption[0].AttyPartyInfo[0].CrtBranch[0]', data.courtBranchName],
+    defendant: ['Page1[0].P1Caption[0].CourtInfo[0].Party1[0]', data.name],
+    dueDate: ['Page1[0].List1[0].Lia[0].FillText1[0]', notes.dueDate || data.dueDate],
+    bailAmount: ['Page1[0].List1[0].Lib[0].TextFieldbail[0]', notes.bail || data.bailAmount],
+    bailDeposited: ['Page1[0].List1[0].Lic[0].DecimalField1[0]', notes.bailDepositedAmount || data.bailDepositedAmount],
+    clerkDate: ['Page1[0].List1[0].Lid[0].TextField2[0]', notes.clerkMailedOrDeliveredDate || data.clerkMailedOrDeliveredDate],
+    clerkSpecify: ['Page1[0].List1[0].Lie[0].FillText109[0]', notes.clerkOfCourtSpecify || data.clerkOfCourtSpecify],
+    clerkMailingAddress: ['Page1[0].List1[0].Lie[0].FillText125[0]', notes.clerkMailingAddress || data.courtMailingAddress],
+    photoCount: ['Page1[0].List2[0].Li5[0].SubList5[0].Lia[0].FillText109[0]', notes.evidencePhotographsCount],
+    otherEvidence: ['Page1[0].List2[0].Li5[0].SubList5[0].Lih[0].FillText11[0]', notes.evidenceOtherSpecify],
+    defendantPage2: ['Page2[0].PxCaption[0].TitlePartyName[0].Party1[0]', data.name],
+    casePage2: ['Page2[0].PxCaption[0].CaseNumber[0].CaseNumber[0]', data.caseNumber],
+    namePage2: ['Page2[0].List2[0].Li6[0].TextField1[0]', data.name],
+    mailingAddressPage2: ['Page2[0].List2[0].Li6[0].FillText19[0]', data.mailingAddress],
+    statementFacts: ['Page2[0].List2[0].Li6[0].FillText20[0]', notes.statementOfFacts || data.statementOfFacts],
+    pagesAttached: ['Page2[0].List2[0].Li7[0].DateofHearing_dt[0]', notes.pagesAttached || data.pagesAttached],
+    signatureDate: ['Page2[0].Sign[0].SigDate[0]', data.signatureDate],
+    signatureName: ['Page2[0].Sign[0].SigName[0]', data.name],
   };
 
-  // Page size: US Letter 215.9mm x 279.4mm
-  const W = 215.9, H = 279.4;
-  const M = 18;
+  for (const [key, [path, value]] of Object.entries(values)) {
+    if (value == null || String(value).trim() === '') continue;
+    try { form.getTextField(field(path)).setText(String(value).trim()); }
+    catch (error) { throw new Error('TR-205 field mapping failed for ' + key + ': ' + String(error.message || error)); }
+  }
 
-  // Header
-  push(M, H - 22, 'REQUEST FOR TRIAL BY WRITTEN DECLARATION', 13, 'Helvetica-Bold');
-  push(M, H - 28, '(Trial by Written Declaration - Traffic)  Vehicle Code, sec. 40902', 9, 'Helvetica');
-  push(M, H - 34, 'TR-205 preparation draft for professional review - verify against the current Judicial Council form before filing', 7.5, 'Helvetica-Oblique');
+  const evidence = notes.evidence && typeof notes.evidence === 'object' ? notes.evidence : {};
+  const checks = {
+    photographs: 'Page1[0].List2[0].Li5[0].SubList5[0].Lia[0].Choice1[0]',
+    medicalRecord: 'Page1[0].List2[0].Li5[0].SubList5[0].Lib[0].Choice9[0]',
+    registrationDocuments: 'Page1[0].List2[0].Li5[0].SubList5[0].Lic[0].Choice3[0]',
+    inspectionCertificate: 'Page1[0].List2[0].Li5[0].SubList5[0].Lid[0].Choice4[0]',
+    diagram: 'Page1[0].List2[0].Li5[0].SubList5[0].Lie[0].Choice5[0]',
+    carRepairReceipt: 'Page1[0].List2[0].Li5[0].SubList5[0].Lif[0].Choice6[0]',
+    insuranceDocuments: 'Page1[0].List2[0].Li5[0].SubList5[0].Lig[0].Choice7[0]',
+    other: 'Page1[0].List2[0].Li5[0].SubList5[0].Lih[0].Choice8[0]',
+  };
+  for (const [key, path] of Object.entries(checks)) {
+    if (evidence[key] === true) form.getCheckBox(field(path)).check();
+  }
 
-  // Court-use block
-  push(M, H - 48, 'NAME OF COURT:', 9, 'Helvetica-Bold');
-  push(M + 40, H - 48, court || '[COURTHOUSE / CITY]', 10);
-  push(M, H - 56, 'CITATION NUMBER:', 9, 'Helvetica-Bold');
-  push(M + 40, H - 56, citation || '[CITATION #]', 10);
-  push(M, H - 64, 'CASE NUMBER:', 9, 'Helvetica-Bold');
-  push(M + 40, H - 64, '', 10);
-
-  // Parties block
-  push(M, H - 80, 'PEOPLE OF THE STATE OF CALIFORNIA', 10);
-  push(M, H - 86, '  vs.  DEFENDANT:  ' + name, 10);
-  push(M, H - 92, 'Defendant DL #:  ' + dl + '     DOB:  ' + dob, 10);
-
-  // Request
-  push(M, H - 106, 'REQUEST FOR TRIAL', 11, 'Helvetica-Bold');
-  push(M + 4, H - 114, 'I request a trial by written declaration pursuant to Vehicle Code section 40902.', 10);
-  push(M + 4, H - 122, 'I have reviewed the Instructions to Defendant (form TR-200).', 10);
-  push(M + 4, H - 130, 'The facts in the Declaration of Facts are personally known to me and are true and correct.', 10);
-
-  // Declaration of facts
-  push(M, H - 148, 'DECLARATION OF FACTS', 11, 'Helvetica-Bold');
-  push(M + 4, H - 156, 'On ' + (date || '[violation date]') + ' I received citation number ' + (citation || '[citation #]') + '.', 10);
-  push(M + 4, H - 164, 'I submit this written declaration. Alleged violation code/section: ' + (code || '[section]') + '.', 10);
-  push(M + 4, H - 172, 'Please see the attached statement and any evidence for the full facts of my case.', 10);
-
-  // Signature block — Date, then citation, then printed name, then signature.
-  push(M, H - 200, 'I declare under penalty of perjury under the laws of the State of California that the', 9.5);
-  push(M + 4, H - 208, 'foregoing is true and correct.', 9.5);
-  push(M, H - 220, 'Date: ' + today, 10, 'Helvetica-Bold');
-  push(M + 40, H - 220, 'Citation number: ' + citation, 10, 'Helvetica-Bold');
-  push(M, H - 228, 'Printed name: ' + name, 10);
-  push(M, H - 236, 'Signature: ______________________________________', 10);
-
-  return renderPdf(rows, W, H, M);
+  form.updateFieldAppearances();
+  if (options.flatten !== false) form.flatten({ updateFieldAppearances: false });
+  return await pdfDoc.save({ useObjectStreams: false });
 }
 
 // Render text rows into a minimal single-page PDF (uncompressed Helvetica).

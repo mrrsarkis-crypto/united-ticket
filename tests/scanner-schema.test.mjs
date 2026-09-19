@@ -44,7 +44,7 @@ test('Gemini scanner request enforces the full structured extraction schema', as
 test('schema requires all extraction fields plus quality metadata', () => {
   assert.equal(GEMINI_EXTRACTION_SCHEMA.type, 'OBJECT');
   assert.ok(GEMINI_EXTRACTION_SCHEMA.required.length >= 20);
-  for (const key of ['defendantName', 'citationNumber', 'courtOrAgency', 'bailAmount', 'unknownFields', 'legibility']) {
+  for (const key of ['defendantName', 'citationNumber', 'caseNumber', 'courtOrAgency', 'courtStreetAddress', 'courtMailingAddress', 'courtCityStateZip', 'courtBranchName', 'bailAmount', 'bailDepositedAmount', 'unknownFields', 'legibility']) {
     assert.ok(GEMINI_EXTRACTION_SCHEMA.required.includes(key));
     assert.ok(GEMINI_EXTRACTION_SCHEMA.properties[key]);
   }

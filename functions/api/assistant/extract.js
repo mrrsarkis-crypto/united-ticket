@@ -13,9 +13,10 @@ const DEFAULT_RATE_LIMIT_PER_MINUTE = 30;
 const ALLOWED_MEDIA = new Set(['image/jpeg', 'image/png', 'application/pdf']);
 const FIELD_KEYS = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
-  'citationNumber','violationDate','courtDate','violationCode','violationDescription',
-  'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
-  'vehiclePlate','bailAmount','dueDate','jurisdiction','courtDivision','filingMethod',
+  'citationNumber','caseNumber','violationDate','courtDate','violationCode','violationDescription',
+  'courtOrAgency','courtStreetAddress','courtMailingAddress','courtCityStateZip','courtBranchName',
+  'officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate',
+  'bailAmount','bailDepositedAmount','dueDate','clerkMailedOrDeliveredDate','jurisdiction','courtDivision','filingMethod',
   'procedureType','eligibilityNotes'
 ];
 const BLOCKED_TEXT = /aliexpress|dsers|dropshipping|shopify product|shopping catalog/i;
@@ -29,6 +30,8 @@ const EXTRACT_SYSTEM = [
   'If characters are ambiguous, preserve only what is readable and set confident=false.',
   'Do not confuse a court address with the defendant mailing address.',
   'Do not confuse an officer ID, case number, barcode, or vehicle plate with the citation number.',
+  'For court information, inspect the top-of-page court block separately from the defendant information and capture the court name, street address, mailing address, city/state/ZIP, and branch name exactly when printed.',
+  'Treat citation number and case number as separate fields. A case number may be absent from a ticket and must remain null when not visible.',
   'For PDFs, inspect the supplied document content and extract only information actually visible.',
   'Return ONLY one valid JSON object. No markdown, prose, code fences, or preamble.',
   'Every field below must be an object with exactly: {"value":string|null,"found":boolean,"confident":boolean}.',
@@ -134,7 +137,9 @@ export async function onRequestPost(context) {
 
   const prompt = typeHint +
     'Extract every requested field literally from the document. ' +
-    'For citation number, driver license number, violation code, dates, court/agency, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
+    'Read the entire page, including the top court information block, captions, footer/date areas, and any court-specific sections. ' +
+    'For citation number, case number, driver license number, violation code/section, dates, court name, court street address, court mailing address, city/state/ZIP, branch name, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
+    'Keep court information separate from the defendant mailing address. ' +
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {

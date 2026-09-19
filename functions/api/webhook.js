@@ -185,9 +185,15 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
     'DOB: ' + (base.dob || '—') + '\n' +
     'Driver license #: ' + (base.dl || '—') + '\n' +
     'Court: ' + (base.court || '—') + '\n' +
+    'Court street address: ' + (base.court_street_address || '—') + '\n' +
+    'Court mailing address: ' + (base.court_mailing_address || '—') + '\n' +
+    'Court city/state/ZIP: ' + (base.court_city_state_zip || '—') + '\n' +
+    'Court branch: ' + (base.court_branch_name || '—') + '\n' +
+    'Case #: ' + (base.case_number || '—') + '\n' +
     'Citation #: ' + (base.citation || '—') + '\n' +
     'Violation date: ' + (notes.date || '—') + '\n' +
     'Code/section: ' + (notes.code || '—') + '\n' +
+    'Response/due date: ' + (notes.dueDate || '—') + '\n' +
     'Bail amount: ' + (notes.bail || '—') + '\n' +
     'Address: ' + (notes.address || '—') + '\n' +
     'Phone: ' + (notes.phone || '—') + '\n' +
@@ -197,8 +203,8 @@ async function notifyPaid(env, session, trackingCode, base, pdfBytes, filename) 
     ? [{ filename, bytes: pdfBytes, type: 'application/pdf' }]
     : [];
   const delivered = await sendBusinessNotification(env, {
-    subject: (pdfBytes ? 'PAID CASE + TBD: ' : 'PAID CASE: ') + trackingCode + ' (' + dollars + ')',
-    text: 'Payment cleared.' + (pdfBytes ? ' A TR-205 preparation draft is attached. It is not the official Judicial Council form. Verify the current form, eligibility, deadline, bail requirements, and local court filing instructions before filing. Official form: https://courts.ca.gov/documents/tr205.pdf' : '') + ' Here is the information the customer submitted online.\n\n' +
+    subject: (pdfBytes ? 'PAID CASE + TR-205: ' : 'PAID CASE: ') + trackingCode + ' (' + dollars + ')',
+    text: 'Payment cleared.' + (pdfBytes ? ' The official Judicial Council TR-205 has been pre-populated with the available case information. It still requires professional review and completion/verification of any missing facts, evidence, signature, and court-specific items before filing. Official form source: https://courts.ca.gov/documents/tr205.pdf' : '') + ' Here is the information the customer submitted online.\n\n' +
       '— CASE —\n' +
       'Tracking code: ' + trackingCode + '\n' +
       'Amount: ' + dollars + '\n' +
@@ -231,10 +237,19 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   let tr205Bytes = null;
   if (isTbwd) {
     try {
-      tr205Bytes = buildTR205({
+      tr205Bytes = await buildTR205({
         name: base.name, citation: base.citation, court: base.court,
+        caseNumber: base.case_number,
+        courtStreetAddress: base.court_street_address,
+        courtMailingAddress: base.court_mailing_address,
+        courtCityStateZip: base.court_city_state_zip,
+        courtBranchName: base.court_branch_name,
         dob: base.dob, dl: base.dl,
-        notes: Object.assign({}, base.notes, { created_at: (base.paid_at || base.created_at) }),
+        notes: Object.assign({}, base.notes, {
+          created_at: (base.paid_at || base.created_at),
+          bailDepositedAmount: base.notes && base.notes.bailDepositedAmount || '',
+          clerkMailedOrDeliveredDate: base.notes && base.notes.clerkMailedOrDeliveredDate || '',
+        }),
       });
     } catch (e) { console.error('TR-205 build failed', e); }
   }

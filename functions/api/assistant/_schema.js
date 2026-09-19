@@ -10,9 +10,10 @@ const fieldSchema = {
 
 const fieldNames = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
-  'citationNumber','violationDate','courtDate','violationCode','violationDescription',
-  'courtOrAgency','officerName','officerId','location','vehicleMake','vehicleModel',
-  'vehiclePlate','bailAmount','dueDate','jurisdiction','courtDivision','filingMethod',
+  'citationNumber','caseNumber','violationDate','courtDate','violationCode','violationDescription',
+  'courtOrAgency','courtStreetAddress','courtMailingAddress','courtCityStateZip','courtBranchName',
+  'officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate',
+  'bailAmount','bailDepositedAmount','dueDate','clerkMailedOrDeliveredDate','jurisdiction','courtDivision','filingMethod',
   'procedureType','eligibilityNotes'
 ];
 
