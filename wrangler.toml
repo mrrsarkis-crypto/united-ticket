@@ -15,6 +15,11 @@
 name = "ticket-fighter"
 pages_build_output_dir = "public"
 
+# Pages Functions use npm packages from the repository. Install from the lockfile
+# before Wrangler compiles the Functions so pdf-lib is available to _tr205.js.
+[build]
+command = "npm ci --ignore-scripts --no-audit"
+
 compatibility_date = "2025-07-18"
 
 [[kv_namespaces]]
