@@ -52,7 +52,7 @@ export async function onRequest(context) {
       "frame-src 'self' https:"
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
-    newHeaders.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    newHeaders.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=(self)');
   }
 
   if (!isPrivateAdminApi && !isScannerApi) {
