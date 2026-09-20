@@ -2,6 +2,7 @@
 // Expects STRIPE_WEBHOOK_SECRET and a KV CASES binding.
 import { buildTR205, buildRetainer, buildReceipt } from './_tr205.js';
 import { caseAccessToken, sendBusinessNotification, resendSend } from './_shared.js';
+import { enqueuePrintJob } from './_print-queue.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -277,7 +278,13 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   // 2) Store the TR-205 in R2 only for the TBWD service.
   if (isTbwd && env.R2 && tr205Bytes) {
     try {
-      await env.R2.put(stamp + '/' + r2Tr205File, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
+      const r2Key = stamp + '/' + r2Tr205File;
+      await env.R2.put(r2Key, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
+      try {
+        await enqueuePrintJob(env, { r2Key, filename: 'TR-205_' + safeCode + '.pdf', trackingCode });
+      } catch (printQueueError) {
+        console.error('TR-205 print queue enqueue failed', printQueueError);
+      }
     } catch (e) { console.error('R2 store failed', e); }
   }
 
