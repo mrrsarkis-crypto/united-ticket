@@ -20,7 +20,7 @@ export async function enqueuePrintJob(env, { r2Key, filename, trackingCode }) {
 export async function requirePrintAgent(request, env) {
   const token = String(env.PRINT_AGENT_TOKEN || '').trim();
   if (!token) return false;
-  const supplied = (request.headers.get('authorization') || '').replace(/^Bearer\\s+/i, '').trim();
+  const supplied = (request.headers.get('x-print-agent-token') || request.headers.get('authorization') || '').replace(/^Bearer\\s+/i, '').trim();
   return supplied === token;
 }
 
