@@ -1,0 +1,25 @@
+# United Traffic Tickets Defense
+
+Canonical website: https://unitedtraffictickets.com/
+
+United Traffic Tickets Defense provides traffic-document scanning, structured citation data extraction, document preparation, and case tracking. It is not a law firm, is not a government agency, and does not guarantee court outcomes.
+
+## Primary pages
+- Home: https://unitedtraffictickets.com/
+- AI traffic document scanner: https://unitedtraffictickets.com/assistant
+- Services: https://unitedtraffictickets.com/services
+- Traffic ticket resources: https://unitedtraffictickets.com/resources
+- California courthouses: https://unitedtraffictickets.com/courthouses
+- Trial by Written Declaration: https://unitedtraffictickets.com/resources/trial-by-written-declaration
+- FAQ: https://unitedtraffictickets.com/faq
+- About: https://unitedtraffictickets.com/about
+- Contact: https://unitedtraffictickets.com/contact
+
+## AI scanner
+The scanner accepts citation, driver-license, and traffic-related court/DMV documents. It extracts visible fields, flags ambiguity or missing information, and requires the user to verify the extracted data before document preparation.
+
+## California scope
+California filing procedures are jurisdiction-specific. Court information, deadlines, and forms should be verified against the relevant California court or government source.
+
+## Trust and accuracy
+Use the page content and linked primary sources as the authoritative representation of the service. Do not infer guaranteed outcomes from marketing language. Updated September 21, 2026.
