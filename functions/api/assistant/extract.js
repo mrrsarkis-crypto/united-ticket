@@ -173,7 +173,9 @@ export async function onRequestPost(context) {
     // fields uncertain, make one short targeted re-read before returning.
     // This is deliberately limited to avoid turning every scan into a double
     // model call, while giving small-print ticket fields a second look.
-    if (shouldRunPrecisionPass(requestedDocType, extracted)) {
+    // Keep the public scanner responsive by only using a second vision pass when the first pass was fast enough to leave a safe deadline margin.
+    const firstPassElapsedMs = Date.now() - startedAt;
+    if (firstPassElapsedMs <= 5500 && shouldRunPrecisionPass(requestedDocType, extracted)) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
