@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.21-9';
+export const SCANNER_ENGINE_VERSION = '2026.09.21-10';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -110,6 +110,92 @@ async function fetchWithDeadline(url, init, timeoutMs) {
     if (error && error.name === 'AbortError') throw new Error('vision provider timed out');
     throw error;
   } finally { clearTimeout(timer); }
+}
+
+function toOpenAiSchema(node) {
+  if (Array.isArray(node)) return node.map(toOpenAiSchema);
+  if (!node || typeof node !== 'object') return node;
+  const type = node.type;
+  const out = {};
+  if (type === 'OBJECT') {
+    out.type = 'object';
+    out.properties = {};
+    for (const [key, value] of Object.entries(node.properties || {})) out.properties[key] = toOpenAiSchema(value);
+    out.required = Array.isArray(node.required) ? [...node.required] : Object.keys(out.properties);
+    out.additionalProperties = false;
+  } else if (type === 'ARRAY') {
+    out.type = 'array';
+    out.items = toOpenAiSchema(node.items || { type: 'string' });
+  } else if (type === 'STRING') {
+    out.type = node.nullable ? ['string', 'null'] : 'string';
+  } else if (type === 'BOOLEAN') {
+    out.type = 'boolean';
+  } else if (type === 'NUMBER') {
+    out.type = 'number';
+  } else if (type === 'INTEGER') {
+    out.type = 'integer';
+  } else if (typeof type === 'string') {
+    out.type = type.toLowerCase();
+  }
+  if (Array.isArray(node.enum)) out.enum = [...node.enum];
+  if (typeof node.description === 'string') out.description = node.description;
+  return out;
+}
+
+function openAiExtractionSchema() {
+  return toOpenAiSchema(GEMINI_EXTRACTION_SCHEMA);
+}
+
+async function callOpenAi(env, { system, base64, mediaType, prompt, timeoutMs }) {
+  if (!env.OPENAI_API_KEY) throw new Error('OpenAI Astra is not configured');
+  const model = env.OPENAI_SCANNER_MODEL || env.OPENAI_MODEL || 'gpt-6-astra';
+  const body = {
+    model,
+    reasoning: { effort: 'low' },
+    max_output_tokens: 1800,
+    instructions: system,
+    input: [{
+      role: 'user',
+      content: [
+        { type: 'input_text', text: prompt },
+        { type: 'input_image', image_url: 'data:' + mediaType + ';base64,' + base64, detail: 'high' },
+      ],
+    }],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'traffic_ticket_extraction',
+        strict: true,
+        schema: openAiExtractionSchema(),
+      },
+    },
+  };
+  const res = await fetchWithDeadline('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + env.OPENAI_API_KEY,
+    },
+    body: JSON.stringify(body),
+  }, timeoutMs);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    const error = new Error('OpenAI Astra HTTP ' + res.status + ': ' + detail.slice(0, 180));
+    error.retryable = retryable(res.status);
+    throw error;
+  }
+  const data = await res.json();
+  const text = typeof data?.output_text === 'string'
+    ? data.output_text.trim()
+    : (data?.output || [])
+      .filter((item) => item?.type === 'message')
+      .flatMap((item) => item.content || [])
+      .filter((part) => part?.type === 'output_text' && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('')
+      .trim();
+  if (!text) throw new Error('OpenAI Astra returned an empty extraction');
+  return { text, attempts: 1 };
 }
 
 async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs }) {
@@ -376,7 +462,7 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
 
 export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env, input && input.timeoutMs);
-  const preferred = String(env.SCANNER_VISION_PROVIDER || 'gemini').toLowerCase();
+  const preferred = String(env.SCANNER_VISION_PROVIDER || 'openai').toLowerCase();
   const available = [];
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
@@ -404,7 +490,8 @@ export async function extractVisionDocument(env, input) {
     try {
       const providerBudget = Math.min(timeoutMs, remainingTotal);
       let result;
-      if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
+      if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });
+      else if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'anthropic') result = await callAnthropic(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'groq') result = await callGroq(env, { ...input, timeoutMs: providerBudget });
       else result = await callGateway(env, { ...input, timeoutMs: providerBudget });
