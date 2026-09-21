@@ -143,8 +143,8 @@ export async function onRequestPost(context) {
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {
-    const visionBudget = Math.min(12000, 15000 - (Date.now() - startedAt));
-    if (visionBudget < 8000) {
+    const visionBudget = Math.min(20000, 24000 - (Date.now() - startedAt));
+    if (visionBudget < 10000) {
       return json({ error: 'The scan took too long to start. Please try again with the document ready to upload.' }, 504, headers);
     }
     const vision = await extractVisionDocument(env, {
