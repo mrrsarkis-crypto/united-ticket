@@ -179,7 +179,7 @@ export async function onRequestPost(context) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
-        const remainingHandlerMs = 15000 - (Date.now() - startedAt);
+        const remainingHandlerMs = 24000 - (Date.now() - startedAt);
         if (remainingHandlerMs >= 9000) {
           const precisionVision = await extractVisionDocument(env, {
             system: EXTRACT_SYSTEM,
