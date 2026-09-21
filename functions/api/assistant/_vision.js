@@ -147,8 +147,8 @@ function openAiExtractionSchema() {
 }
 
 async function callOpenAi(env, { system, base64, mediaType, prompt, timeoutMs }) {
-  if (!env.OPENAI_API_KEY) throw new Error('OpenAI Astra is not configured');
-  const model = env.OPENAI_SCANNER_MODEL || env.OPENAI_MODEL || 'gpt-6-astra';
+  if (!env.OPENAI_API_KEY) throw new Error('OpenAI scanner is not configured');
+  const model = env.OPENAI_SCANNER_MODEL || env.OPENAI_MODEL || 'gpt-5.6-luna';
   const body = {
     model,
     reasoning: { effort: 'low' },

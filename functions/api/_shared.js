@@ -177,8 +177,111 @@ export function anthropicText(data) {
 // the assistant needs is routed through assistantChat / assistantExtract below
 // so the route handlers do not care which provider answered.
 
+export const OPENAI_DEFAULT_MODEL = 'gpt-5.6-luna';
 export const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
 export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-120b';
+
+function openAiToolSchema(tools) {
+  return (tools || []).map((tool) => ({
+    type: 'function',
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.input_schema || { type: 'object', properties: {} },
+    strict: true,
+  }));
+}
+
+function openAiMessages(history) {
+  const input = [];
+  for (const message of history || []) {
+    if (typeof message?.content === 'string') {
+      input.push({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content });
+      continue;
+    }
+    const blocks = Array.isArray(message?.content) ? message.content : [];
+    for (const block of blocks) {
+      if (!block) continue;
+      if (block.type === 'text' && block.text) {
+        input.push({ role: message.role === 'assistant' ? 'assistant' : 'user', content: block.text });
+      } else if (block.type === 'tool_use') {
+        input.push({
+          type: 'function_call',
+          call_id: block.id,
+          name: block.name,
+          arguments: JSON.stringify(block.input || {}),
+        });
+      } else if (block.type === 'tool_result') {
+        const output = Array.isArray(block.content)
+          ? block.content.filter((c) => c && c.type === 'text').map((c) => c.text || '').join('\n')
+          : String(block.content != null ? block.content : '');
+        input.push({
+          type: 'function_call_output',
+          call_id: block.tool_use_id,
+          output,
+        });
+      }
+    }
+  }
+  return input;
+}
+
+async function openAiResponses(env, { system, messages, tools }) {
+  const key = env.OPENAI_API_KEY;
+  if (!key) throw new Error('OpenAI API key not configured');
+  const model = env.OPENAI_MODEL || OPENAI_DEFAULT_MODEL;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TOTAL_TIMEOUT_MS);
+  try {
+    const res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + key,
+      },
+      body: JSON.stringify({
+        model,
+        store: false,
+        instructions: system,
+        input: openAiMessages(messages),
+        tools: openAiToolSchema(tools),
+        reasoning: { effort: 'low' },
+        max_output_tokens: 1400,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error('OpenAI HTTP ' + res.status + ': ' + text.slice(0, 500));
+    }
+    return res.json();
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('OpenAI request timed out');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function openAiReplyParts(data) {
+  const output = Array.isArray(data?.output) ? data.output : [];
+  const text = typeof data?.output_text === 'string'
+    ? data.output_text.trim()
+    : output
+      .filter((item) => item?.type === 'message')
+      .flatMap((item) => item.content || [])
+      .filter((part) => part?.type === 'output_text' && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('')
+      .trim();
+  const toolUses = output
+    .filter((item) => item?.type === 'function_call')
+    .map((item) => {
+      let input = {};
+      try { input = JSON.parse(item.arguments || '{}'); } catch { input = {}; }
+      return { id: item.call_id, name: item.name, input };
+    });
+  return { text, toolUses };
+}
 
 // Total wall-clock budget for a single AI helper call. Cloudflare Free/Pro
 // terminates Pages Function requests around ~100s with an HTML 524 page, so the
@@ -193,6 +296,7 @@ export function timedAbort(ms) {
 }
 
 export function pickAiProvider(env) {
+  if (env.OPENAI_API_KEY) return 'openai';
   if (env.ANTHROPIC_API_KEY) return 'anthropic';
   if (env.GROQ_API_KEY) return 'groq';
   if (env.GEMINI_API_KEY) return 'gemini';
@@ -470,6 +574,33 @@ export function groqReply(data) {
 // conversation in KV exactly as before.
 export async function assistantChat(env, { system, messages, tools, resolveTool }) {
   const provider = pickAiProvider(env);
+
+  if (provider === 'openai') {
+    let data = await openAiResponses(env, { system, messages, tools });
+    let turns = 0;
+    for (;;) {
+      const reply = openAiReplyParts(data);
+      const assistantBlocks = [];
+      if (reply.text) assistantBlocks.push({ type: 'text', text: reply.text });
+      for (const tu of reply.toolUses) {
+        assistantBlocks.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
+      }
+      if (assistantBlocks.length) messages.push({ role: 'assistant', content: assistantBlocks });
+      if (!reply.toolUses.length || turns >= 4) return { text: reply.text, history: messages };
+      turns++;
+      const userBlocks = [];
+      for (const tu of reply.toolUses) {
+        userBlocks.push({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: await resolveTool(tu.name, tu.input),
+        });
+      }
+      messages.push({ role: 'user', content: userBlocks });
+      data = await openAiResponses(env, { system, messages, tools });
+    }
+  }
+
   if (provider === 'anthropic') {
     let data = await anthropic(env, { system, messages, max_tokens: 1024, tools });
     let turns = 0;
@@ -546,6 +677,62 @@ export async function assistantChat(env, { system, messages, tools, resolveTool 
 // (the route parses the JSON contract itself). Prefer Gemini when configured,
 // then fall back to Groq's active multimodal model when Gemini is unavailable.
 export async function assistantExtract(env, { system, base64, mediaType, prompt }) {
+  if (env.OPENAI_API_KEY && mediaType !== 'application/pdf') {
+    const schema = {
+      type: 'object',
+      properties: {
+        extraction: { type: 'string' },
+      },
+      required: ['extraction'],
+      additionalProperties: false,
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AI_TOTAL_TIMEOUT_MS);
+    try {
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + env.OPENAI_API_KEY,
+        },
+        body: JSON.stringify({
+          model: env.OPENAI_MODEL || OPENAI_DEFAULT_MODEL,
+          store: false,
+          instructions: system,
+          input: [{
+            role: 'user',
+            content: [
+              { type: 'input_text', text: prompt },
+              { type: 'input_image', image_url: 'data:' + mediaType + ';base64,' + base64, detail: 'high' },
+            ],
+          }],
+          reasoning: { effort: 'low' },
+          max_output_tokens: 1600,
+          text: {
+            format: {
+              type: 'json_schema',
+              name: 'assistant_extraction',
+              strict: true,
+              schema,
+            },
+          },
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error('OpenAI HTTP ' + res.status + ': ' + detail.slice(0, 500));
+      }
+      const data = await res.json();
+      return typeof data?.output_text === 'string' ? data.output_text : '';
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw new Error('OpenAI request timed out');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   if (env.ANTHROPIC_API_KEY) {
     const data = await anthropic(env, {
       system,

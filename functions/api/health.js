@@ -12,7 +12,8 @@ export async function onRequestGet(context) {
 
   const missing = required.filter((key) => !env[key]);
   const gatewayReady = !!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN);
-  const scannerVisionReady = !!(env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
+  const openAiConfigured = !!env.OPENAI_API_KEY;
+  const scannerVisionReady = !!(openAiConfigured || env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
   const casesReady = !!env.CASES;
   const r2Ready = !!env.R2;
   const googleCalendarConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REFRESH_TOKEN);
@@ -43,6 +44,8 @@ export async function onRequestGet(context) {
     scanner: {
       ready: scannerVisionReady,
       visionConfigured: scannerVisionReady,
+      provider: openAiConfigured ? 'openai' : (env.GEMINI_API_KEY ? 'gemini' : (env.ANTHROPIC_API_KEY ? 'anthropic' : (gatewayReady ? 'gateway' : 'none'))),
+      openaiConfigured: openAiConfigured,
       gatewayConfigured: gatewayReady,
       geminiConfigured: !!env.GEMINI_API_KEY,
       anthropicConfigured: !!env.ANTHROPIC_API_KEY,

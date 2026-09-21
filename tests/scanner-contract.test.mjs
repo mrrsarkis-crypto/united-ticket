@@ -185,7 +185,7 @@ test('OpenAI Astra is selected first when configured and preserves strict extrac
   assert.equal(result.provider, 'openai');
   assert.equal(result.attempts, 1);
   assert.match(requestUrl, /api\.openai\.com\/v1\/responses$/);
-  assert.equal(requestBody.model, 'gpt-6-astra');
+  assert.equal(requestBody.model, 'gpt-5.6-luna');
   assert.equal(requestBody.reasoning.effort, 'low');
   assert.equal(requestBody.text.format.type, 'json_schema');
   assert.equal(requestBody.text.format.strict, true);
