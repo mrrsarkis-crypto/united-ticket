@@ -11,6 +11,8 @@ export async function onRequestGet(context) {
   ];
 
   const missing = required.filter((key) => !env[key]);
+  const stripeSecret = String(env.STRIPE_SECRET_KEY || '');
+  const stripeKeyMode = stripeSecret.startsWith('sk_live_') ? 'live' : (stripeSecret.startsWith('sk_test_') ? 'test' : (stripeSecret ? 'unknown' : 'missing'));
   const gatewayReady = !!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN);
   const openAiConfigured = !!env.OPENAI_API_KEY;
   const scannerVisionReady = !!(openAiConfigured || env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
@@ -35,6 +37,10 @@ export async function onRequestGet(context) {
       cases: casesReady,
       r2: r2Ready,
       scannerVision: scannerVisionReady,
+    },
+    stripe: {
+      configured: !!stripeSecret,
+      keyMode: stripeKeyMode,
     },
     integrations: {
       googleCalendar: googleCalendarConfigured,
