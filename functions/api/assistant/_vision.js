@@ -128,6 +128,9 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
     generationConfig: {
       temperature: 0,
       maxOutputTokens: 1800,
+      thinkingConfig: {
+        thinkingLevel: 'low',
+      },
       responseMimeType: 'application/json',
       responseSchema: GEMINI_EXTRACTION_SCHEMA,
     },
