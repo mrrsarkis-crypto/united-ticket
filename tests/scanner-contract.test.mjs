@@ -155,6 +155,42 @@ test('PDF scan refuses an Anthropic-only configuration instead of sending PDF as
   );
 });
 
+test('OpenAI Astra is selected first when configured and preserves strict extraction', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestUrl;
+  let requestBody;
+  globalThis.fetch = async (url, init) => {
+    requestUrl = String(url);
+    requestBody = JSON.parse(init.body);
+    return new Response(JSON.stringify({
+      output_text: '{"legibility":"good"}',
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const result = await extractVisionDocument(
+    {
+      OPENAI_API_KEY: 'test-openai',
+      GEMINI_API_KEY: 'test-gemini',
+      SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+    },
+    {
+      system: 'x',
+      base64: SAMPLE_B64,
+      mediaType: 'image/jpeg',
+      prompt: 'x',
+      validateText: () => true,
+    }
+  );
+  assert.equal(result.provider, 'openai');
+  assert.equal(result.attempts, 1);
+  assert.match(requestUrl, /api\.openai\.com\/v1\/responses$/);
+  assert.equal(requestBody.model, 'gpt-6-astra');
+  assert.equal(requestBody.reasoning.effort, 'low');
+  assert.equal(requestBody.text.format.type, 'json_schema');
+  assert.equal(requestBody.text.format.strict, true);
+});
+
 test('Gemini transport response is returned with provider metadata', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

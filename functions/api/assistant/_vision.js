@@ -464,6 +464,7 @@ export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env, input && input.timeoutMs);
   const preferred = String(env.SCANNER_VISION_PROVIDER || 'openai').toLowerCase();
   const available = [];
+  if (env.OPENAI_API_KEY && input.mediaType !== 'application/pdf') available.push('openai');
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
   if (env.GROQ_API_KEY && input.mediaType !== 'application/pdf') available.push('groq');
