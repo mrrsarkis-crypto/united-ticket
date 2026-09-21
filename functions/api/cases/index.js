@@ -187,7 +187,6 @@ export async function onRequestPost(context) {
   try {
     const origin = new URL(request.url).origin;
     const caseUrl = origin + '/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '');
-    const integrationId = 'tf-' + Math.random().toString(36).slice(2, 10);
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -200,7 +199,6 @@ export async function onRequestPost(context) {
         cancel_url: env.STRIPE_CANCEL_URL || (origin + '/#/cancel'),
         customer_email: email,
         client_reference_id: trackingCode,
-        integration_identifier: integrationId,
         'line_items[0][price]': priceId,
         'line_items[0][quantity]': '1',
         allow_promotion_codes: 'true',
