@@ -42,7 +42,7 @@ test('scanner post-result payment bridge preserves the TBD path', () => {
   assert.match(scanPay, /Trial by Written Declaration/);
   assert.match(scanPay, /bot-courthouse\?path=tbd/);
   assert.match(scanPay, /claimCta/);
-  assert.match(scanPay, /value=x\?"149":"199"/);
+  assert.match(scanPay, /location\.href="\/bot-courthouse\?path=tbd"/);
   assert.match(scanPay, /alameda/);
 });
 
