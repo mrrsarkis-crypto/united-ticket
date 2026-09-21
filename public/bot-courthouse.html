@@ -79,7 +79,7 @@
       <div class="breadcrumb"><a href="/">Home</a> &rsaquo; <a href="/courthouses">Courthouses</a> &rsaquo; Bot Courthouse</div>
       <p class="eyebrow">Bot Courthouse</p>
       <h1>Fight your California traffic ticket</h1>
-      <p class="sub">Pick your county, choose a path, and get plain-language next steps. Ready to contest by Trial by Written Declaration? Start the <strong>$199 TBD package</strong> — or generate a free rough draft first. No account needed, and you can use it on any device.</p>
+      <p class="sub">Pick your county, choose a path, and complete your Trial by Written Declaration intake before payment. Review your draft first, then pay to unlock professional review, final document preparation, and case tracking. No account needed, and you can use it on any device.</p>
     </div>
   </section>
 
@@ -125,7 +125,7 @@
         <li class="is-active"><span class="bc-step-num">1</span> County</li>
         <li><span class="bc-step-num">2</span> Path</li>
         <li><span class="bc-step-num">3</span> Guidance</li>
-        <li><span class="bc-step-num">4</span> Draft (optional)</li>
+        <li><span class="bc-step-num">4</span> TBD Draft</li>
       </ol>
 
       <!-- STEP 1 -->
@@ -179,12 +179,12 @@
           <li>Attorney review before filing</li>
           <li>Case tracking so you know what happens next</li>
         </ul>
-        <p class="bc-offer-scarcity">Takes a few minutes &middot; Secure Stripe checkout</p>
+        <p class="bc-offer-scarcity">Complete and review your TBD information first &middot; Secure Stripe checkout comes after</p>
         <div class="bc-offer-actions">
-          <button type="button" class="bc-cta-pay" id="bcPayCta">Pay $199 — Start TBD fight</button>
+          <button type="button" class="bc-cta-pay" id="bcPayCta" disabled>Complete TBD draft first</button>
           <a class="bc-cta-secondary" id="bcScanFree" href="/assistant?service=199&amp;intent=tbd">Scan free first</a>
         </div>
-        <p class="bc-offer-legal">Document preparation and case tracking — not a law firm. Outcomes are never guaranteed. Educational guidance above is free either way.</p>
+        <p class="bc-offer-legal">Your TBD intake and draft review happen before payment. Payment unlocks the professional review, final document preparation, and case tracking package. Document preparation is not legal advice and outcomes are never guaranteed.</p>
       </div>
 
       <!-- CHECKOUT -->
@@ -245,9 +245,9 @@
 
       <!-- STEP 4 -->
       <div class="bc-panel bc-draft" id="bcDraftPanel">
-        <div class="bc-draft-upsell">Prefer a complete TBD package? <button type="button" class="bc-linkish" id="bcUpsellPay">Pay $199 — Start TBD fight</button> (AI scan, prefilled TR-205, paralegal + attorney review, case tracking).</div>
-        <h2>Step 4 (optional) — Free rough draft only</h2>
-        <p class="bc-lead">Generates a printable first-person statement <strong>locally in your browser</strong> — nothing is uploaded. This is a <strong>free rough draft</strong> for your own review — not a filed TR-205. For the full $199 TBD package (prefilled TR-205 + reviews + tracking), use the offer above. Not legal advice.</p>
+        <div class="bc-draft-upsell">Complete your TBD intake and review the draft <strong>before paying</strong>. When you are satisfied with the information, payment unlocks the professional review and final TR-205 preparation.</div>
+        <h2>Step 4 — Complete your TBD draft before payment</h2>
+        <p class="bc-lead">Enter your facts and generate a printable draft <strong>locally in your browser</strong>. Nothing is uploaded by this draft step. Review every field before proceeding. The final official TR-205 is prepared after payment and professional review. Not legal advice.</p>
         <label for="bcDeclName">Your full legal name</label>
         <input type="text" id="bcDeclName" autocomplete="name" placeholder="Jane Q. Driver">
         <label for="bcDeclCite">Citation / case number</label>
@@ -259,7 +259,7 @@
         <label for="bcDeclFacts">What happened (your facts)</label>
         <textarea id="bcDeclFacts" placeholder="Write only facts you personally know. Be clear and respectful. Do not invent evidence."></textarea>
         <div class="bc-draft-actions">
-          <button type="button" class="btn bc-btn-amber" id="bcGenDraft">Generate draft</button>
+          <button type="button" class="btn bc-btn-amber" id="bcGenDraft">Generate &amp; review TBD draft</button>
           <button type="button" class="btn bc-btn-navy" id="bcPrintDraft">Print draft</button>
         </div>
         <div class="bc-preview" id="bcPreview">
@@ -271,22 +271,22 @@
       <!-- FINAL CTAs -->
       <div class="bc-panel" id="bcFinalPanel" style="display:none">
         <h2>Next steps</h2>
-        <p class="bc-lead">Start the $199 TBD fight, scan free with our assistant, call for a consultation, or return to the official county site.</p>
+        <p class="bc-lead">After you review your TBD draft, continue to secure payment. Payment unlocks professional review, final TR-205 preparation, and case tracking.</p>
         <div class="bc-final-ctas">
-          <button type="button" class="bc-cta-amber" id="bcFinalPay">Pay $199 — Start TBD fight</button>
+          <button type="button" class="bc-cta-amber" id="bcFinalPay" disabled>Complete TBD draft first</button>
           <a class="bc-cta-navy" href="tel:+18182058271">Call (818) 205-8271</a>
           <a class="bc-cta-outline" id="bcFinalAssistant" href="/assistant?service=199&amp;intent=tbd">Scan free — Assistant</a>
           <a class="bc-cta-outline" id="bcBackOfficial" href="/all-courthouses" target="_blank" rel="noopener">Back to county official site</a>
         </div>
-        <p class="bc-kiosk-note">Outcomes are never guaranteed. Document preparation is not a law firm and does not provide legal advice. This page does not file anything until you complete paid checkout and our team reviews your case.</p>
+        <p class="bc-kiosk-note">Your TBD draft is reviewed before payment. Nothing is filed at this stage. Payment unlocks the professional review and final document-preparation workflow. Outcomes are never guaranteed.</p>
       </div>
     </div>
   </section>
 
   <section class="page-cta">
     <div class="wrap">
-      <h2>Ready to fight by Written Declaration?</h2>
-      <p>Standard Ticket TBD package is $199 — or scan free first and decide.</p>
+      <h2>Ready to prepare your Written Declaration?</h2>
+      <p>Complete your TBD draft first. Review it, then continue to the $199 package when you are ready.</p>
       <a class="btn btn-amber" href="#bcPathPanel" id="bcPageCtaPay">FIGHT TBD — $199</a>
       <a class="btn btn-amber" href="/assistant?service=199&amp;intent=tbd" style="margin-left:10px;">SCAN MY TICKET — FREE</a>
     </div>
