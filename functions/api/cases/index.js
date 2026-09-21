@@ -62,9 +62,8 @@ export async function onRequestPost(context) {
   if (!dob || !dl) return json({ error: 'Driver\'s license number and date of birth are required' }, 400);
 
   const debug = (env.DEBUG_MODE || '0') === '1';
-  const priceKey = priceFor(service);
-  if (!priceKey) return json({ error: 'Unknown service type' }, 400);
-  if (!env[priceKey]) return json({ error: 'Payment for this service is not configured yet. Contact the site owner.' + (debug ? ' Missing env ' + priceKey : '') }, 500);
+  const priceId = priceFor(service);
+  if (!priceId) return json({ error: 'Unknown service type' }, 400);
 
   const trackingCode = claimedCode || ('TF-' + Date.now().toString(36).toUpperCase() + rand(3));
   const isClaimed = !!claimedCode;
@@ -129,7 +128,7 @@ export async function onRequestPost(context) {
         'Extras/notes: ' + (n.notes || 'N/A') + '\n' +
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
         'Assist. session: ' + (record.session_id || 'N/A') + '\n' +
-        'Service: $' + ({ '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00');
+        'Service: $' + ({ '199': '199.00', '149': '149.00', '99': '99.00' }[service] || '199.00');
       const header = isClaimed
         ? 'Existing quick-scan claim completed with full details (awaiting payment).\n\nCLAIM\nTracking code: ' + trackingCode + '\nClaimed at: ' + record.created_at + '\n\n'
         : 'New "Fight My Ticket" submission received (awaiting payment - Checkout URL sent to customer).\n\nCASE\nTracking code: ' + trackingCode + '\nStatus: payment_pending\nTime: ' + record.created_at + '\n\n';
@@ -182,8 +181,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const priceId = env[priceKey];
-  const dollars = { '199': '199.00', '299': '299.00', '999': '999.00' }[service] || '199.00';
+  const dollars = { '199': '199.00', '149': '149.00', '99': '99.00' }[service] || '199.00';
   const accessToken = await caseAccessToken(env, trackingCode);
   let sessionUrl;
   try {

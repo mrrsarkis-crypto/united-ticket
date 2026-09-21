@@ -62,9 +62,9 @@ export function csvResponse(records, cols, filename) {
 }
 
 export function priceFor(service) {
-  if (service === '199') return 'STRIPE_PRICE_199';
-  if (service === '299') return 'STRIPE_PRICE_299';
-  if (service === '999') return 'STRIPE_PRICE_999';
+  if (service === '199') return 'price_1UHw68LMSqKARRUqlhvD82xl';
+  if (service === '149') return 'price_1UHw6DLMSqKARRUqDTK6w7LB';
+  if (service === '99') return 'price_1UHw6FLMSqKARRUqJ8vVNoCr';
   return null;
 }
 

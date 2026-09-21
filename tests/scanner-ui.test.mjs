@@ -37,12 +37,12 @@ test('scanner result is framed as a review reveal', () => {
 
 test('scanner post-result payment bridge preserves the TBD path', () => {
   assert.match(scanPay, /PAY NOW/);
-  assert.match(scanPay, /\$199/);
+  assert.match(scanPay, /\$149/);
   assert.match(scanPay, /POTENTIAL TBD PATH DETECTED/);
   assert.match(scanPay, /Trial by Written Declaration/);
   assert.match(scanPay, /bot-courthouse\?path=tbd/);
   assert.match(scanPay, /claimCta/);
-  assert.match(scanPay, /value\s*=\s*['\"]199['\"]/);
+  assert.match(scanPay, /value=x\?"149":"199"/);
   assert.match(scanPay, /alameda/);
 });
 
