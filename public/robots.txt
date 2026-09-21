@@ -7,3 +7,5 @@ Sitemap: https://unitedtraffictickets.com/sitemap.xml
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /admin-cases
+
+# IndexNow key is hosted at /9243ac7fef3e445e945b1695b8ab43df.txt
