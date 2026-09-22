@@ -49,8 +49,8 @@ export async function onRequestGet(context) {
     stripe: {
       configured: !!stripeSecret,
       keyMode: stripeKeyMode,
-      successUrlValid: /^https?:\\/\\//i.test(effectiveSuccessUrl),
-      cancelUrlValid: /^https?:\\/\\//i.test(effectiveCancelUrl),
+      successUrlValid: /^https?:\/\//i.test(effectiveSuccessUrl),
+      cancelUrlValid: /^https?:\/\//i.test(effectiveCancelUrl),
       checkout: {
         apiConfigured: !!stripeSecret && /^sk_(live|test)_/.test(stripeSecret),
         paymentLinkFallbackConfigured: true,
