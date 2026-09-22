@@ -5,6 +5,9 @@ node_modules/
 dist/
 .tmp-fnbuild/
 
+# Print-agent test chrome profiles
+tmp-chrome-profile*/
+
 # OS junk
 Thumbs.db
 .DS_Store
