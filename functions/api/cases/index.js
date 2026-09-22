@@ -229,8 +229,10 @@ export async function onRequestPost(context) {
     const session = await stripeRes.json();
     if (!stripeRes.ok) {
       console.error('Stripe checkout session failed', stripeRes.status, session);
-      if (stripeRes.status === 401 || stripeRes.status === 403) {
-        console.warn('Stripe API authentication failed; using live Payment Link fallback');
+      const resourceMissingPrice = session && session.error && session.error.code === 'resource_missing'
+        && /price|line_items/i.test(String(session.error.param || '') + ' ' + String(session.error.message || ''));
+      if (stripeRes.status === 401 || stripeRes.status === 403 || stripeRes.status === 404 || resourceMissingPrice) {
+        console.warn('Stripe checkout API could not use the configured price; using matching live Payment Link fallback');
         sessionUrl = fallbackUrl.toString();
       } else {
         if (debug) {
