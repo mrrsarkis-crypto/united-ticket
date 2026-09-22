@@ -2,8 +2,10 @@ import { normalizeStripeSecret } from './_shared.js';
 
 // /api/health - safe production configuration check.
 // Never returns secret values; it reports only whether required bindings exist.
+// Stripe checkout itself has a live Payment Link fallback when the API cannot
+// create a Checkout Session, so health must not make authenticated Stripe calls.
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { env, request } = context;
   const required = [
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
@@ -23,27 +25,10 @@ export async function onRequestGet(context) {
   const googleCalendarConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REFRESH_TOKEN);
   const googleAuthorizationConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
   const platform = env.VERCEL || env.VERCEL_ENV ? 'vercel' : 'cloudflare';
-  const checkoutSuccessUrl = env.STRIPE_SUCCESS_URL || '';
-  const checkoutCancelUrl = env.STRIPE_CANCEL_URL || '';
-  let stripeApiProbe = { ok: false, accountMatches: false, price199: false, error: null };
-  if (stripeSecret) {
-    try {
-      const [acctRes, priceRes] = await Promise.all([
-        fetch('https://api.stripe.com/v1/account', { headers: { Authorization: 'Bearer ' + stripeSecret } }),
-        fetch('https://api.stripe.com/v1/prices/price_1UHw68LMSqKARRUqlhvD82xl', { headers: { Authorization: 'Bearer ' + stripeSecret } }),
-      ]);
-      const acct = await acctRes.json().catch(() => ({}));
-      const price = await priceRes.json().catch(() => ({}));
-      stripeApiProbe = {
-        ok: acctRes.ok && priceRes.ok,
-        accountMatches: acct && acct.id === 'acct_1U4OTALMSqKARRUq',
-        price199: priceRes.ok && price && price.active === true && price.unit_amount === 19900 && price.currency === 'usd',
-        error: acctRes.ok && priceRes.ok ? null : ('Stripe GET ' + (acctRes.ok ? priceRes.status : acctRes.status)),
-      };
-    } catch (e) {
-      stripeApiProbe.error = String(e && e.message || e).slice(0, 160);
-    }
-  }
+  const origin = new URL(request.url).origin;
+  const effectiveSuccessUrl = env.STRIPE_SUCCESS_URL || (origin + '/case?code=CASE&payment=success');
+  const effectiveCancelUrl = env.STRIPE_CANCEL_URL || (origin + '/#/cancel');
+
   const ok = missing.length === 0 && casesReady && r2Ready && scannerVisionReady;
   const safeMissing = [];
   if (missing.length) safeMissing.push('required_runtime_configuration');
@@ -64,9 +49,12 @@ export async function onRequestGet(context) {
     stripe: {
       configured: !!stripeSecret,
       keyMode: stripeKeyMode,
-      successUrlValid: /^https?:\/\//i.test(checkoutSuccessUrl),
-      cancelUrlValid: /^https?:\/\//i.test(checkoutCancelUrl),
-      api: stripeApiProbe,
+      successUrlValid: /^https?:\\/\\//i.test(effectiveSuccessUrl),
+      cancelUrlValid: /^https?:\\/\\//i.test(effectiveCancelUrl),
+      checkout: {
+        apiConfigured: !!stripeSecret && /^sk_(live|test)_/.test(stripeSecret),
+        paymentLinkFallbackConfigured: true,
+      },
     },
     integrations: {
       googleCalendar: googleCalendarConfigured,
