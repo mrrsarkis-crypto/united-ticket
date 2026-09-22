@@ -7,10 +7,6 @@ $TempDir = Join-Path $env:LOCALAPPDATA 'UnitedTrafficTickets\PrintQueue'
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 $headers = @{ 'X-Print-Agent-Token' = $Token }
 $PrinterName = 'HP OfficeJet Pro 8130e series [HPID4EDCE]'
-$Printer = Get-Printer -Name $PrinterName -ErrorAction SilentlyContinue
-if (-not $Printer -or $Printer.PrinterStatus -eq 'Offline') {
-  throw ('Configured physical printer is unavailable: ' + $PrinterName)
-}
 $AcrobatPath = 'C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe'
 if (-not (Test-Path $AcrobatPath)) { throw 'Adobe Acrobat DC is required for unattended PDF printing.' }
 while ($true) {
