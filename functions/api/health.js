@@ -24,7 +24,7 @@ export async function onRequestGet(context) {
   const checkoutSuccessUrl = env.STRIPE_SUCCESS_URL || '';
   const checkoutCancelUrl = env.STRIPE_CANCEL_URL || '';
   let stripeApiProbe = { ok: false, accountMatches: false, price199: false, error: null };
-  if (stripeKeyMode === 'live' && stripeSecret) {
+  if (stripeSecret) {
     try {
       const [acctRes, priceRes] = await Promise.all([
         fetch('https://api.stripe.com/v1/account', { headers: { Authorization: 'Bearer ' + stripeSecret } }),
