@@ -1,4 +1,6 @@
 const PREFIX = 'printjob:';
+const HEAD_KEY = 'printqueue:head';
+const TAIL_KEY = 'printqueue:tail';
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export async function enqueuePrintJob(env, { r2Key, filename, trackingCode }) {
@@ -12,8 +14,19 @@ export async function enqueuePrintJob(env, { r2Key, filename, trackingCode }) {
     trackingCode: String(trackingCode || ''),
     createdAt: new Date().toISOString(),
     attempts: 0,
+    nextId: null,
   };
   await env.CASES.put(PREFIX + id, JSON.stringify(job), { expirationTtl: JOB_TTL_SECONDS });
+  const tailId = await env.CASES.get(TAIL_KEY);
+  if (tailId) {
+    const tail = await env.CASES.get(PREFIX + tailId, 'json');
+    if (tail && tail.status !== 'printed') {
+      await env.CASES.put(PREFIX + tailId, JSON.stringify({ ...tail, nextId: id }), { expirationTtl: JOB_TTL_SECONDS });
+    }
+  } else {
+    await env.CASES.put(HEAD_KEY, id, { expirationTtl: JOB_TTL_SECONDS });
+  }
+  await env.CASES.put(TAIL_KEY, id, { expirationTtl: JOB_TTL_SECONDS });
   return job;
 }
 
@@ -26,14 +39,21 @@ export async function requirePrintAgent(request, env) {
 
 export async function nextPrintJob(env) {
   if (!env.CASES) return null;
-  const listed = await env.CASES.list({ prefix: PREFIX, limit: 50 });
-  const jobs = [];
-  for (const item of listed.keys || []) {
-    const job = await env.CASES.get(item.name, 'json');
-    if (job && job.status === 'queued') jobs.push(job);
+  const headId = await env.CASES.get(HEAD_KEY);
+  if (!headId) return null;
+  const job = await env.CASES.get(PREFIX + headId, 'json');
+  if (!job) {
+    await env.CASES.delete(HEAD_KEY);
+    if ((await env.CASES.get(TAIL_KEY)) === headId) await env.CASES.delete(TAIL_KEY);
+    return null;
   }
-  jobs.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
-  return jobs[0] || null;
+  if (job.status === 'queued') return job;
+  if (job.status === 'claimed' && Date.now() - Date.parse(job.claimedAt || 0) > 15 * 60 * 1000) {
+    const recovered = { ...job, status: 'queued', recoveredAt: new Date().toISOString() };
+    await env.CASES.put(PREFIX + headId, JSON.stringify(recovered), { expirationTtl: JOB_TTL_SECONDS });
+    return recovered;
+  }
+  return null;
 }
 
 export async function claimPrintJob(env, job) {
@@ -51,6 +71,13 @@ export async function finishPrintJob(env, id, ok, error) {
   const current = await env.CASES.get(key, 'json');
   if (!current) return false;
   if (ok) {
+    const headId = await env.CASES.get(HEAD_KEY);
+    if (headId === String(id)) {
+      const nextId = current.nextId || null;
+      if (nextId) await env.CASES.put(HEAD_KEY, nextId, { expirationTtl: JOB_TTL_SECONDS });
+      else await env.CASES.delete(HEAD_KEY);
+      if (!nextId) await env.CASES.delete(TAIL_KEY);
+    }
     await env.CASES.delete(key);
   } else {
     const requeued = { ...current, status: 'queued', lastError: String(error || 'print_failed').slice(0, 500), requeuedAt: new Date().toISOString() };

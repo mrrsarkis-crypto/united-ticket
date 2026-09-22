@@ -6,6 +6,13 @@ if ([string]::IsNullOrWhiteSpace($Token)) { throw 'Print agent token is not conf
 $TempDir = Join-Path $env:LOCALAPPDATA 'UnitedTrafficTickets\PrintQueue'
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 $headers = @{ 'X-Print-Agent-Token' = $Token }
+$PrinterName = 'HP OfficeJet Pro 8130e series [HPID4EDCE]'
+$Printer = Get-Printer -Name $PrinterName -ErrorAction SilentlyContinue
+if (-not $Printer -or $Printer.PrinterStatus -eq 'Offline') {
+  throw ('Configured physical printer is unavailable: ' + $PrinterName)
+}
+$AcrobatPath = 'C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe'
+if (-not (Test-Path $AcrobatPath)) { throw 'Adobe Acrobat DC is required for unattended PDF printing.' }
 while ($true) {
   try {
     $response = Invoke-WebRequest -Uri ($BaseUrl + '/api/print-queue') -Headers $headers -Method Get -TimeoutSec 30 -UseBasicParsing
@@ -18,7 +25,7 @@ while ($true) {
       $pdf = Join-Path $TempDir ($jobId + '_' + $safe)
       [IO.File]::WriteAllBytes($pdf, $response.Content)
       try {
-        Start-Process -FilePath $pdf -Verb Print -Wait
+        Start-Process -FilePath $AcrobatPath -ArgumentList @('/t', $pdf, $PrinterName) -Wait
         Invoke-RestMethod -Uri ($BaseUrl + '/api/print-queue') -Headers $headers -Method Post -ContentType 'application/json' -Body (@{ id=$jobId; status='printed' } | ConvertTo-Json) | Out-Null
         Remove-Item $pdf -Force -ErrorAction SilentlyContinue
       } catch {
