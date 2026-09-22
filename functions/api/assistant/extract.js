@@ -259,6 +259,23 @@ export async function onRequestPost(context) {
     console.error('scanner extraction failed', { scanId, durationMs: Date.now() - startedAt, error: message.slice(0, 300) });
     const debug = (env.DEBUG_MODE || '0') === '1';
     const timedOut = /timed out|timeout/i.test(message);
+    const providerUnavailable = /All configured scanner vision providers failed|No scanner vision provider configured/i.test(message);
+    if (mediaType !== 'application/pdf' && providerUnavailable) {
+      return json({
+        ok: true,
+        clientOcrFallback: true,
+        error: null,
+        scanMeta: {
+          engineVersion: SCANNER_ENGINE_VERSION,
+          scanId,
+          requestedDocumentType: requestedDocType,
+          mediaType,
+          provider: 'browser-ocr',
+          cloudProvidersUnavailable: true,
+          requiresHumanVerification: true,
+        },
+      }, 200, headers);
+    }
     const userMessage = timedOut
       ? 'The scan took too long to read that document. Please try a smaller or clearer image.'
       : 'The AI scan is temporarily unavailable. Please try again shortly.';

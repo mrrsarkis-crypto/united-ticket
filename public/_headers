@@ -6,3 +6,26 @@
 
 /.well-known/oauth-protected-resource
   Content-Type: application/json; charset=utf-8
+/assistant
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scanner-browser-fallback.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scanner-ui.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/assistant.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scanner-client.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scan-guard.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/assistant.css
+  Cache-Control: no-store, no-cache, must-revalidate

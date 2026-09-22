@@ -7,8 +7,8 @@
 <title>AI Traffic Ticket Scanner &amp; Document Prep | United Traffic Tickets Defense</title>
 <meta name="description" content="AI-assisted traffic ticket scanner for California and nationwide document intake. Upload a citation, verify extracted fields, review next steps, and continue to secure document preparation. Not legal advice; outcomes are never guaranteed.">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/pages.css">
-<link rel="stylesheet" href="/assistant.css">
+<link rel="stylesheet" href="/pages.css?v=20260921-1730">
+<link rel="stylesheet" href="/assistant.css?v=20260921-1730">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="canonical" href="https://unitedtraffictickets.com/assistant">
@@ -246,9 +246,30 @@
   </div>
 </footer>
 
-<script src="/scan-guard.js" defer></script>
-<script src="/scanner-client.js" defer></script>
-<script src="/assistant.js" defer></script>
+<script>
+/* Guaranteed scanner fallback bootstrap. Runs before deferred scanner scripts. */
+if (!window.UTTBrowserOCRFallback) {
+  const uttFallbackReady = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/scanner-browser-fallback.js?bootstrap=20260922';
+    script.async = true;
+    script.onload = () => typeof window.UTTBrowserOCRFallback === 'function'
+      ? resolve(window.UTTBrowserOCRFallback)
+      : reject(new Error('Browser OCR fallback did not initialize.'));
+    script.onerror = () => reject(new Error('Browser OCR fallback could not load.'));
+    document.head.appendChild(script);
+  });
+  window.UTTBrowserOCRFallback = async function(image) {
+    const fn = await uttFallbackReady;
+    return fn(image);
+  };
+}
+</script>
+<script src="/scan-guard.js?v=20260921-1730" defer></script>
+<script src="/scanner-client.js?v=20260921-1730" defer></script>
+<script src="/scanner-browser-fallback.js?v=20260921-1730" defer></script>
+<script src="/scanner-ui.js?v=20260921-1730" defer></script>
+<script src="/assistant.js?v=20260921-1730" defer></script>
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
 (function(){

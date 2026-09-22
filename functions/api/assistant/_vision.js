@@ -345,8 +345,10 @@ async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
         { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + base64 } },
       ],
     }],
-    max_completion_tokens: 1800,
+    max_completion_tokens: 900,
     temperature: 0,
+    reasoning_effort: 'none',
+    reasoning_format: 'hidden',
     response_format: {
       type: 'json_schema',
       json_schema: {
@@ -477,7 +479,10 @@ export async function extractVisionDocument(env, input) {
     throw new Error('No scanner vision provider configured');
   }
 
-  available.sort((a, b) => (a === preferred ? -1 : b === preferred ? 1 : 0));
+  const providerOrder = preferred === 'openai'
+    ? ['openai', 'groq', 'gemini', 'anthropic', 'gateway']
+    : [preferred, 'openai', 'groq', 'gemini', 'anthropic', 'gateway'];
+  available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const totalDeadline = Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * Math.max(1, available.length));
   let totalAttempts = 0;

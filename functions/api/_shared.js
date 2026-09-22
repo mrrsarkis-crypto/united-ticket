@@ -61,6 +61,11 @@ export function csvResponse(records, cols, filename) {
   });
 }
 
+export function normalizeStripeSecret(value) {
+  const raw = String(value || '').trim();
+  return raw.replace(/^['"]+|['"]+$/g, '').trim();
+}
+
 export function priceFor(service) {
   if (service === '199') return 'price_1UHw68LMSqKARRUqlhvD82xl';
   if (service === '149') return 'price_1UHw6DLMSqKARRUqDTK6w7LB';

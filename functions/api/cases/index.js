@@ -1,7 +1,16 @@
 // /api/cases — create a case (POST) and return a Stripe Checkout URL
 import { addCaseDatesToGoogleCalendar } from '../_google-calendar.js';
 import { sendClientWelcomeEmail } from '../_welcome-email.js';
-import { caseAccessToken, json, listRecords, priceFor, rand, sendBusinessNotification } from '../_shared.js';
+import { caseAccessToken, json, listRecords, normalizeStripeSecret, priceFor, rand, sendBusinessNotification } from '../_shared.js';
+
+// Live Stripe Payment Link fallback used only when the production API key is
+// malformed/unavailable. The app still appends client_reference_id so the
+// existing Stripe webhook can reconcile the payment to the case.
+const FALLBACK_PAYMENT_LINKS = {
+  '199': 'https://buy.stripe.com/4gM14o73HbcldKz3HCefC00',
+  '149': 'https://buy.stripe.com/7sYbJ2bjX8099ujemgefC01',
+  '99': 'https://buy.stripe.com/fZudRa4Vz5S1fSH6TOefC02',
+};
 
 // GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
 // The canonical full admin endpoint remains /api/cases/admin.
@@ -187,16 +196,29 @@ export async function onRequestPost(context) {
   try {
     const origin = new URL(request.url).origin;
     const caseUrl = origin + '/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '');
+    const stripeSecret = normalizeStripeSecret(env.STRIPE_SECRET_KEY);
+    const fallbackLink = FALLBACK_PAYMENT_LINKS[service];
+    if (!fallbackLink) throw new Error('No safe Payment Link fallback is configured for service ' + service);
+    const fallbackUrl = new URL(fallbackLink);
+    fallbackUrl.searchParams.set('client_reference_id', trackingCode);
+    const successUrlRaw = String(env.STRIPE_SUCCESS_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
+    const cancelUrlRaw = String(env.STRIPE_CANCEL_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
+    const successUrl = /^https?:\/\//i.test(successUrlRaw) ? successUrlRaw : (caseUrl + '&payment=success');
+    const cancelUrl = /^https?:\/\//i.test(cancelUrlRaw) ? cancelUrlRaw : (origin + '/#/cancel');
+    if (!stripeSecret || !/^sk_(live|test)_/.test(stripeSecret)) {
+      console.warn('Stripe API secret is unavailable; using live Payment Link fallback');
+      sessionUrl = fallbackUrl.toString();
+    } else {
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + env.STRIPE_SECRET_KEY,
+        'Authorization': 'Bearer ' + stripeSecret,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
         mode: 'payment',
-        success_url: env.STRIPE_SUCCESS_URL || (caseUrl + '&payment=success'),
-        cancel_url: env.STRIPE_CANCEL_URL || (origin + '/#/cancel'),
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         customer_email: email,
         client_reference_id: trackingCode,
         'line_items[0][price]': priceId,
@@ -207,12 +229,19 @@ export async function onRequestPost(context) {
     const session = await stripeRes.json();
     if (!stripeRes.ok) {
       console.error('Stripe checkout session failed', stripeRes.status, session);
-      if (debug) {
-        return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session) }, 503);
+      if (stripeRes.status === 401 || stripeRes.status === 403) {
+        console.warn('Stripe API authentication failed; using live Payment Link fallback');
+        sessionUrl = fallbackUrl.toString();
+      } else {
+        if (debug) {
+          return json({ error: 'Stripe HTTP ' + stripeRes.status + ': ' + JSON.stringify(session) }, 503);
+        }
+        throw new Error('Stripe error');
       }
-      throw new Error('Stripe error');
+    } else {
+      sessionUrl = session.url;
     }
-    sessionUrl = session.url;
+    }
   } catch (e) {
     if (stored && env.CASES) {
       try {
