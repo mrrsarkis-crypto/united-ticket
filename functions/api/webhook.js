@@ -233,8 +233,8 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   const raw = session && session.amount_total;
   const dollars = raw ? (raw / 100).toFixed(2) : '0.00';
 
-  // Confidential TR-205 (TBD) is only appropriate for the $199/TBWD service.
-  const isTbwd = String(base.service || '199') === '199';
+  // Confidential TR-205 (TBD) is only appropriate for the $149/TBWD service.
+  const isTbwd = String(base.service || '149') === '149';
   let tr205Bytes = null;
   if (isTbwd) {
     try {
