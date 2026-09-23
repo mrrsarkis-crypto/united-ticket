@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-13';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-14';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -429,6 +429,10 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
           temperature: 0,
           max_tokens: 2200,
         };
+        const configuredEndpoint = !!String(env.SCANNER_DASHSCOPE_BASE_URL || '').trim();
+        const requestBudget = configuredEndpoint
+          ? Math.min(15000, remaining)
+          : Math.min(6000, remaining);
         const res = await fetchWithDeadline(endpoint, {
           method: 'POST',
           headers: {
@@ -436,7 +440,7 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
             Authorization: 'Bearer ' + env.DASHSCOPE_API_KEY,
           },
           body: JSON.stringify(body),
-        }, Math.min(7000, remaining));
+        }, requestBudget);
         if (!res.ok) {
           const detail = await res.text().catch(() => '');
           const error = new Error('DashScope HTTP ' + res.status + ': ' + detail.slice(0, 180));
