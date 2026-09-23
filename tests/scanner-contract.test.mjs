@@ -328,10 +328,11 @@ test('Cloudflare Workers AI OCR uses the native binding before external fallback
     }
   );
   assert.equal(result.provider, 'workersai');
-  assert.equal(model, '@cf/moondream/moondream3.1-9B-A2B');
-  assert.equal(payload.task, 'query');
+  assert.equal(model, '@cf/meta/llama-4-scout-17b-16e-instruct');
   assert.match(payload.image, /^data:image\/jpeg;base64,/);
-  assert.equal(payload.reasoning, false);
+  assert.equal(payload.messages[0].role, 'system');
+  assert.equal(payload.messages[1].role, 'user');
+  assert.equal(payload.temperature, 0);
   assert.equal(payload.stream, false);
 });
 

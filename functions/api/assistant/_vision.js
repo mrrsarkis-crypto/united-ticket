@@ -504,19 +504,26 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
 
 async function callWorkersAi(env, { system, base64, mediaType, prompt }) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Cloudflare Workers AI is not configured');
-  if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI OCR image path does not accept PDF');
-  const result = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
-    task: 'query',
+  if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI vision path does not accept PDF');
+  const result = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
+    messages: [
+      { role: 'system', content: system },
+      {
+        role: 'user',
+        content: prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
+      },
+    ],
     image: 'data:' + mediaType + ';base64,' + base64,
-    question: system + '\n\nTASK:\n' + prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
-    reasoning: false,
+    guided_json: GEMINI_EXTRACTION_SCHEMA,
     temperature: 0,
     max_tokens: 2200,
     stream: false,
   });
   const text = typeof result === 'string'
     ? result.trim()
-    : (typeof result?.answer === 'string' ? result.answer.trim() : '');
+    : (typeof result?.response === 'string'
+      ? result.response.trim()
+      : (typeof result?.answer === 'string' ? result.answer.trim() : ''));
   if (!text) throw new Error('Cloudflare Workers AI returned an empty extraction');
   return { text, attempts: 1 };
 }
