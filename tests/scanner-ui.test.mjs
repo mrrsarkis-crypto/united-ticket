@@ -22,6 +22,13 @@ test('customer scanner source never renders a numeric score or scan confidence',
   assert.doesNotMatch(scannerClient, /renderScanConfidence|scan confidence/i);
 });
 
+test('uncertain bail never auto-fills the customer form', () => {
+  assert.doesNotMatch(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.value\)/);
+  assert.match(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.confident\?e\.bailAmount\.value:""\)/);
+  assert.doesNotMatch(app, /bail\|fine\|amount/);
+  assert.match(app, /bail\|fine\)\(\?:\\s\+amount\)\?/);
+});
+
 test('scanner result is framed as a review reveal', () => {
   assert.match(app, /SCAN COMPLETE/);
   assert.match(app, /REVIEW SIGNAL/);
