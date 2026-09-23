@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-23';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-28';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -502,40 +502,205 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
   throw lastError || new Error('DashScope OCR extraction failed');
 }
 
-async function callWorkersAi(env, { system, base64, mediaType, prompt }) {
+function workersAiCompactSchema(fields = EXTRACTION_FIELD_NAMES) {
+  const properties = {};
+  for (const name of fields) properties[name] = { type: ['string', 'null'] };
+  properties.confidentFields = { type: 'array', items: { type: 'string', enum: [...fields] } };
+  properties.unknownFields = { type: 'array', items: { type: 'string', enum: [...fields] } };
+  properties.legibility = { type: 'string', enum: ['good', 'fair', 'poor'] };
+  return {
+    type: 'object',
+    properties,
+    required: [...fields, 'confidentFields', 'unknownFields', 'legibility'],
+    additionalProperties: false,
+  };
+}
+
+function expandWorkersAiCompact(text) {
+  const candidate = firstJsonObject(text);
+  if (!candidate) throw new Error('Cloudflare Workers AI returned invalid JSON');
+  const parsed = JSON.parse(candidate);
+  if (validExtractionObject(parsed)) return JSON.stringify(parsed);
+  const confident = new Set(Array.isArray(parsed.confidentFields) ? parsed.confidentFields : []);
+  const unknown = new Set(Array.isArray(parsed.unknownFields) ? parsed.unknownFields : []);
+  const expanded = {};
+  for (const name of EXTRACTION_FIELD_NAMES) {
+    const raw = typeof parsed[name] === 'string' ? parsed[name].trim() : '';
+    const value = raw || null;
+    expanded[name] = { value, found: value !== null, confident: value !== null && confident.has(name) && !unknown.has(name) };
+  }
+  expanded.unknownFields = EXTRACTION_FIELD_NAMES.filter((name) => unknown.has(name) || expanded[name].value === null);
+  expanded.legibility = ['good', 'fair', 'poor'].includes(parsed.legibility) ? parsed.legibility : 'fair';
+  return JSON.stringify(expanded);
+}
+
+async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Cloudflare Workers AI is not configured');
   if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI vision path does not accept PDF');
   const imageUrl = 'data:' + mediaType + ';base64,' + base64;
-  const result = await env.AI.run('@cf/qwen/qwen3.8-27b', {
-    messages: [
-      { role: 'system', content: system },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
-          },
-          { type: 'image_url', image_url: { url: imageUrl } },
-        ],
-      },
-    ],
-    temperature: 0,
-    stream: false,
-    max_completion_tokens: 3000,
-    reasoning_effort: 'low',
-    chat_template_kwargs: { enable_thinking: false },
-    response_format: { type: 'json_object' },
-  });
-  const text = typeof result === 'string'
+  const groups = [
+    ['defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress','caseNumber'],
+    ['courtDate','clerkMailedOrDeliveredDate','location','officerName','officerId'],
+    ['courtOrAgency','courtStreetAddress','courtMailingAddress','courtCityStateZip','courtBranchName','jurisdiction','courtDivision'],
+    ['vehicleMake','vehicleModel','vehiclePlate','bailAmount','bailDepositedAmount','filingMethod','procedureType','eligibilityNotes'],
+    ['citationNumber'],
+    ['violationCode','violationDescription'],
+    ['violationDate','dueDate'],
+  ];
+  const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
+  const readResultText = (result) => typeof result === 'string'
     ? result.trim()
     : (typeof result?.choices?.[0]?.message?.content === 'string'
       ? result.choices[0].message.content.trim()
       : (typeof result?.response === 'string'
         ? result.response.trim()
         : (typeof result?.answer === 'string' ? result.answer.trim() : '')));
-  if (!text) throw new Error('Cloudflare Workers AI returned an empty extraction');
-  return { text, attempts: 1 };
+
+  const runGroup = async (fields) => {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('vision provider timed out')), Math.max(2500, timeoutMs - 500));
+    });
+    const isCitationPass = fields.length === 1 && fields[0] === 'citationNumber';
+    const isViolationPair = fields.length === 2 && fields.includes('violationCode') && fields.includes('violationDescription');
+    const isDatePair = fields.length === 2 && fields.includes('violationDate') && fields.includes('dueDate');
+    const isCriticalPass = isCitationPass || isViolationPair || isDatePair;
+    let fieldPrompt;
+    if (isCitationPass) {
+      fieldPrompt = 'Read ONLY the citation number from the top-right citation identifier or matching barcode identifier. Do not use a case number, officer serial number, vehicle plate, law section, radar number, or printed form code. Return null if unclear.';
+    } else if (isViolationPair) {
+      fieldPrompt = 'Look ONLY inside the CITATION DETAILS table. Read the TOPMOST handwritten non-empty violation row. Return Code/Section and Description from that SAME first row. Ignore lower violation rows, speed boxes, footer law references, vehicle-code references, and printed instructional text. Transcribe literally; do not interpret the law.';
+    } else if (isDatePair) {
+      fieldPrompt = 'Read two separate labeled dates only: violationDate from the box labeled Date of Violation (mm/dd/yy), and dueDate from the top box labeled RESPOND TO CITATION BEFORE: DATE. Never swap them, copy one into the other, or use a declaration/signature date. Return null if either handwritten date is unclear.';
+    } else {
+      fieldPrompt = [
+        'Read this traffic-related document literally. Extract only these labeled fields: ' + fields.join(', ') + '.',
+        'Never invent, autocomplete, repair, or shift text from a neighboring box.',
+        'Bail must come from a field explicitly labeled bail, fine, or deposit.',
+        'Vehicle make, model, and plate must come from their own labeled boxes. Keep court and defendant addresses separate.',
+        'Use null when missing or unclear. Put only fully legible fields in confidentFields and uncertain/missing fields in unknownFields.',
+        'Return only JSON matching the guided schema.'
+      ].join(' ');
+    }
+    const guidedSchema = isCriticalPass
+      ? {
+        type: 'object',
+        properties: Object.fromEntries(fields.map((name) => [name, { type: ['string', 'null'] }])),
+        required: [...fields],
+        additionalProperties: false,
+      }
+      : workersAiCompactSchema(fields);
+    const run = env.AI.run(model, {
+      messages: [
+        { role: 'system', content: isCriticalPass
+          ? 'Read traffic citations literally. Never guess unclear text and never borrow text from a different labeled box or row.'
+          : 'You are a literal OCR engine for traffic documents. Read printed and handwritten text conservatively.' },
+        { role: 'user', content: [
+          { type: 'text', text: fieldPrompt },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ] },
+      ],
+      temperature: 0,
+      stream: false,
+      max_tokens: isCriticalPass ? 260 : 650,
+      guided_json: guidedSchema,
+    });
+    let result;
+    try {
+      result = await Promise.race([run, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+    const text = readResultText(result);
+    const candidate = firstJsonObject(text);
+    if (!candidate) throw new Error('Cloudflare Workers AI returned invalid JSON');
+    return { fields, parsed: JSON.parse(candidate), priority: 1 };
+  };
+
+  const runGemmaField = async (field, prompt) => {
+    const fields = [field];
+    const schema = {
+      type: 'object',
+      properties: { [field]: { type: ['string', 'null'] } },
+      required: fields,
+      additionalProperties: false,
+    };
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Gemma accuracy pass timed out')), Math.min(6500, Math.max(2500, timeoutMs - 1000)));
+    });
+    const run = env.AI.run('@cf/google/gemma-4-26b-a4b-it', {
+      messages: [
+        { role: 'system', content: 'Read traffic citations literally. Never guess unclear handwriting or borrow text from another box.' },
+        { role: 'user', content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ] },
+      ],
+      guided_json: schema,
+      temperature: 0,
+      max_tokens: 140,
+      stream: false,
+      chat_template_kwargs: { enable_thinking: false },
+    }, { rejectIfBusy: true });
+    let result;
+    try {
+      result = await Promise.race([run, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+    const text = readResultText(result);
+    const candidate = firstJsonObject(text);
+    if (!candidate) throw new Error('Gemma accuracy pass returned invalid JSON');
+    return { fields, parsed: JSON.parse(candidate), priority: 2 };
+  };
+
+  const gemmaViolation = runGemmaField(
+    'violationCode',
+    'Look ONLY inside the CITATION DETAILS table. Read the Code/Section from the TOPMOST handwritten non-empty violation row. Ignore lower rows, speed boxes, footer law references, vehicle-code references, and printed instructions. Return null if unclear.'
+  );
+  const gemmaDueDate = runGemmaField(
+    'dueDate',
+    'Read ONLY the handwritten date in the top box labeled RESPOND TO CITATION BEFORE: DATE. Do not use Date of Violation, declaration date, signature date, or any other date. Return null if unclear.'
+  );
+  const settled = await Promise.allSettled([gemmaViolation, gemmaDueDate, ...groups.map(runGroup)]);
+  const successful = settled
+    .filter((item) => item.status === 'fulfilled')
+    .map((item) => item.value)
+    .sort((a, b) => (a.priority || 1) - (b.priority || 1));
+  if (!successful.length) throw new Error('vision provider timed out');
+
+  const compact = Object.fromEntries(EXTRACTION_FIELD_NAMES.map((name) => [name, null]));
+  const confident = new Set();
+  const unknown = new Set(EXTRACTION_FIELD_NAMES);
+  const legibilityScores = [];
+  for (const { fields, parsed } of successful) {
+    for (const name of fields) {
+      if (typeof parsed[name] === 'string' && parsed[name].trim()) {
+        compact[name] = parsed[name].trim();
+        unknown.delete(name);
+      }
+    }
+    for (const name of Array.isArray(parsed.confidentFields) ? parsed.confidentFields : []) {
+      if (fields.includes(name) && compact[name]) confident.add(name);
+    }
+    for (const name of Array.isArray(parsed.unknownFields) ? parsed.unknownFields : []) {
+      if (fields.includes(name)) unknown.add(name);
+    }
+    if (['good', 'fair', 'poor'].includes(parsed.legibility)) {
+      legibilityScores.push(parsed.legibility === 'good' ? 2 : parsed.legibility === 'poor' ? 0 : 1);
+    }
+  }
+  const averageLegibility = legibilityScores.length
+    ? legibilityScores.reduce((sum, value) => sum + value, 0) / legibilityScores.length
+    : 0;
+  let legibility = averageLegibility >= 1.6 ? 'good' : averageLegibility >= 0.6 ? 'fair' : 'poor';
+  const llamaSuccessCount = successful.filter((item) => (item.priority || 1) === 1).length;
+  if (llamaSuccessCount < groups.length && legibility === 'good') legibility = 'fair';
+  compact.confidentFields = [...confident].filter((name) => !unknown.has(name));
+  compact.unknownFields = [...unknown];
+  compact.legibility = legibility;
+  return { text: expandWorkersAiCompact(JSON.stringify(compact)), attempts: successful.length };
 }
 
 function gatewayContentText(content) {
@@ -670,7 +835,11 @@ export async function extractVisionDocument(env, input) {
       break;
     }
     try {
-      const providerBudget = Math.min(timeoutMs, remainingTotal);
+      // Keep slow native Workers AI from consuming the entire scanner budget.
+      // A fast fail here leaves enough time for external OCR fallbacks.
+      const providerBudget = provider === 'workersai'
+        ? Math.min(9000, timeoutMs, remainingTotal)
+        : Math.min(timeoutMs, remainingTotal);
       let result;
       if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'workersai') result = await callWorkersAi(env, { ...input, timeoutMs: providerBudget });

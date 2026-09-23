@@ -5,8 +5,10 @@
   window.__UTTD_SCANNER_PREPROCESS__ = true;
 
   var nativeFetch = window.fetch.bind(window);
-  var MAX_DIMENSION = 2600;
-  var TARGET_BYTES = 1300000;
+  // Preserve handwriting detail for ticket OCR. Modern phone photos can stay near
+  // native resolution while remaining well below the scanner's 10 MB file limit.
+  var MAX_DIMENSION = 4200;
+  var TARGET_BYTES = 3000000;
 
   function isScannerRequest(input) {
     try {

@@ -329,15 +329,61 @@ test('Cloudflare Workers AI OCR uses the native binding before external fallback
     }
   );
   assert.equal(result.provider, 'workersai');
-  assert.equal(model, '@cf/qwen/qwen3.8-27b');
+  assert.equal(model, '@cf/meta/llama-4-scout-17b-16e-instruct');
   assert.equal(payload.messages[1].content[1].type, 'image_url');
   assert.match(payload.messages[1].content[1].image_url.url, /^data:image\/jpeg;base64,/);
   assert.equal(payload.messages[0].role, 'system');
   assert.equal(payload.messages[1].role, 'user');
-  assert.equal(payload.chat_template_kwargs.enable_thinking, false);
-  assert.equal(payload.response_format.type, 'json_object');
+  assert.equal(payload.guided_json.type, 'object');
   assert.equal(payload.temperature, 0);
   assert.equal(payload.stream, false);
+});
+
+test('Workers AI keeps Llama citation ID while Gemma corrects critical code and due date', async () => {
+  const gemmaOptions = [];
+  const env = {
+    AI: {
+      run: async (name, input, options) => {
+        const required = input.guided_json?.required || [];
+        if (name.includes('gemma-4')) {
+          gemmaOptions.push(options);
+          if (required.includes('violationCode')) {
+            return { choices: [{ message: { content: '{"violationCode":"22350"}' } }] };
+          }
+          return { choices: [{ message: { content: '{"dueDate":"01/20/26"}' } }] };
+        }
+        const out = {};
+        for (const field of required) {
+          if (field === 'citationNumber') out[field] = 'J533157';
+          else if (field === 'violationCode') out[field] = '27315(a)';
+          else if (field === 'violationDescription') out[field] = 'wrong neighboring row';
+          else if (field === 'violationDate') out[field] = '10/11/24';
+          else if (field === 'dueDate') out[field] = '09/12/24';
+          else if (field === 'confidentFields') out[field] = [];
+          else if (field === 'unknownFields') out[field] = [];
+          else if (field === 'legibility') out[field] = 'fair';
+          else out[field] = null;
+        }
+        return { choices: [{ message: { content: JSON.stringify(out) } }] };
+      },
+    },
+    SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+  };
+  const result = await extractVisionDocument(env, {
+    system: 'literal OCR',
+    base64: SAMPLE_B64,
+    mediaType: 'image/jpeg',
+    prompt: 'extract',
+    preferredProvider: 'workersai',
+    validateText: () => true,
+  });
+  const extracted = JSON.parse(result.text);
+  assert.equal(extracted.citationNumber.value, 'J533157');
+  assert.equal(extracted.violationCode.value, '22350');
+  assert.equal(extracted.dueDate.value, '01/20/26');
+  assert.equal(extracted.violationDate.value, '10/11/24');
+  assert.equal(gemmaOptions.length, 2);
+  assert.ok(gemmaOptions.every((options) => options?.rejectIfBusy === true));
 });
 
 test('Gemini transport response is returned with provider metadata', async (t) => {
