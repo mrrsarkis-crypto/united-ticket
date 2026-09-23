@@ -620,7 +620,9 @@ export async function extractVisionDocument(env, input) {
     }
   }
 
-  throw new Error('All configured scanner vision providers failed: ' + failures.join(' | '));
+  const error = new Error('All configured scanner vision providers failed: ' + failures.join(' | '));
+  error.fallbacks = fallbackDiagnostics.slice(0, 6);
+  throw error;
 }
 
 export const __visionTest = {

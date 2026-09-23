@@ -272,7 +272,8 @@ export async function onRequestPost(context) {
     return json({ ok: true, extracted }, 200, headers);
   } catch (error) {
     const message = String(error && error.message || error || '');
-    console.error('scanner extraction failed', { scanId, durationMs: Date.now() - startedAt, error: message.slice(0, 300) });
+    const providerFallbacks = Array.isArray(error && error.fallbacks) ? error.fallbacks.slice(0, 6) : [];
+    console.error('scanner extraction failed', { scanId, durationMs: Date.now() - startedAt, error: message.slice(0, 300), providerFallbacks });
     const debug = (env.DEBUG_MODE || '0') === '1';
     const timedOut = /timed out|timeout/i.test(message);
     const providerUnavailable = /All configured scanner vision providers failed|No scanner vision provider configured/i.test(message);
@@ -288,6 +289,7 @@ export async function onRequestPost(context) {
           mediaType,
           provider: 'browser-ocr',
           cloudProvidersUnavailable: true,
+          providerFallbacks,
           requiresHumanVerification: true,
         },
       }, 200, headers);

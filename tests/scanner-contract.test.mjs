@@ -149,6 +149,25 @@ test('vision pipeline fails closed when no provider is configured', async () => 
   );
 });
 
+test('all-provider failure exposes only safe fallback diagnostics', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: 'invalid API key' } }), {
+    status: 401,
+    headers: { 'content-type': 'application/json' },
+  });
+  await assert.rejects(
+    extractVisionDocument(
+      { GEMINI_API_KEY: 'test-gemini', SCANNER_PROVIDER_TIMEOUT_MS: '4000' },
+      { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x' }
+    ),
+    (error) => {
+      assert.deepEqual(error.fallbacks, [{ provider: 'gemini', category: 'auth', status: 401 }]);
+      return /All configured scanner vision providers failed/.test(String(error.message));
+    }
+  );
+});
+
 test('PDF scan refuses an Anthropic-only configuration instead of sending PDF as image', async () => {
   await assert.rejects(
     extractVisionDocument({ ANTHROPIC_API_KEY: 'test' }, { system: 'x', base64: SAMPLE_B64, mediaType: 'application/pdf', prompt: 'x' }),
