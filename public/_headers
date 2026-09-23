@@ -21,6 +21,9 @@
 /assistant.js
   Cache-Control: no-store, no-cache, must-revalidate
 
+/scanner-preprocess.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
 /scanner-client.js
   Cache-Control: no-store, no-cache, must-revalidate
 

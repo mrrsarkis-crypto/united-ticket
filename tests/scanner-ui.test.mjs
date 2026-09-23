@@ -6,11 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
+const scannerPreprocess = fs.readFileSync(path.join(root, 'public', 'scanner-preprocess.js'), 'utf8');
 const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.js'), 'utf8');
 const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
 const scanStage = fs.readFileSync(path.join(root, 'public', 'scan-stage.js'), 'utf8');
 const scanPay = fs.readFileSync(path.join(root, 'public', 'scan-pay.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+const assistant = fs.readFileSync(path.join(root, 'public', 'assistant.html'), 'utf8');
+const serviceWorker = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
 const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'), 'utf8');
 const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'), 'utf8');
 const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
@@ -60,9 +63,25 @@ test('scanner page retains a conversion CTA and honest result disclaimer', () =>
 });
 
 test('scanner bridge scripts stay off the critical render path', () => {
+  assert.match(middleware, /const SCANNER_PREPROCESS_SCRIPT = '<script src=\"\/scanner-preprocess\.js\" defer><\/script>'/);
   assert.match(middleware, /const SCANNER_CLIENT_SCRIPT = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
+  assert.ok(middleware.indexOf('element.append(SCANNER_PREPROCESS_SCRIPT') < middleware.indexOf('element.append(SCANNER_CLIENT_SCRIPT'));
+  assert.match(buildScript, /const scannerPreprocessTag = '<script src=\"\/scanner-preprocess\.js\" defer><\/script>'/);
   assert.match(buildScript, /const scannerClientTag = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
-  assert.match(index, /<script src=\"\/app\.js\" defer><\/script>/);
+  assert.ok(index.indexOf('/scanner-preprocess.js') < index.indexOf('/app.js'));
+  assert.ok(assistant.indexOf('/scanner-preprocess.js') < assistant.indexOf('/scanner-client.js'));
+});
+
+test('scanner preprocessing covers HEIC, image quality, and conservative enhancement', () => {
+  assert.doesNotThrow(() => new Function(scannerPreprocess));
+  assert.match(scannerPreprocess, /heic2any/);
+  assert.match(scannerPreprocess, /clientQuality/);
+  assert.match(scannerPreprocess, /low_contrast/);
+  assert.match(scannerPreprocess, /possible_blur/);
+  assert.match(scannerPreprocess, /contrast\(/);
+  assert.match(scannerPreprocess, /brightness\(/);
+  assert.match(serviceWorker, /scanner-preprocess/);
+  assert.match(serviceWorker, /utt-cache-v11/);
 });
 
 test('AdSense is restricted to designated informational pages', () => {

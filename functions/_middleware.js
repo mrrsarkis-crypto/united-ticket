@@ -5,6 +5,7 @@ const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
 const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
+const SCANNER_PREPROCESS_SCRIPT = '<script src="/scanner-preprocess.js" defer></script>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js" defer></script>';
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
 const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
@@ -78,6 +79,7 @@ export async function onRequest(context) {
   if (isStandardHtml) {
     output = new HTMLRewriter().on('head', {
       element(element) {
+        element.append(SCANNER_PREPROCESS_SCRIPT, { html: true });
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
         element.append(SCORE_UI_SCRIPT, { html: true });
         element.append(SCAN_STAGE_SCRIPT, { html: true });

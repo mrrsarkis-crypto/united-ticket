@@ -10,6 +10,7 @@ const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pag
 const accountMeta = `<meta name="google-adsense-account" content="${publisher}">`;
 const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
+const scannerPreprocessTag = '<script src="/scanner-preprocess.js" defer></script>';
 const scannerClientTag = '<script src="/scanner-client.js" defer></script>';
 
 function isMonetizedPath(pathname) {
@@ -68,6 +69,10 @@ for (const file of await walk(outDir)) {
     continue;
   }
 
+  if (!html.includes('/scanner-preprocess.js')) {
+    html = html.replace(/<head([^>]*)>/i, `$&\n${scannerPreprocessTag}`);
+    changed = true;
+  }
   if (!html.includes('/scanner-client.js')) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${scannerClientTag}`);
     changed = true;
