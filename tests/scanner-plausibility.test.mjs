@@ -143,3 +143,15 @@ test('fair handwritten scan downgrades high-risk handwritten fields', () => {
   assert.equal(extracted.violationDescription.confident, false);
   assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 4);
 });
+
+
+test('two-digit year dates participate in chronology checks', () => {
+  const extracted = {
+    violationDate: field('01/13/20'),
+    dueDate: field('01/11/2020'),
+    legibility: 'good',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.dueDate.confident, false);
+  assert.deepEqual(warnings, [{ field: 'dueDate', reason: 'before_violation_date' }]);
+});

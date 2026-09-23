@@ -73,12 +73,13 @@ function plausibleOfficerId(value) {
 function dateValue(field) {
   const text = valueOf(field);
   if (!text || !plausibleDate(text)) return null;
-  const parts = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text) || /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/.exec(text);
-  if (!parts) return null;
-  const year = parts[1].length === 4 ? Number(parts[1]) : Number(parts[3]);
-  const month = parts[1].length === 4 ? Number(parts[2]) : Number(parts[1]);
-  const day = parts[1].length === 4 ? Number(parts[3]) : Number(parts[2]);
-  return new Date(Date.UTC(year, month - 1, day));
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+  if (iso) return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+  const us = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/.exec(text);
+  if (!us) return null;
+  let year = Number(us[3]);
+  if (year < 100) year += year >= 70 ? 1900 : 2000;
+  return new Date(Date.UTC(year, Number(us[1]) - 1, Number(us[2])));
 }
 
 function plausiblePersonName(value) {
