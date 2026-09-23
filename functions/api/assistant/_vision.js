@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-28';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-31';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -539,13 +539,7 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
   if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI vision path does not accept PDF');
   const imageUrl = 'data:' + mediaType + ';base64,' + base64;
   const groups = [
-    ['defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress','caseNumber'],
-    ['courtDate','clerkMailedOrDeliveredDate','location','officerName','officerId'],
-    ['courtOrAgency','courtStreetAddress','courtMailingAddress','courtCityStateZip','courtBranchName','jurisdiction','courtDivision'],
-    ['vehicleMake','vehicleModel','vehiclePlate','bailAmount','bailDepositedAmount','filingMethod','procedureType','eligibilityNotes'],
-    ['citationNumber'],
-    ['violationCode','violationDescription'],
-    ['violationDate','dueDate'],
+    ['defendantName','drivingLicenseNumber','drivingLicenseState','citationNumber','violationDate','courtDate','violationCode','violationDescription','courtOrAgency','location','vehiclePlate','dueDate'],
   ];
   const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
   const readResultText = (result) => typeof result === 'string'
@@ -561,17 +555,18 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
     const timeout = new Promise((_, reject) => {
       timer = setTimeout(() => reject(new Error('vision provider timed out')), Math.max(2500, timeoutMs - 500));
     });
-    const isCitationPass = fields.length === 1 && fields[0] === 'citationNumber';
-    const isViolationPair = fields.length === 2 && fields.includes('violationCode') && fields.includes('violationDescription');
-    const isDatePair = fields.length === 2 && fields.includes('violationDate') && fields.includes('dueDate');
-    const isCriticalPass = isCitationPass || isViolationPair || isDatePair;
+    const isCriticalPass = fields.includes('citationNumber') && fields.includes('violationCode') && fields.includes('dueDate');
     let fieldPrompt;
-    if (isCitationPass) {
-      fieldPrompt = 'Read ONLY the citation number from the top-right citation identifier or matching barcode identifier. Do not use a case number, officer serial number, vehicle plate, law section, radar number, or printed form code. Return null if unclear.';
-    } else if (isViolationPair) {
-      fieldPrompt = 'Look ONLY inside the CITATION DETAILS table. Read the TOPMOST handwritten non-empty violation row. Return Code/Section and Description from that SAME first row. Ignore lower violation rows, speed boxes, footer law references, vehicle-code references, and printed instructional text. Transcribe literally; do not interpret the law.';
-    } else if (isDatePair) {
-      fieldPrompt = 'Read two separate labeled dates only: violationDate from the box labeled Date of Violation (mm/dd/yy), and dueDate from the top box labeled RESPOND TO CITATION BEFORE: DATE. Never swap them, copy one into the other, or use a declaration/signature date. Return null if either handwritten date is unclear.';
+    if (isCriticalPass) {
+      fieldPrompt = [
+        'Read only the essential intake fields requested by the schema.',
+        'defendantName: labeled Name line. drivingLicenseNumber/state: only their labeled boxes.',
+        'citationNumber: top-right citation identifier or matching barcode identifier; never case number, officer ID, plate, radar number, law section, or form code.',
+        'violationCode and violationDescription: TOPMOST handwritten non-empty row inside CITATION DETAILS; keep code and description from the SAME row and ignore lower rows or footer law references.',
+        'violationDate: only Date of Violation. courtDate: only a separately labeled court appearance date if present.',
+        'dueDate: only RESPOND TO CITATION BEFORE: DATE. courtOrAgency: printed issuing/court agency. location: labeled Location of Violation. vehiclePlate: labeled Vehicle License/VIN or plate box.',
+        'Never swap dates or borrow from neighboring boxes. Return null for anything unclear. Set legibility to good, fair, or poor based on whether these values can be read reliably.'
+      ].join(' ');
     } else {
       fieldPrompt = [
         'Read this traffic-related document literally. Extract only these labeled fields: ' + fields.join(', ') + '.',
@@ -585,8 +580,11 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
     const guidedSchema = isCriticalPass
       ? {
         type: 'object',
-        properties: Object.fromEntries(fields.map((name) => [name, { type: ['string', 'null'] }])),
-        required: [...fields],
+        properties: {
+          ...Object.fromEntries(fields.map((name) => [name, { type: ['string', 'null'] }])),
+          legibility: { type: 'string', enum: ['good', 'fair', 'poor'] },
+        },
+        required: [...fields, 'legibility'],
         additionalProperties: false,
       }
       : workersAiCompactSchema(fields);
@@ -655,15 +653,44 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
     return { fields, parsed: JSON.parse(candidate), priority: 2 };
   };
 
-  const gemmaViolation = runGemmaField(
-    'violationCode',
-    'Look ONLY inside the CITATION DETAILS table. Read the Code/Section from the TOPMOST handwritten non-empty violation row. Ignore lower rows, speed boxes, footer law references, vehicle-code references, and printed instructions. Return null if unclear.'
-  );
-  const gemmaDueDate = runGemmaField(
-    'dueDate',
-    'Read ONLY the handwritten date in the top box labeled RESPOND TO CITATION BEFORE: DATE. Do not use Date of Violation, declaration date, signature date, or any other date. Return null if unclear.'
-  );
-  const settled = await Promise.allSettled([gemmaViolation, gemmaDueDate, ...groups.map(runGroup)]);
+  const gemmaCritical = (async () => {
+    const fields = ['violationCode', 'dueDate'];
+    const schema = {
+      type: 'object',
+      properties: Object.fromEntries(fields.map((name) => [name, { type: ['string', 'null'] }])),
+      required: fields,
+      additionalProperties: false,
+    };
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Gemma accuracy pass timed out')), Math.min(6500, Math.max(2500, timeoutMs - 1000)));
+    });
+    const run = env.AI.run('@cf/google/gemma-4-26b-a4b-it', {
+      messages: [
+        { role: 'system', content: 'Read traffic citations literally. Never guess unclear handwriting or borrow text from another box.' },
+        { role: 'user', content: [
+          { type: 'text', text: 'Extract only two fields. violationCode: Code/Section from the TOPMOST handwritten non-empty row inside CITATION DETAILS; ignore lower rows and footer law references. dueDate: handwritten date in the top RESPOND TO CITATION BEFORE: DATE box; do not use Date of Violation or any other date. Return null if unclear.' },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ] },
+      ],
+      guided_json: schema,
+      temperature: 0,
+      max_tokens: 160,
+      stream: false,
+      chat_template_kwargs: { enable_thinking: false },
+    }, { rejectIfBusy: true });
+    let result;
+    try {
+      result = await Promise.race([run, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+    const text = readResultText(result);
+    const candidate = firstJsonObject(text);
+    if (!candidate) throw new Error('Gemma accuracy pass returned invalid JSON');
+    return { fields, parsed: JSON.parse(candidate), priority: 2 };
+  })();
+  const settled = await Promise.allSettled([gemmaCritical, ...groups.map(runGroup)]);
   const successful = settled
     .filter((item) => item.status === 'fulfilled')
     .map((item) => item.value)
@@ -838,7 +865,7 @@ export async function extractVisionDocument(env, input) {
       // Keep slow native Workers AI from consuming the entire scanner budget.
       // A fast fail here leaves enough time for external OCR fallbacks.
       const providerBudget = provider === 'workersai'
-        ? Math.min(9000, timeoutMs, remainingTotal)
+        ? Math.min(10000, timeoutMs, remainingTotal)
         : Math.min(timeoutMs, remainingTotal);
       let result;
       if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });

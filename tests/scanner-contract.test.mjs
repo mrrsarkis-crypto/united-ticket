@@ -347,10 +347,7 @@ test('Workers AI keeps Llama citation ID while Gemma corrects critical code and 
         const required = input.guided_json?.required || [];
         if (name.includes('gemma-4')) {
           gemmaOptions.push(options);
-          if (required.includes('violationCode')) {
-            return { choices: [{ message: { content: '{"violationCode":"22350"}' } }] };
-          }
-          return { choices: [{ message: { content: '{"dueDate":"01/20/26"}' } }] };
+          return { choices: [{ message: { content: '{"violationCode":"22350","dueDate":"01/20/26"}' } }] };
         }
         const out = {};
         for (const field of required) {
@@ -382,7 +379,7 @@ test('Workers AI keeps Llama citation ID while Gemma corrects critical code and 
   assert.equal(extracted.violationCode.value, '22350');
   assert.equal(extracted.dueDate.value, '01/20/26');
   assert.equal(extracted.violationDate.value, '10/11/24');
-  assert.equal(gemmaOptions.length, 2);
+  assert.equal(gemmaOptions.length, 1);
   assert.ok(gemmaOptions.every((options) => options?.rejectIfBusy === true));
 });
 
