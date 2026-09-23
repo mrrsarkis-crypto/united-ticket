@@ -237,6 +237,14 @@ export function applyFieldPlausibility(extracted) {
     }
   }
 
+  // Vehicle make/model are low-value for case analysis but easy for vision models
+  // to shift from neighboring handwritten boxes. On a fair/poor scan, prefer a
+  // blank review field over a plausible-looking value that may belong elsewhere.
+  if (extracted.legibility === 'fair' || extracted.legibility === 'poor') {
+    clearField(extracted, 'vehicleMake', warnings, 'uncertain_vehicle_box_mapping');
+    clearField(extracted, 'vehicleModel', warnings, 'uncertain_vehicle_box_mapping');
+  }
+
   duplicateIdentifierFields(extracted, [
     ['citationNumber', 'officerId'],
     ['citationNumber', 'vehiclePlate'],

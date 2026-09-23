@@ -172,6 +172,10 @@ test('fair handwritten scan downgrades high-risk handwritten fields', () => {
   const warnings = applyFieldPlausibility(extracted);
   assert.equal(extracted.vehicleMake.confident, false);
   assert.equal(extracted.vehicleModel.confident, false);
+  assert.equal(extracted.vehicleMake.value, null);
+  assert.equal(extracted.vehicleMake.found, false);
+  assert.equal(extracted.vehicleModel.value, null);
+  assert.equal(extracted.vehicleModel.found, false);
   assert.equal(extracted.vehiclePlate.confident, false);
   assert.equal(extracted.violationDescription.confident, false);
   assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 4);
