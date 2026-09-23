@@ -191,7 +191,7 @@ export function applyFieldPlausibility(extracted) {
   // Handwritten fields on a globally fair scan can still be useful as a draft,
   // but they should not be presented as verified facts without a human check.
   if (extracted.legibility === 'fair') {
-    for (const key of ['defendantName','drivingLicenseNumber','mailingAddress','violationDate','courtDate','dueDate','dateOfBirth','violationCode','violationDescription','officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate']) {
+    for (const key of ['defendantName','drivingLicenseNumber','mailingAddress','violationDate','courtDate','dueDate','dateOfBirth','violationCode','violationDescription','officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate','bailAmount','bailDepositedAmount']) {
       const field = extracted[key];
       if (field && field.found === true && field.confident === true) {
         downgrade(extracted, key, warnings, 'fair_legibility_requires_verification');

@@ -170,13 +170,15 @@ test('fair scan downgrades high-risk identity and ticket fields for verification
     violationCode: field('22350'),
     officerId: field('31055'),
     location: field('W 111 ST'),
+    bailAmount: field('150'),
+    bailDepositedAmount: field('150'),
     legibility: 'fair',
   };
   const warnings = applyFieldPlausibility(extracted);
-  for (const key of ['defendantName','drivingLicenseNumber','violationDate','courtDate','violationCode','officerId','location']) {
+  for (const key of ['defendantName','drivingLicenseNumber','violationDate','courtDate','violationCode','officerId','location','bailAmount','bailDepositedAmount']) {
     assert.equal(extracted[key].confident, false);
   }
-  assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 7);
+  assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 9);
 });
 
 test('two-digit year dates participate in chronology checks', () => {

@@ -152,6 +152,7 @@ export async function onRequestPost(context) {
     'For violation rows, keep the code/section and description from the SAME row. If there are multiple rows, use the TOPMOST non-empty row even when a lower row is easier to read; never merge rows. If the top row is partly unclear, preserve the readable text and set confident=false rather than substituting a lower row. ' +
     'Read the response/due date only from the labeled response/due-date box; do not reuse the violation date when that box is unclear. ' +
     'Read vehicle make, model, and plate from their own labeled boxes only; if handwriting is unclear, return the literal readable portion with confident=false or null. ' +
+    'Read bailAmount and bailDepositedAmount ONLY from a clearly visible box or line explicitly labeled bail, fine, deposit, or bail deposited. Never copy a speed, officer ID, date, code, vehicle value, or other nearby number into a bail field. If no explicit bail/fine/deposit label is visible next to the amount, return null/found=false for both bail fields. ' +
     'Keep court information separate from the defendant mailing address. ' +
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
@@ -191,7 +192,7 @@ export async function onRequestPost(context) {
     if (firstPassElapsedMs <= 8000 && shouldRunPrecisionPass(requestedDocType, extracted)) {
       try {
         const precisionPrompt = prompt +
-          ' PRECISION PASS: re-inspect the same document at maximum available visual detail. For a citation with multiple violation rows, use ONLY the TOPMOST non-empty violation row for violationCode and violationDescription and never substitute a lower row. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
+          ' PRECISION PASS: re-inspect the same document at maximum available visual detail. For a citation with multiple violation rows, use ONLY the TOPMOST non-empty violation row for violationCode and violationDescription and never substitute a lower row. Focus especially on citation number, violation code/section, court or agency name, violation date, and court/response date. For bail or deposit, return a value only when an explicit bail/fine/deposit label is visible beside it; otherwise keep it null. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
         const remainingHandlerMs = 24000 - (Date.now() - startedAt);
         if (remainingHandlerMs >= 9000) {
           const precisionVision = await extractVisionDocument(env, {
