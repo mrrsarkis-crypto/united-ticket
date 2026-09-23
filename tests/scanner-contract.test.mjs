@@ -379,6 +379,31 @@ test('Groq fallback requests strict schema output', async (t) => {
   assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
 });
 
+test('configured Groq provider takes priority even when OpenAI is configured', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let openAiCalls = 0;
+  let groqCalls = 0;
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes('api.openai.com')) openAiCalls++;
+    if (target.includes('api.groq.com')) {
+      groqCalls++;
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"legibility":"good"}' } }] }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }
+    throw new Error('unexpected provider URL');
+  };
+  const result = await extractVisionDocument(
+    { OPENAI_API_KEY: 'test-openai', GROQ_API_KEY: 'test-groq', SCANNER_VISION_PROVIDER: 'groq', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', validateText: () => true }
+  );
+  assert.equal(result.provider, 'groq');
+  assert.equal(groqCalls, 1);
+  assert.equal(openAiCalls, 0);
+});
+
 test('default fallback prefers Groq before slower Cloudflare and DashScope fallbacks when OpenAI is unavailable', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

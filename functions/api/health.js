@@ -34,11 +34,9 @@ export async function onRequestGet(context) {
     gatewayReady && 'gateway',
   ].filter(Boolean);
   const requestedScannerProvider = String(env.SCANNER_VISION_PROVIDER || '').trim().toLowerCase();
-  const effectiveScannerProvider = openAiConfigured
-    ? 'openai'
-    : (scannerProviders.includes(requestedScannerProvider)
-      ? requestedScannerProvider
-      : (scannerProviders[0] || 'none'));
+  const effectiveScannerProvider = scannerProviders.includes(requestedScannerProvider)
+    ? requestedScannerProvider
+    : (openAiConfigured ? 'openai' : (scannerProviders[0] || 'none'));
   const scannerVisionReady = scannerProviders.length > 0;
   const casesReady = !!env.CASES;
   const r2Ready = !!env.R2;

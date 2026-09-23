@@ -622,9 +622,10 @@ export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env, input && input.timeoutMs);
   const explicitPreferred = String(input && input.preferredProvider || '').trim().toLowerCase();
   const requestedProvider = String(env.SCANNER_VISION_PROVIDER || '').trim().toLowerCase();
-  // Astra/OpenAI is the primary scanner for the first pass whenever its key exists.
-  // A bounded precision pass may explicitly reuse the provider that already succeeded.
-  const preferred = explicitPreferred || (env.OPENAI_API_KEY ? 'openai' : (requestedProvider || 'openai'));
+  // Respect an explicitly configured production provider. OpenAI remains the
+  // default when no provider is configured, and a precision pass may explicitly
+  // reuse the provider that already succeeded.
+  const preferred = explicitPreferred || requestedProvider || 'openai';
   const available = [];
   if (env.OPENAI_API_KEY) available.push('openai');
   if (env.AI && typeof env.AI.run === 'function' && input.mediaType !== 'application/pdf') available.push('workersai');
