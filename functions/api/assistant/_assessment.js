@@ -91,14 +91,23 @@ export function buildScanAssessment(extracted, options = {}) {
     imageQualityPenalty = Math.min(20, imageQualityPenalty);
   }
 
-  const validationWarningCount = Array.isArray(options.validationWarnings)
-    ? options.validationWarnings.length
-    : Math.max(0, Number(options.validationWarningCount || 0));
+  const validationWarnings = Array.isArray(options.validationWarnings) ? options.validationWarnings : [];
+  const validationWarningCount = validationWarnings.length || Math.max(0, Number(options.validationWarningCount || 0));
   const validationPenalty = Math.min(12, validationWarningCount * 3);
+  const criticalTicketFields = new Set(['citationNumber','violationCode','dueDate','courtDate','violationDate']);
+  const criticalValidationWarning = documentType === 'ticket' && validationWarnings.some((warning) => {
+    const field = typeof warning === 'string' ? warning : warning && warning.field;
+    return criticalTicketFields.has(field);
+  });
+  const criticalVerificationNeeded = documentType === 'ticket' && verify.some((label) =>
+    ['citation number','violation code','response/court date','violation date'].includes(label)
+  );
+  const criticalKeyConcern = criticalValidationWarning || criticalVerificationNeeded;
 
   let scanConfidencePercent = Math.max(0, rawConfidence - imageQualityPenalty - validationPenalty);
   if (quality && quality.grade === 'fair') scanConfidencePercent = Math.min(79, scanConfidencePercent);
   if (quality && quality.grade === 'poor') scanConfidencePercent = Math.min(54, scanConfidencePercent);
+  if (criticalKeyConcern) scanConfidencePercent = Math.min(69, scanConfidencePercent);
   scanConfidencePercent = Math.round(scanConfidencePercent);
 
   const allKeyFieldsReliable = missing.length === 0 && verify.length === 0 && validationWarningCount === 0;
@@ -114,6 +123,7 @@ export function buildScanAssessment(extracted, options = {}) {
   } else if (
     scanConfidencePercent >= 55 &&
     legibility !== 'poor' &&
+    !criticalKeyConcern &&
     (!quality || quality.grade !== 'poor')
   ) {
     label = 'Usable read';

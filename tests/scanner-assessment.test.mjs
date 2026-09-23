@@ -61,7 +61,9 @@ test('format validation warnings reduce server confidence', () => {
   });
   assert.equal(warned.validationWarningCount, 2);
   assert.equal(warned.validationPenalty, 6);
-  assert.equal(warned.scanConfidencePercent, clean.scanConfidencePercent - 6);
+  assert.equal(warned.label, 'Needs review');
+  assert.ok(warned.scanConfidencePercent <= 69);
+  assert.ok(warned.scanConfidencePercent < clean.scanConfidencePercent);
 });
 
 test('missing or uncertain fields are surfaced for human verification', () => {
@@ -72,5 +74,7 @@ test('missing or uncertain fields are surfaced for human verification', () => {
   const result = buildScanAssessment(ticket, { clientQuality: { grade: 'good', warnings: [] } });
   assert.ok(result.missingKeyFields.includes('response/court date'));
   assert.ok(result.fieldsNeedingVerification.includes('violation code'));
+  assert.equal(result.label, 'Needs review');
+  assert.ok(result.scanConfidencePercent <= 69);
   assert.equal(result.needsManualReview, true);
 });
