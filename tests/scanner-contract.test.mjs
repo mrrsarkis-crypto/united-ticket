@@ -270,6 +270,25 @@ test('Groq fallback requests strict schema output', async (t) => {
   assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
 });
 
+test('default fallback prefers Groq before slower DashScope when OpenAI is unavailable', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestUrl;
+  globalThis.fetch = async (url) => {
+    requestUrl = String(url);
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{\"legibility\":\"good\"}' } }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const result = await extractVisionDocument(
+    { GROQ_API_KEY: 'test-groq', GEMINI_API_KEY: 'test-gemini', DASHSCOPE_API_KEY: 'test-dashscope', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', validateText: () => true }
+  );
+  assert.equal(result.provider, 'groq');
+  assert.match(requestUrl, /api\.groq\.com\/openai\/v1\/chat\/completions$/);
+});
+
 test('DashScope OCR uses the current OCR model and Base64 image input', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

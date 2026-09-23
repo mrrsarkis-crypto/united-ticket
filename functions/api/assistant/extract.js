@@ -186,8 +186,9 @@ export async function onRequestPost(context) {
     // fields uncertain, make one short targeted re-read before returning.
     // This is deliberately limited to avoid turning every scan into a double
     // model call, while giving small-print ticket fields a second look.
-    // Keep the public scanner responsive by running the second pass only when the handler still has a safe deadline margin.
-    if (shouldRunPrecisionPass(requestedDocType, extracted)) {
+    // Keep the public scanner responsive and rate-limit friendly: only run a second pass when the first read was fast.
+    const firstPassElapsedMs = Date.now() - startedAt;
+    if (firstPassElapsedMs <= 8000 && shouldRunPrecisionPass(requestedDocType, extracted)) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. For a citation with multiple violation rows, use ONLY the TOPMOST non-empty violation row for violationCode and violationDescription and never substitute a lower row. Focus especially on citation number, violation code/section, court or agency name, violation date, court/response date, and bail/fine. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
