@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __scannerTest } from '../functions/api/assistant/extract.js';
-import { extractVisionDocument } from '../functions/api/assistant/_vision.js';
+import { extractVisionDocument, __visionTest } from '../functions/api/assistant/_vision.js';
 
 const {
   isAllowedScannerRequest,
@@ -249,6 +249,58 @@ test('OpenAI Astra sends PDFs as Responses API input_file content', async (t) =>
   assert.equal(result.provider, 'openai');
   assert.equal(filePart.filename, 'traffic-document.pdf');
   assert.equal(filePart.file_data, SAMPLE_B64);
+});
+
+test('rate-limited provider is cooled down for the next request', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    __visionTest.resetProviderCooldowns();
+  });
+  __visionTest.resetProviderCooldowns();
+  let openAiCalls = 0;
+  let groqCalls = 0;
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes('api.openai.com')) {
+      openAiCalls++;
+      return new Response(JSON.stringify({ error: { message: 'rate limit reached' } }), {
+        status: 429,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (target.includes('api.groq.com')) {
+      groqCalls++;
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"legibility":"good"}' } }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    throw new Error('unexpected provider URL');
+  };
+
+  const env = {
+    OPENAI_API_KEY: 'test-openai',
+    GROQ_API_KEY: 'test-groq',
+    SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+  };
+  const input = {
+    system: 'x',
+    base64: SAMPLE_B64,
+    mediaType: 'image/jpeg',
+    prompt: 'x',
+    validateText: () => true,
+  };
+
+  const first = await extractVisionDocument(env, input);
+  const second = await extractVisionDocument(env, input);
+
+  assert.equal(first.provider, 'groq');
+  assert.deepEqual(first.fallbacks, [{ provider: 'openai', category: 'rate_limit', status: 429 }]);
+  assert.equal(second.provider, 'groq');
+  assert.deepEqual(second.fallbacks, [{ provider: 'openai', category: 'rate_limit', status: 429, cooldown: true }]);
+  assert.equal(openAiCalls, 1);
+  assert.equal(groqCalls, 2);
 });
 
 test('Gemini transport response is returned with provider metadata', async (t) => {

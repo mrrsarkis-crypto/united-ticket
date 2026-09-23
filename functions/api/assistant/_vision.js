@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-22';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-23';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -10,8 +10,34 @@ const MIN_PROVIDER_TIMEOUT_MS = 2000;
 const MAX_TOTAL_VISION_MS = 24000;
 const MAX_ATTEMPTS = 2;
 const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
+const PROVIDER_COOLDOWN_MS = {
+  rate_limit: 30000,
+  provider_unavailable: 10000,
+  timeout: 5000,
+};
+const providerCooldowns = new Map();
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function activeProviderCooldown(provider) {
+  const item = providerCooldowns.get(provider);
+  if (!item) return null;
+  if (item.until <= Date.now()) {
+    providerCooldowns.delete(provider);
+    return null;
+  }
+  return item;
+}
+
+function setProviderCooldown(provider, diagnostic) {
+  const duration = PROVIDER_COOLDOWN_MS[diagnostic && diagnostic.category] || 0;
+  if (!duration) return;
+  providerCooldowns.set(provider, {
+    until: Date.now() + duration,
+    category: diagnostic.category,
+    status: diagnostic.status ?? null,
+  });
+}
 
 function providerTimeout(env, overrideMs) {
   const configured = Number(overrideMs || env.SCANNER_PROVIDER_TIMEOUT_MS || DEFAULT_PROVIDER_TIMEOUT_MS);
@@ -588,6 +614,17 @@ export async function extractVisionDocument(env, input) {
   let totalAttempts = 0;
 
   for (const provider of available) {
+    const cooldown = activeProviderCooldown(provider);
+    if (cooldown) {
+      fallbackDiagnostics.push({
+        provider,
+        category: cooldown.category,
+        status: cooldown.status,
+        cooldown: true,
+      });
+      continue;
+    }
+
     const remainingTotal = totalDeadline - Date.now();
     if (remainingTotal < 1500) {
       failures.push(provider + ': total scanner deadline exhausted');
@@ -611,11 +648,14 @@ export async function extractVisionDocument(env, input) {
       catch { valid = false; }
       if (!valid) throw new Error('vision provider returned an incomplete or invalid extraction contract');
 
+      providerCooldowns.delete(provider);
       return { text: result.text, provider, attempts: totalAttempts, fallbacks: fallbackDiagnostics };
     } catch (error) {
       const safe = safeErrorMessage(error);
+      const diagnostic = classifyProviderFailure(provider, error);
       failures.push(provider + ': ' + safe);
-      fallbackDiagnostics.push(classifyProviderFailure(provider, error));
+      fallbackDiagnostics.push(diagnostic);
+      setProviderCooldown(provider, diagnostic);
       console.warn('scanner vision provider failed', { provider, error: safe });
     }
   }
@@ -633,4 +673,5 @@ export const __visionTest = {
   validExtractionText,
   gatewayToken,
   gatewayContentText,
+  resetProviderCooldowns: () => providerCooldowns.clear(),
 };
