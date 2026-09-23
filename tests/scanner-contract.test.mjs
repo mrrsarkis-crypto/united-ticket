@@ -11,6 +11,7 @@ const {
   normalizeExtraction,
   buildScanAssessment,
   extractJson,
+  shouldAttemptPrecisionPass,
 } = __scannerTest;
 const SAMPLE_B64 = 'A'.repeat(80);
 
@@ -360,6 +361,14 @@ test('precision pass only triggers for ambiguous ticket reads', () => {
   assert.equal(__scannerTest.shouldRunPrecisionPass('ticket', weak), true);
   assert.equal(__scannerTest.shouldRunPrecisionPass('ticket', clear), false);
   assert.equal(__scannerTest.shouldRunPrecisionPass('license', weak), false);
+});
+
+test('quota-sensitive fallback providers skip duplicate precision calls', () => {
+  const weak = { legibility: 'good', citationNumber: { value: null, found: false, confident: false }, violationCode: { value: null, found: false, confident: false }, courtOrAgency: { value: 'Court', found: true, confident: true }, violationDate: { value: null, found: false, confident: false } };
+  assert.equal(shouldAttemptPrecisionPass('groq', 2500, 'ticket', weak), false);
+  assert.equal(shouldAttemptPrecisionPass('dashscope', 2500, 'ticket', weak), false);
+  assert.equal(shouldAttemptPrecisionPass('openai', 2500, 'ticket', weak), true);
+  assert.equal(shouldAttemptPrecisionPass('gemini', 9000, 'ticket', weak), false);
 });
 
 test('precision pass prefers the extraction with more reliable key fields', () => {

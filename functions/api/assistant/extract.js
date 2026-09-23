@@ -189,7 +189,7 @@ export async function onRequestPost(context) {
     // model call, while giving small-print ticket fields a second look.
     // Keep the public scanner responsive and rate-limit friendly: only run a second pass when the first read was fast.
     const firstPassElapsedMs = Date.now() - startedAt;
-    if (firstPassElapsedMs <= 8000 && shouldRunPrecisionPass(requestedDocType, extracted)) {
+    if (shouldAttemptPrecisionPass(vision.provider, firstPassElapsedMs, requestedDocType, extracted)) {
       try {
         const precisionPrompt = prompt +
           ' PRECISION PASS: re-inspect the same document at maximum available visual detail. For a citation with multiple violation rows, use ONLY the TOPMOST non-empty violation row for violationCode and violationDescription and never substitute a lower row. Focus especially on citation number, violation code/section, court or agency name, violation date, and court/response date. For bail or deposit, return a value only when an explicit bail/fine/deposit label is visible beside it; otherwise keep it null. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
@@ -296,6 +296,16 @@ export async function onRequestPost(context) {
       : 'The AI scan is temporarily unavailable. Please try again shortly.';
     return json({ error: userMessage + (debug ? ' ' + message.slice(0, 250) : '') }, timedOut ? 504 : 502, headers);
   }
+}
+
+function shouldAttemptPrecisionPass(provider, elapsedMs, requestedDocType, extracted) {
+  const normalizedProvider = String(provider || '').toLowerCase();
+  // Groq and DashScope are fallback OCR providers with tighter rate/latency budgets.
+  // Do not spend a second call after a successful first pass; preserve that budget
+  // for the next customer scan instead.
+  if (normalizedProvider === 'groq' || normalizedProvider === 'dashscope') return false;
+  if (!Number.isFinite(Number(elapsedMs)) || Number(elapsedMs) > 8000) return false;
+  return shouldRunPrecisionPass(requestedDocType, extracted);
 }
 
 function shouldRunPrecisionPass(requestedDocType, extracted) {
@@ -602,5 +612,6 @@ export const __scannerTest = {
   buildNextSteps,
   extractJson,
   shouldRunPrecisionPass,
+  shouldAttemptPrecisionPass,
   preferExtraction,
 };
