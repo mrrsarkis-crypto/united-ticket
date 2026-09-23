@@ -311,7 +311,7 @@ test('Cloudflare Workers AI OCR uses the native binding before external fallback
       run: async (name, input) => {
         model = name;
         payload = input;
-        return { answer: '{"legibility":"good"}' };
+        return { choices: [{ message: { content: '{"legibility":"good"}' } }] };
       },
     },
     GROQ_API_KEY: 'test-groq',
@@ -324,14 +324,18 @@ test('Cloudflare Workers AI OCR uses the native binding before external fallback
       base64: SAMPLE_B64,
       mediaType: 'image/jpeg',
       prompt: 'extract',
+      preferredProvider: 'workersai',
       validateText: () => true,
     }
   );
   assert.equal(result.provider, 'workersai');
-  assert.equal(model, '@cf/meta/llama-4-scout-17b-16e-instruct');
-  assert.match(payload.image, /^data:image\/jpeg;base64,/);
+  assert.equal(model, '@cf/qwen/qwen3.8-27b');
+  assert.equal(payload.messages[1].content[1].type, 'image_url');
+  assert.match(payload.messages[1].content[1].image_url.url, /^data:image\/jpeg;base64,/);
   assert.equal(payload.messages[0].role, 'system');
   assert.equal(payload.messages[1].role, 'user');
+  assert.equal(payload.chat_template_kwargs.enable_thinking, false);
+  assert.equal(payload.response_format.type, 'json_object');
   assert.equal(payload.temperature, 0);
   assert.equal(payload.stream, false);
 });
@@ -375,10 +379,11 @@ test('Groq fallback requests strict schema output', async (t) => {
   assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
 });
 
-test('default fallback prefers Groq before slower DashScope when OpenAI is unavailable', async (t) => {
+test('default fallback prefers Groq before slower Cloudflare and DashScope fallbacks when OpenAI is unavailable', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
   let requestUrl;
+  let workersAiCalls = 0;
   globalThis.fetch = async (url) => {
     requestUrl = String(url);
     return new Response(JSON.stringify({ choices: [{ message: { content: '{\"legibility\":\"good\"}' } }] }), {
@@ -387,11 +392,12 @@ test('default fallback prefers Groq before slower DashScope when OpenAI is unava
     });
   };
   const result = await extractVisionDocument(
-    { GROQ_API_KEY: 'test-groq', GEMINI_API_KEY: 'test-gemini', DASHSCOPE_API_KEY: 'test-dashscope', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { AI: { run: async () => { workersAiCalls++; return { choices: [{ message: { content: '{\"legibility\":\"good\"}' } }] }; } }, GROQ_API_KEY: 'test-groq', GEMINI_API_KEY: 'test-gemini', DASHSCOPE_API_KEY: 'test-dashscope', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
     { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', validateText: () => true }
   );
   assert.equal(result.provider, 'groq');
   assert.match(requestUrl, /api\.groq\.com\/openai\/v1\/chat\/completions$/);
+  assert.equal(workersAiCalls, 0);
 });
 
 test('DashScope OCR uses the current OCR model and Base64 image input', async (t) => {

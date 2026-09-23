@@ -505,25 +505,35 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
 async function callWorkersAi(env, { system, base64, mediaType, prompt }) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Cloudflare Workers AI is not configured');
   if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI vision path does not accept PDF');
-  const result = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
+  const imageUrl = 'data:' + mediaType + ';base64,' + base64;
+  const result = await env.AI.run('@cf/qwen/qwen3.8-27b', {
     messages: [
       { role: 'system', content: system },
       {
         role: 'user',
-        content: prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
+        content: [
+          {
+            type: 'text',
+            text: prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
+          },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ],
       },
     ],
-    image: 'data:' + mediaType + ';base64,' + base64,
-    guided_json: GEMINI_EXTRACTION_SCHEMA,
     temperature: 0,
-    max_tokens: 2200,
     stream: false,
+    max_completion_tokens: 3000,
+    reasoning_effort: 'low',
+    chat_template_kwargs: { enable_thinking: false },
+    response_format: { type: 'json_object' },
   });
   const text = typeof result === 'string'
     ? result.trim()
-    : (typeof result?.response === 'string'
-      ? result.response.trim()
-      : (typeof result?.answer === 'string' ? result.answer.trim() : ''));
+    : (typeof result?.choices?.[0]?.message?.content === 'string'
+      ? result.choices[0].message.content.trim()
+      : (typeof result?.response === 'string'
+        ? result.response.trim()
+        : (typeof result?.answer === 'string' ? result.answer.trim() : '')));
   if (!text) throw new Error('Cloudflare Workers AI returned an empty extraction');
   return { text, attempts: 1 };
 }
@@ -632,8 +642,8 @@ export async function extractVisionDocument(env, input) {
   }
 
   const providerOrder = preferred === 'openai'
-    ? ['openai', 'workersai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway']
-    : [preferred, 'openai', 'workersai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway'];
+    ? ['openai', 'groq', 'workersai', 'gemini', 'dashscope', 'anthropic', 'gateway']
+    : [preferred, 'openai', 'groq', 'workersai', 'gemini', 'dashscope', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const fallbackDiagnostics = [];
