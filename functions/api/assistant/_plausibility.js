@@ -13,6 +13,15 @@ function downgrade(extracted, key, warnings, reason) {
   warnings.push({ field: key, reason });
 }
 
+function clearField(extracted, key, warnings, reason) {
+  const field = extracted && extracted[key];
+  if (!field || field.found !== true || !field.value) return;
+  field.value = null;
+  field.found = false;
+  field.confident = false;
+  warnings.push({ field: key, reason });
+}
+
 function plausibleDate(value) {
   const text = String(value || '').trim();
   let match = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/.exec(text);
@@ -132,7 +141,7 @@ export function applyFieldPlausibility(extracted) {
   if (code && !plausibleViolationCode(code)) downgrade(extracted, 'violationCode', warnings, 'format');
   const description = valueOf(extracted.violationDescription);
   if (code && description && !descriptionFitsKnownSection(code, description)) {
-    downgrade(extracted, 'violationDescription', warnings, 'code_description_mismatch');
+    clearField(extracted, 'violationDescription', warnings, 'code_description_mismatch');
   }
 
   for (const key of dates) {

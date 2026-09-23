@@ -127,7 +127,8 @@ test('VC 22350 rejects a description taken from another violation row', () => {
     legibility: 'good',
   };
   const warnings = applyFieldPlausibility(extracted);
-  assert.equal(extracted.violationDescription.value, 'CARRYING PASSENGERS');
+  assert.equal(extracted.violationDescription.value, null);
+  assert.equal(extracted.violationDescription.found, false);
   assert.equal(extracted.violationDescription.confident, false);
   assert.deepEqual(warnings, [{ field: 'violationDescription', reason: 'code_description_mismatch' }]);
 });
