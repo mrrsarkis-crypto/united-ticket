@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-12';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-13';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -389,6 +389,74 @@ async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
   return { text: text.trim(), attempts: 1 };
 }
 
+function dashScopeEndpoints(env) {
+  const configured = String(env.SCANNER_DASHSCOPE_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (configured) {
+    return [configured.endsWith('/chat/completions') ? configured : configured + '/chat/completions'];
+  }
+  return [
+    'https://dashscope-us.aliyuncs.com/compatible-mode/v1/chat/completions',
+    'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',
+    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+  ];
+}
+
+async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs }) {
+  if (!env.DASHSCOPE_API_KEY) throw new Error('DashScope is not configured');
+  if (mediaType === 'application/pdf') throw new Error('DashScope OCR image path does not accept PDF');
+  const configuredModel = String(env.SCANNER_DASHSCOPE_MODEL || '').trim();
+  const models = configuredModel ? [configuredModel] : ['qwen3.5-ocr', 'qwen-vl-ocr-latest'];
+  const endpoints = dashScopeEndpoints(env);
+  const deadline = Date.now() + timeoutMs;
+  let attempts = 0;
+  let lastError;
+
+  for (const endpoint of endpoints) {
+    for (const model of models) {
+      const remaining = deadline - Date.now();
+      if (remaining < 1200) break;
+      attempts++;
+      try {
+        const body = {
+          model,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + base64 } },
+              { type: 'text', text: system + '\n\nTASK:\n' + prompt + '\n\nUse OCR literally. Do not correct, infer, or autocomplete unclear characters. Return only the required JSON object.' },
+            ],
+          }],
+          temperature: 0,
+          max_tokens: 2200,
+        };
+        const res = await fetchWithDeadline(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + env.DASHSCOPE_API_KEY,
+          },
+          body: JSON.stringify(body),
+        }, Math.min(7000, remaining));
+        if (!res.ok) {
+          const detail = await res.text().catch(() => '');
+          const error = new Error('DashScope HTTP ' + res.status + ': ' + detail.slice(0, 180));
+          lastError = error;
+          if (res.status === 401) break;
+          continue;
+        }
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (typeof text !== 'string' || !text.trim()) throw new Error('DashScope OCR returned an empty extraction');
+        return { text: text.trim(), attempts };
+      } catch (error) {
+        lastError = error;
+        if (/timed out/i.test(String(error && error.message))) break;
+      }
+    }
+  }
+  throw lastError || new Error('DashScope OCR extraction failed');
+}
+
 function gatewayContentText(content) {
   if (typeof content === 'string') return content.trim();
   if (!Array.isArray(content)) return '';
@@ -474,6 +542,7 @@ export async function extractVisionDocument(env, input) {
   const preferred = String(env.SCANNER_VISION_PROVIDER || 'openai').toLowerCase();
   const available = [];
   if (env.OPENAI_API_KEY) available.push('openai');
+  if (env.DASHSCOPE_API_KEY && input.mediaType !== 'application/pdf') available.push('dashscope');
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
   if (env.GROQ_API_KEY && input.mediaType !== 'application/pdf') available.push('groq');
@@ -487,8 +556,8 @@ export async function extractVisionDocument(env, input) {
   }
 
   const providerOrder = preferred === 'openai'
-    ? ['openai', 'groq', 'gemini', 'anthropic', 'gateway']
-    : [preferred, 'openai', 'groq', 'gemini', 'anthropic', 'gateway'];
+    ? ['openai', 'dashscope', 'groq', 'gemini', 'anthropic', 'gateway']
+    : [preferred, 'openai', 'dashscope', 'groq', 'gemini', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const totalDeadline = Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * Math.max(1, available.length));
@@ -504,6 +573,7 @@ export async function extractVisionDocument(env, input) {
       const providerBudget = Math.min(timeoutMs, remainingTotal);
       let result;
       if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });
+      else if (provider === 'dashscope') result = await callDashScope(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'anthropic') result = await callAnthropic(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'groq') result = await callGroq(env, { ...input, timeoutMs: providerBudget });

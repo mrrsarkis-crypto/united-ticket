@@ -251,6 +251,34 @@ test('Groq fallback requests strict schema output', async (t) => {
   assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
 });
 
+test('DashScope OCR uses the current OCR model and Base64 image input', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestUrl;
+  let requestBody;
+  globalThis.fetch = async (url, init) => {
+    requestUrl = String(url);
+    requestBody = JSON.parse(init.body);
+    return new Response(JSON.stringify({
+      choices: [{ message: { content: '{"legibility":"good"}' } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const result = await extractVisionDocument(
+    {
+      DASHSCOPE_API_KEY: 'test-dashscope',
+      SCANNER_VISION_PROVIDER: 'dashscope',
+      SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+    },
+    { system: 'literal OCR', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'extract', validateText: () => true }
+  );
+  assert.equal(result.provider, 'dashscope');
+  assert.equal(requestBody.model, 'qwen3.5-ocr');
+  assert.match(requestUrl, /dashscope-us\.aliyuncs\.com\/compatible-mode\/v1\/chat\/completions$/);
+  assert.match(requestBody.messages[0].content[0].image_url.url, /^data:image\/jpeg;base64,/);
+  assert.equal(requestBody.max_tokens, 2200);
+});
+
 test('invalid Gemini extraction automatically falls back to Anthropic', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
