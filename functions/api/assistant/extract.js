@@ -32,6 +32,8 @@ const EXTRACT_SYSTEM = [
   'Never combine a code/section from one violation row with the description from another row. Keep each row internally consistent.',
   'Never copy a date from another field to fill a missing date. A response/due date must come from its own labeled box.',
   'Vehicle make, model, and plate must be read only from their own labeled boxes. Never infer them from appearance or common vehicle combinations.',
+  'Anchor every extracted value to the printed label of the same box. Never move handwriting from an adjacent box into a field just because the result looks plausible.',
+  'On citation layouts that show Vehicle License/VIN, State, Reg, Year of Veh, Make, Model, and Body Style, the Vehicle License/VIN value is NEVER the vehicle make or model. Read Make only inside the box labeled Make and Model only inside the box labeled Model. If the label/value boundary is unclear, return null/found=false rather than borrowing from a neighboring box.',
   'For handwritten fields, set confident=true only when every returned character is directly legible.',
   'Legibility measures whether the document values can be read reliably, not whether the photo itself is sharp. A sharp photo with ambiguous handwriting must be fair or poor, never good.',
   'Read defendantName only from the labeled Name (first, middle, last) line and preserve the full visible name; do not shorten it to an easier fragment.',
@@ -151,7 +153,7 @@ export async function onRequestPost(context) {
     'For citation number, case number, driver license number, violation code/section, dates, court name, court street address, court mailing address, city/state/ZIP, branch name, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
     'For violation rows, keep the code/section and description from the SAME row. If there are multiple rows, use the TOPMOST non-empty row even when a lower row is easier to read; never merge rows. If the top row is partly unclear, preserve the readable text and set confident=false rather than substituting a lower row. ' +
     'Read the response/due date only from the labeled response/due-date box; do not reuse the violation date when that box is unclear. ' +
-    'Read vehicle make, model, and plate from their own labeled boxes only; if handwriting is unclear, return the literal readable portion with confident=false or null. ' +
+    'Read vehicle make, model, and plate from their own labeled boxes only; if handwriting is unclear, return the literal readable portion with confident=false or null. Do not treat the Vehicle License/VIN entry as the make or model, and do not shift handwriting across adjacent vehicle boxes. ' +
     'Read bailAmount and bailDepositedAmount ONLY from a clearly visible box or line explicitly labeled bail, fine, deposit, or bail deposited. Never copy a speed, officer ID, date, code, vehicle value, or other nearby number into a bail field. If no explicit bail/fine/deposit label is visible next to the amount, return null/found=false for both bail fields. ' +
     'Keep court information separate from the defendant mailing address. ' +
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
