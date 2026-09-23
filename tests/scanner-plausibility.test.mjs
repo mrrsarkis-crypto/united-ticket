@@ -55,6 +55,22 @@ test('date parser rejects invalid calendar days and accepts leap day', () => {
   assert.equal(__plausibilityTest.plausibleDate('13/01/2026'), false);
 });
 
+test('historical adult birth dates remain valid', () => {
+  const extracted = { dateOfBirth: field('07/13/57') };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(__plausibilityTest.plausibleBirthDate('07/13/57'), true);
+  assert.equal(extracted.dateOfBirth.confident, true);
+  assert.deepEqual(warnings, []);
+});
+
+test('impossible historical birth dates are downgraded', () => {
+  const extracted = { dateOfBirth: field('02/31/57') };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(__plausibilityTest.plausibleBirthDate('02/31/57'), false);
+  assert.equal(extracted.dateOfBirth.confident, false);
+  assert.deepEqual(warnings, [{ field: 'dateOfBirth', reason: 'date_format' }]);
+});
+
 test('semantic identifier collisions are downgraded without rewriting values', () => {
   const extracted = {
     citationNumber: field('A12345'),

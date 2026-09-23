@@ -46,6 +46,33 @@ function plausibleDate(value) {
   return false;
 }
 
+function birthDateValueFromText(value) {
+  const text = String(value || '').trim();
+  let match = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/.exec(text);
+  if (!match) {
+    const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+    if (!iso) return null;
+    match = [iso[0], iso[2], iso[3], iso[1]];
+  }
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  if (year < 100) {
+    const currentTwoDigitYear = currentYear % 100;
+    year += year <= currentTwoDigitYear ? 2000 : 1900;
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31 || year < currentYear - 120 || year > currentYear) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+}
+
+function plausibleBirthDate(value) {
+  return birthDateValueFromText(value) !== null;
+}
+
 function plausibleCitation(value) {
   const text = String(value || '').trim();
   return text.length >= 4 && text.length <= 24 && /\d/.test(text) && /^[A-Za-z0-9\-\/ ]+$/.test(text);
@@ -131,7 +158,7 @@ function duplicateIdentifierFields(extracted, pairs, warnings) {
 
 export function applyFieldPlausibility(extracted) {
   const warnings = [];
-  const dates = ['violationDate', 'courtDate', 'dueDate', 'dateOfBirth'];
+  const dates = ['violationDate', 'courtDate', 'dueDate'];
   if (!extracted || typeof extracted !== 'object') return warnings;
 
   const citation = valueOf(extracted.citationNumber);
@@ -148,11 +175,13 @@ export function applyFieldPlausibility(extracted) {
     const value = valueOf(extracted[key]);
     if (value && !plausibleDate(value)) downgrade(extracted, key, warnings, 'date_format');
   }
+  const dobText = valueOf(extracted.dateOfBirth);
+  if (dobText && !plausibleBirthDate(dobText)) downgrade(extracted, 'dateOfBirth', warnings, 'date_format');
 
   const violationDate = dateValue(extracted.violationDate);
   const courtDate = dateValue(extracted.courtDate);
   const dueDate = dateValue(extracted.dueDate);
-  const dob = dateValue(extracted.dateOfBirth);
+  const dob = birthDateValueFromText(dobText);
   if (violationDate && courtDate && courtDate < violationDate) {
     downgrade(extracted, 'courtDate', warnings, 'before_violation_date');
   }
@@ -221,6 +250,7 @@ export function applyFieldPlausibility(extracted) {
 export const __plausibilityTest = {
   dateValue,
   plausibleDate,
+  plausibleBirthDate,
   plausibleCitation,
   plausibleViolationCode,
   plausibleMoney,
