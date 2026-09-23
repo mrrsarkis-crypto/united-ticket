@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-14';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-15';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -543,7 +543,10 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
 
 export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env, input && input.timeoutMs);
-  const preferred = String(env.SCANNER_VISION_PROVIDER || 'openai').toLowerCase();
+  const requestedProvider = String(env.SCANNER_VISION_PROVIDER || '').trim().toLowerCase();
+  // Astra/OpenAI is the primary scanner whenever its production key exists.
+  // The provider flag only selects an alternate primary when OpenAI is unavailable.
+  const preferred = env.OPENAI_API_KEY ? 'openai' : (requestedProvider || 'openai');
   const available = [];
   if (env.OPENAI_API_KEY) available.push('openai');
   if (env.DASHSCOPE_API_KEY && input.mediaType !== 'application/pdf') available.push('dashscope');
