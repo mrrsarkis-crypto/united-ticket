@@ -87,7 +87,7 @@ test('semantic identifier collisions are downgraded without rewriting values', (
   assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 4);
 });
 
-test('California license copied from a violation code is downgraded without rewriting', () => {
+test('invalid California license is cleared instead of prefilled', () => {
   const extracted = {
     drivingLicenseState: field('CA'),
     drivingLicenseNumber: field('71350'),
@@ -95,12 +95,13 @@ test('California license copied from a violation code is downgraded without rewr
     legibility: 'good',
   };
   const warnings = applyFieldPlausibility(extracted);
-  assert.equal(extracted.drivingLicenseNumber.value, '71350');
-  assert.equal(extracted.violationCode.value, '71350');
+  assert.equal(extracted.drivingLicenseNumber.value, null);
+  assert.equal(extracted.drivingLicenseNumber.found, false);
   assert.equal(extracted.drivingLicenseNumber.confident, false);
-  assert.equal(extracted.violationCode.confident, false);
+  assert.equal(extracted.violationCode.value, '71350');
+  assert.equal(extracted.violationCode.confident, true);
   assert.ok(warnings.some((w) => w.field === 'drivingLicenseNumber' && w.reason === 'california_license_format'));
-  assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 2);
+  assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 0);
 });
 
 test('court-looking mailing addresses are flagged while the literal value is preserved', () => {
@@ -159,6 +160,21 @@ test('response due date duplicated from violation date requires verification', (
   assert.equal(extracted.dueDate.value, '09/11/2020');
   assert.equal(extracted.dueDate.confident, false);
   assert.deepEqual(warnings, [{ field: 'dueDate', reason: 'same_as_violation_date' }]);
+});
+
+test('fair scan clears court and due dates copied from the violation date', () => {
+  const extracted = {
+    violationDate: field('09/11/2020'),
+    courtDate: field('09/11/2020'),
+    dueDate: field('09/11/2020'),
+    legibility: 'fair',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.courtDate.value, null);
+  assert.equal(extracted.courtDate.found, false);
+  assert.equal(extracted.dueDate.value, null);
+  assert.equal(extracted.dueDate.found, false);
+  assert.equal(warnings.filter((w) => w.reason === 'same_as_violation_date').length, 2);
 });
 
 test('fair handwritten scan downgrades high-risk handwritten fields', () => {

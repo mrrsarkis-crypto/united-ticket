@@ -188,8 +188,19 @@ export function applyFieldPlausibility(extracted) {
   if (violationDate && dueDate && dueDate < violationDate) {
     downgrade(extracted, 'dueDate', warnings, 'before_violation_date');
   }
+  if (violationDate && courtDate && courtDate.getTime() === violationDate.getTime()) {
+    if (extracted.legibility === 'fair' || extracted.legibility === 'poor') {
+      clearField(extracted, 'courtDate', warnings, 'same_as_violation_date');
+    } else {
+      downgrade(extracted, 'courtDate', warnings, 'same_as_violation_date');
+    }
+  }
   if (violationDate && dueDate && dueDate.getTime() === violationDate.getTime()) {
-    downgrade(extracted, 'dueDate', warnings, 'same_as_violation_date');
+    if (extracted.legibility === 'fair' || extracted.legibility === 'poor') {
+      clearField(extracted, 'dueDate', warnings, 'same_as_violation_date');
+    } else {
+      downgrade(extracted, 'dueDate', warnings, 'same_as_violation_date');
+    }
   }
   if (dob && violationDate && dob >= violationDate) {
     downgrade(extracted, 'dateOfBirth', warnings, 'not_before_violation_date');
@@ -209,7 +220,7 @@ export function applyFieldPlausibility(extracted) {
   const normalizedState = state.toUpperCase();
   const compactLicense = license.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (license && normalizedState === 'CA' && !/^[A-Z][0-9]{7}$/.test(compactLicense)) {
-    downgrade(extracted, 'drivingLicenseNumber', warnings, 'california_license_format');
+    clearField(extracted, 'drivingLicenseNumber', warnings, 'california_license_format');
   }
 
   const plate = valueOf(extracted.vehiclePlate);
