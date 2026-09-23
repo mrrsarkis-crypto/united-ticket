@@ -32,6 +32,17 @@ test('uncertain bail never auto-fills the customer form', () => {
   assert.match(app, /bail\|fine\)\(\?:\\s\+amount\)\?/);
 });
 
+test('uncertain scanner fields do not auto-fill the customer form', () => {
+  assert.match(app, /defendantName&&e\.defendantName\.confident/);
+  assert.match(app, /dateOfBirth&&e\.dateOfBirth\.confident\?e\.dateOfBirth\.value:""/);
+  assert.match(app, /drivingLicenseNumber&&e\.drivingLicenseNumber\.confident\?e\.drivingLicenseNumber\.value:""/);
+  assert.match(app, /citationNumber&&e\.citationNumber\.confident\?e\.citationNumber\.value:""/);
+  assert.match(app, /if\(t&&t\.confident&&t\.value\)return t\.value/);
+  assert.match(app, /courtOrAgency&&e\.courtOrAgency\.confident\?e\.courtOrAgency\.value:""/);
+  assert.match(app, /violationCode&&e\.violationCode\.confident\?e\.violationCode\.value:""/);
+  assert.match(app, /mailingAddress&&e\.mailingAddress\.confident\?e\.mailingAddress\.value:""/);
+});
+
 test('scanner result is framed as a review reveal', () => {
   assert.match(app, /SCAN COMPLETE/);
   assert.match(app, /REVIEW SIGNAL/);
@@ -81,7 +92,7 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(scannerPreprocess, /contrast\(/);
   assert.match(scannerPreprocess, /brightness\(/);
   assert.match(serviceWorker, /scanner-preprocess/);
-  assert.match(serviceWorker, /utt-cache-v11/);
+  assert.match(serviceWorker, /utt-cache-v12/);
 });
 
 test('AdSense is restricted to designated informational pages', () => {

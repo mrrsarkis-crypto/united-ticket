@@ -1,5 +1,5 @@
 // Service worker for United Traffic Tickets Defense (PWA)
-const CACHE = 'utt-cache-v11';
+const CACHE = 'utt-cache-v12';
 const CORE = [
   '/',
   '/index.html',
