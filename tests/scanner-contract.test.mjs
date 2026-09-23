@@ -303,6 +303,38 @@ test('rate-limited provider is cooled down for the next request', async (t) => {
   assert.equal(groqCalls, 2);
 });
 
+test('Cloudflare Workers AI OCR uses the native binding before external fallbacks', async () => {
+  let model;
+  let payload;
+  const env = {
+    AI: {
+      run: async (name, input) => {
+        model = name;
+        payload = input;
+        return { answer: '{"legibility":"good"}' };
+      },
+    },
+    GROQ_API_KEY: 'test-groq',
+    SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+  };
+  const result = await extractVisionDocument(
+    env,
+    {
+      system: 'literal OCR',
+      base64: SAMPLE_B64,
+      mediaType: 'image/jpeg',
+      prompt: 'extract',
+      validateText: () => true,
+    }
+  );
+  assert.equal(result.provider, 'workersai');
+  assert.equal(model, '@cf/moondream/moondream3.1-9B-A2B');
+  assert.equal(payload.task, 'query');
+  assert.match(payload.image, /^data:image\/jpeg;base64,/);
+  assert.equal(payload.reasoning, false);
+  assert.equal(payload.stream, false);
+});
+
 test('Gemini transport response is returned with provider metadata', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

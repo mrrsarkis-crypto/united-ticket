@@ -17,6 +17,9 @@ pages_build_output_dir = "public"
 
 compatibility_date = "2025-07-18"
 
+[ai]
+binding = "AI"
+
 [[kv_namespaces]]
 binding = "CASES"
 id = "9a4dddc310f2406a86f9e3c3da65565d"

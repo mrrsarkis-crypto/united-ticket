@@ -19,12 +19,14 @@ export async function onRequestGet(context) {
   const stripeKeyMode = stripeSecret.startsWith('sk_live_') ? 'live' : (stripeSecret.startsWith('sk_test_') ? 'test' : (stripeSecret ? 'unknown' : 'missing'));
   const gatewayReady = !!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN);
   const openAiConfigured = !!env.OPENAI_API_KEY;
+  const workersAiConfigured = !!(env.AI && typeof env.AI.run === 'function');
   const dashscopeConfigured = !!env.DASHSCOPE_API_KEY;
   const groqConfigured = !!env.GROQ_API_KEY;
   const geminiConfigured = !!env.GEMINI_API_KEY;
   const anthropicConfigured = !!env.ANTHROPIC_API_KEY;
   const scannerProviders = [
     openAiConfigured && 'openai',
+    workersAiConfigured && 'workersai',
     dashscopeConfigured && 'dashscope',
     groqConfigured && 'groq',
     geminiConfigured && 'gemini',
@@ -85,6 +87,7 @@ export async function onRequestGet(context) {
       provider: effectiveScannerProvider,
       configuredProviders: scannerProviders,
       openaiConfigured: openAiConfigured,
+      workersAiConfigured,
       dashscopeConfigured,
       groqConfigured,
       gatewayConfigured: gatewayReady,

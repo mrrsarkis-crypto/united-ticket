@@ -502,6 +502,25 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
   throw lastError || new Error('DashScope OCR extraction failed');
 }
 
+async function callWorkersAi(env, { system, base64, mediaType, prompt }) {
+  if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Cloudflare Workers AI is not configured');
+  if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI OCR image path does not accept PDF');
+  const result = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
+    task: 'query',
+    image: 'data:' + mediaType + ';base64,' + base64,
+    question: system + '\n\nTASK:\n' + prompt + '\n\nReturn only the required JSON object. Transcribe literally and do not invent unclear characters.',
+    reasoning: false,
+    temperature: 0,
+    max_tokens: 2200,
+    stream: false,
+  });
+  const text = typeof result === 'string'
+    ? result.trim()
+    : (typeof result?.answer === 'string' ? result.answer.trim() : '');
+  if (!text) throw new Error('Cloudflare Workers AI returned an empty extraction');
+  return { text, attempts: 1 };
+}
+
 function gatewayContentText(content) {
   if (typeof content === 'string') return content.trim();
   if (!Array.isArray(content)) return '';
@@ -591,6 +610,7 @@ export async function extractVisionDocument(env, input) {
   const preferred = explicitPreferred || (env.OPENAI_API_KEY ? 'openai' : (requestedProvider || 'openai'));
   const available = [];
   if (env.OPENAI_API_KEY) available.push('openai');
+  if (env.AI && typeof env.AI.run === 'function' && input.mediaType !== 'application/pdf') available.push('workersai');
   if (env.DASHSCOPE_API_KEY && input.mediaType !== 'application/pdf') available.push('dashscope');
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
@@ -605,8 +625,8 @@ export async function extractVisionDocument(env, input) {
   }
 
   const providerOrder = preferred === 'openai'
-    ? ['openai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway']
-    : [preferred, 'openai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway'];
+    ? ['openai', 'workersai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway']
+    : [preferred, 'openai', 'workersai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const fallbackDiagnostics = [];
@@ -635,6 +655,7 @@ export async function extractVisionDocument(env, input) {
       const providerBudget = Math.min(timeoutMs, remainingTotal);
       let result;
       if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });
+      else if (provider === 'workersai') result = await callWorkersAi(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'dashscope') result = await callDashScope(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'gemini') result = await callGemini(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'anthropic') result = await callAnthropic(env, { ...input, timeoutMs: providerBudget });
