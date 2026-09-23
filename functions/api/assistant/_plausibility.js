@@ -168,6 +168,11 @@ export function applyFieldPlausibility(extracted) {
 
   const license = valueOf(extracted.drivingLicenseNumber);
   if (license && !plausibleLicense(license)) downgrade(extracted, 'drivingLicenseNumber', warnings, 'license_format');
+  const normalizedState = state.toUpperCase();
+  const compactLicense = license.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (license && normalizedState === 'CA' && !/^[A-Z][0-9]{7}$/.test(compactLicense)) {
+    downgrade(extracted, 'drivingLicenseNumber', warnings, 'california_license_format');
+  }
 
   const plate = valueOf(extracted.vehiclePlate);
   if (plate && !plausiblePlate(plate)) downgrade(extracted, 'vehiclePlate', warnings, 'plate_format');
@@ -186,7 +191,7 @@ export function applyFieldPlausibility(extracted) {
   // Handwritten fields on a globally fair scan can still be useful as a draft,
   // but they should not be presented as verified facts without a human check.
   if (extracted.legibility === 'fair') {
-    for (const key of ['dueDate','dateOfBirth','violationDescription','vehicleMake','vehicleModel','vehiclePlate']) {
+    for (const key of ['defendantName','drivingLicenseNumber','mailingAddress','violationDate','courtDate','dueDate','dateOfBirth','violationCode','violationDescription','officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate']) {
       const field = extracted[key];
       if (field && field.found === true && field.confident === true) {
         downgrade(extracted, key, warnings, 'fair_legibility_requires_verification');
@@ -198,6 +203,7 @@ export function applyFieldPlausibility(extracted) {
     ['citationNumber', 'officerId'],
     ['citationNumber', 'vehiclePlate'],
     ['drivingLicenseNumber', 'vehiclePlate'],
+    ['drivingLicenseNumber', 'violationCode'],
   ], warnings);
 
   return warnings.slice(0, 20);

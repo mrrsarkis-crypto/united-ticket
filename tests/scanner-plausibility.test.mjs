@@ -71,6 +71,22 @@ test('semantic identifier collisions are downgraded without rewriting values', (
   assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 4);
 });
 
+test('California license copied from a violation code is downgraded without rewriting', () => {
+  const extracted = {
+    drivingLicenseState: field('CA'),
+    drivingLicenseNumber: field('71350'),
+    violationCode: field('71350'),
+    legibility: 'good',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.drivingLicenseNumber.value, '71350');
+  assert.equal(extracted.violationCode.value, '71350');
+  assert.equal(extracted.drivingLicenseNumber.confident, false);
+  assert.equal(extracted.violationCode.confident, false);
+  assert.ok(warnings.some((w) => w.field === 'drivingLicenseNumber' && w.reason === 'california_license_format'));
+  assert.equal(warnings.filter((w) => w.reason === 'identifier_collision').length, 2);
+});
+
 test('court-looking mailing addresses are flagged while the literal value is preserved', () => {
   const extracted = {
     mailingAddress: field('Los Angeles Superior Court, 111 North Hill Street, Los Angeles CA'),
@@ -144,6 +160,24 @@ test('fair handwritten scan downgrades high-risk handwritten fields', () => {
   assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 4);
 });
 
+
+test('fair scan downgrades high-risk identity and ticket fields for verification', () => {
+  const extracted = {
+    defendantName: field('Lee Yan'),
+    drivingLicenseNumber: field('A1234567'),
+    violationDate: field('09/20/2026'),
+    courtDate: field('10/20/2026'),
+    violationCode: field('22350'),
+    officerId: field('31055'),
+    location: field('W 111 ST'),
+    legibility: 'fair',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  for (const key of ['defendantName','drivingLicenseNumber','violationDate','courtDate','violationCode','officerId','location']) {
+    assert.equal(extracted[key].confident, false);
+  }
+  assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 7);
+});
 
 test('two-digit year dates participate in chronology checks', () => {
   const extracted = {
