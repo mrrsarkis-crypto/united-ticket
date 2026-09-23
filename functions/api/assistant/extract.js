@@ -246,6 +246,7 @@ export async function onRequestPost(context) {
       inputBytes: fileBytes,
       provider: vision.provider,
       providerAttempts: vision.attempts,
+      providerFallbacks: Array.isArray(vision.fallbacks) ? vision.fallbacks.slice(0, 4) : [],
       durationMs: Date.now() - startedAt,
       clientQuality,
       validationWarningCount: plausibilityWarnings.length,

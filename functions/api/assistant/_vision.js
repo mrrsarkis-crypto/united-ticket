@@ -28,6 +28,21 @@ function safeErrorMessage(error) {
   return msg.replace(/[A-Za-z0-9_.-]{28,}/g, '[redacted]').slice(0, 300);
 }
 
+function classifyProviderFailure(provider, error) {
+  const msg = String(error && error.message || error || '');
+  const statusMatch = msg.match(/HTTP\s+(\d{3})/i);
+  const status = statusMatch ? Number(statusMatch[1]) : null;
+  let category = 'provider_error';
+  if (/timed out|timeout/i.test(msg)) category = 'timeout';
+  else if (status === 401 || status === 403) category = 'auth';
+  else if (status === 402) category = 'billing';
+  else if (status === 429) category = 'rate_limit';
+  else if (status === 400 || status === 404 || status === 409 || status === 422) category = 'request_validation';
+  else if (status && status >= 500) category = 'provider_unavailable';
+  else if (/incomplete|invalid extraction|empty extraction/i.test(msg)) category = 'invalid_response';
+  return { provider, category, status };
+}
+
 function gatewayToken(env) {
   return String(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN || '').trim();
 }
@@ -568,6 +583,7 @@ export async function extractVisionDocument(env, input) {
     : [preferred, 'openai', 'groq', 'gemini', 'dashscope', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
+  const fallbackDiagnostics = [];
   const totalDeadline = Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * Math.max(1, available.length));
   let totalAttempts = 0;
 
@@ -575,6 +591,7 @@ export async function extractVisionDocument(env, input) {
     const remainingTotal = totalDeadline - Date.now();
     if (remainingTotal < 1500) {
       failures.push(provider + ': total scanner deadline exhausted');
+      fallbackDiagnostics.push({ provider, category: 'timeout', status: null });
       break;
     }
     try {
@@ -594,10 +611,11 @@ export async function extractVisionDocument(env, input) {
       catch { valid = false; }
       if (!valid) throw new Error('vision provider returned an incomplete or invalid extraction contract');
 
-      return { text: result.text, provider, attempts: totalAttempts };
+      return { text: result.text, provider, attempts: totalAttempts, fallbacks: fallbackDiagnostics };
     } catch (error) {
       const safe = safeErrorMessage(error);
       failures.push(provider + ': ' + safe);
+      fallbackDiagnostics.push(classifyProviderFailure(provider, error));
       console.warn('scanner vision provider failed', { provider, error: safe });
     }
   }

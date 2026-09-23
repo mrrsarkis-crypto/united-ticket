@@ -352,6 +352,7 @@ test('invalid Gemini extraction automatically falls back to Anthropic', async (t
   assert.equal(result.provider, 'anthropic');
   assert.equal(result.attempts, 2);
   assert.equal(result.text, '{"legibility":"fair"}');
+  assert.deepEqual(result.fallbacks, [{ provider: 'gemini', category: 'invalid_response', status: null }]);
 });
 
 
