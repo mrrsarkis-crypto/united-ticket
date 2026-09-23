@@ -151,7 +151,7 @@ test('vision pipeline fails closed when no provider is configured', async () => 
 test('PDF scan refuses an Anthropic-only configuration instead of sending PDF as image', async () => {
   await assert.rejects(
     extractVisionDocument({ ANTHROPIC_API_KEY: 'test' }, { system: 'x', base64: SAMPLE_B64, mediaType: 'application/pdf', prompt: 'x' }),
-    /PDF scanning requires a configured Gemini vision provider/
+    /PDF scanning requires a configured OpenAI, Gemini, or AI Gateway provider/
   );
 });
 
@@ -191,6 +191,27 @@ test('OpenAI Astra is selected first when configured and preserves strict extrac
   assert.equal(requestBody.text.format.strict, true);
 });
 
+test('OpenAI Astra sends PDFs as Responses API input_file content', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestBody;
+  globalThis.fetch = async (_url, init) => {
+    requestBody = JSON.parse(init.body);
+    return new Response(JSON.stringify({ output_text: '{"legibility":"good"}' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const result = await extractVisionDocument(
+    { OPENAI_API_KEY: 'test-openai', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'application/pdf', prompt: 'x', validateText: () => true }
+  );
+  const filePart = requestBody.input[0].content.find((part) => part.type === 'input_file');
+  assert.equal(result.provider, 'openai');
+  assert.equal(filePart.filename, 'traffic-document.pdf');
+  assert.equal(filePart.file_data, SAMPLE_B64);
+});
+
 test('Gemini transport response is returned with provider metadata', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
@@ -226,6 +247,7 @@ test('Groq fallback requests strict schema output', async (t) => {
   assert.equal(result.provider, 'groq');
   assert.equal(requestBody.response_format.type, 'json_schema');
   assert.equal(requestBody.response_format.json_schema.strict, true);
+  assert.equal(requestBody.max_completion_tokens, 1800);
   assert.equal(requestBody.response_format.json_schema.schema.additionalProperties, false);
 });
 

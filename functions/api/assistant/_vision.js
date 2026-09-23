@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-11';
+export const SCANNER_ENGINE_VERSION = '2026.09.23-12';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -151,6 +151,9 @@ function openAiExtractionSchema() {
 async function callOpenAi(env, { system, base64, mediaType, prompt, timeoutMs }) {
   if (!env.OPENAI_API_KEY) throw new Error('OpenAI scanner is not configured');
   const model = env.OPENAI_SCANNER_MODEL || env.OPENAI_MODEL || 'gpt-5.6-luna';
+  const documentInput = mediaType === 'application/pdf'
+    ? { type: 'input_file', filename: 'traffic-document.pdf', file_data: base64 }
+    : { type: 'input_image', image_url: 'data:' + mediaType + ';base64,' + base64, detail: 'high' };
   const body = {
     model,
     reasoning: { effort: 'low' },
@@ -160,7 +163,7 @@ async function callOpenAi(env, { system, base64, mediaType, prompt, timeoutMs })
       role: 'user',
       content: [
         { type: 'input_text', text: prompt },
-        { type: 'input_image', image_url: 'data:' + mediaType + ';base64,' + base64, detail: 'high' },
+        documentInput,
       ],
     }],
     text: {
@@ -347,7 +350,9 @@ async function callGroq(env, { system, base64, mediaType, prompt, timeoutMs }) {
         { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + base64 } },
       ],
     }],
-    max_completion_tokens: 900,
+    // The extraction contract has 30+ fields; 900 tokens intermittently
+    // truncated valid Groq JSON. Keep enough headroom for the full schema.
+    max_completion_tokens: 1800,
     temperature: 0,
     reasoning_effort: 'none',
     reasoning_format: 'hidden',
@@ -468,7 +473,7 @@ export async function extractVisionDocument(env, input) {
   const timeoutMs = providerTimeout(env, input && input.timeoutMs);
   const preferred = String(env.SCANNER_VISION_PROVIDER || 'openai').toLowerCase();
   const available = [];
-  if (env.OPENAI_API_KEY && input.mediaType !== 'application/pdf') available.push('openai');
+  if (env.OPENAI_API_KEY) available.push('openai');
   if (env.GEMINI_API_KEY) available.push('gemini');
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
   if (env.GROQ_API_KEY && input.mediaType !== 'application/pdf') available.push('groq');
@@ -476,7 +481,7 @@ export async function extractVisionDocument(env, input) {
 
   if (!available.length) {
     if (input.mediaType === 'application/pdf' && env.ANTHROPIC_API_KEY && !env.GEMINI_API_KEY) {
-      throw new Error('PDF scanning requires a configured Gemini vision provider');
+      throw new Error('PDF scanning requires a configured OpenAI, Gemini, or AI Gateway provider');
     }
     throw new Error('No scanner vision provider configured');
   }
