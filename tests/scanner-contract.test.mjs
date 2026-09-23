@@ -191,6 +191,25 @@ test('OpenAI Astra is selected first when configured and preserves strict extrac
   assert.equal(requestBody.text.format.strict, true);
 });
 
+test('precision pass can reuse the provider that already succeeded', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requestUrl;
+  globalThis.fetch = async (url) => {
+    requestUrl = String(url);
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{\"legibility\":\"good\"}' } }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const result = await extractVisionDocument(
+    { OPENAI_API_KEY: 'test-openai', GROQ_API_KEY: 'test-groq', SCANNER_PROVIDER_TIMEOUT_MS: '8000' },
+    { system: 'x', base64: SAMPLE_B64, mediaType: 'image/jpeg', prompt: 'x', preferredProvider: 'groq', validateText: () => true }
+  );
+  assert.equal(result.provider, 'groq');
+  assert.match(requestUrl, /api\.groq\.com\/openai\/v1\/chat\/completions$/);
+});
+
 test('OpenAI Astra sends PDFs as Responses API input_file content', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
