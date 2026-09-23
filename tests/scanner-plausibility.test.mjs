@@ -102,3 +102,44 @@ test('cross-field date checks downgrade impossible chronology without changing t
     { field: 'dateOfBirth', reason: 'not_before_court_date' },
   ]);
 });
+
+
+test('VC 22350 rejects a description taken from another violation row', () => {
+  const extracted = {
+    violationCode: field('VC 22350'),
+    violationDescription: field('CARRYING PASSENGERS'),
+    legibility: 'good',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.violationDescription.value, 'CARRYING PASSENGERS');
+  assert.equal(extracted.violationDescription.confident, false);
+  assert.deepEqual(warnings, [{ field: 'violationDescription', reason: 'code_description_mismatch' }]);
+});
+
+test('response due date duplicated from violation date requires verification', () => {
+  const extracted = {
+    violationDate: field('09/11/2020'),
+    dueDate: field('09/11/2020'),
+    legibility: 'good',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.dueDate.value, '09/11/2020');
+  assert.equal(extracted.dueDate.confident, false);
+  assert.deepEqual(warnings, [{ field: 'dueDate', reason: 'same_as_violation_date' }]);
+});
+
+test('fair handwritten scan downgrades high-risk handwritten fields', () => {
+  const extracted = {
+    vehicleMake: field('BMW'),
+    vehicleModel: field('328'),
+    vehiclePlate: field('7YH1154'),
+    violationDescription: field('Unsafe speed'),
+    legibility: 'fair',
+  };
+  const warnings = applyFieldPlausibility(extracted);
+  assert.equal(extracted.vehicleMake.confident, false);
+  assert.equal(extracted.vehicleModel.confident, false);
+  assert.equal(extracted.vehiclePlate.confident, false);
+  assert.equal(extracted.violationDescription.confident, false);
+  assert.equal(warnings.filter((w) => w.reason === 'fair_legibility_requires_verification').length, 4);
+});

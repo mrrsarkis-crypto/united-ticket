@@ -92,6 +92,22 @@ function looksLikeCourtAddress(value) {
   return /\b(superior court|municipal court|district court|traffic court|courthouse|court of|clerk of court|court clerk|judicial district|justice center)\b/i.test(text);
 }
 
+function normalizedViolationSection(value) {
+  const text = String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const match = text.match(/\b(\d{3,5})(?:\s*\([A-Z0-9]+\))?/);
+  return match ? match[1] : '';
+}
+
+function descriptionFitsKnownSection(code, description) {
+  const section = normalizedViolationSection(code);
+  const text = String(description || '').toLowerCase();
+  if (!section || !text) return true;
+  // California Vehicle Code 22350 is the basic speed law. A description from
+  // a different violation row should never be paired with this section.
+  if (section === '22350') return /\b(speed|speeding|safe|unsafe|reasonable|prudent)\b/i.test(text);
+  return true;
+}
+
 function duplicateIdentifierFields(extracted, pairs, warnings) {
   for (const [left, right] of pairs) {
     const a = valueOf(extracted[left]);
@@ -113,6 +129,10 @@ export function applyFieldPlausibility(extracted) {
 
   const code = valueOf(extracted.violationCode);
   if (code && !plausibleViolationCode(code)) downgrade(extracted, 'violationCode', warnings, 'format');
+  const description = valueOf(extracted.violationDescription);
+  if (code && description && !descriptionFitsKnownSection(code, description)) {
+    downgrade(extracted, 'violationDescription', warnings, 'code_description_mismatch');
+  }
 
   for (const key of dates) {
     const value = valueOf(extracted[key]);
@@ -128,6 +148,9 @@ export function applyFieldPlausibility(extracted) {
   }
   if (violationDate && dueDate && dueDate < violationDate) {
     downgrade(extracted, 'dueDate', warnings, 'before_violation_date');
+  }
+  if (violationDate && dueDate && dueDate.getTime() === violationDate.getTime()) {
+    downgrade(extracted, 'dueDate', warnings, 'same_as_violation_date');
   }
   if (dob && violationDate && dob >= violationDate) {
     downgrade(extracted, 'dateOfBirth', warnings, 'not_before_violation_date');
@@ -159,6 +182,17 @@ export function applyFieldPlausibility(extracted) {
     downgrade(extracted, 'mailingAddress', warnings, 'possible_court_address');
   }
 
+  // Handwritten fields on a globally fair scan can still be useful as a draft,
+  // but they should not be presented as verified facts without a human check.
+  if (extracted.legibility === 'fair') {
+    for (const key of ['dueDate','dateOfBirth','violationDescription','vehicleMake','vehicleModel','vehiclePlate']) {
+      const field = extracted[key];
+      if (field && field.found === true && field.confident === true) {
+        downgrade(extracted, key, warnings, 'fair_legibility_requires_verification');
+      }
+    }
+  }
+
   duplicateIdentifierFields(extracted, [
     ['citationNumber', 'officerId'],
     ['citationNumber', 'vehiclePlate'],
@@ -179,4 +213,6 @@ export const __plausibilityTest = {
   plausibleOfficerId,
   plausiblePersonName,
   looksLikeCourtAddress,
+  normalizedViolationSection,
+  descriptionFitsKnownSection,
 };

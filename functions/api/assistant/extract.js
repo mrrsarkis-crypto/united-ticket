@@ -28,6 +28,10 @@ const EXTRACT_SYSTEM = [
   'Do not give legal advice. Do not predict outcomes. Do not browse or use outside knowledge.',
   'Never invent, autocomplete, infer, or repair a field that is not clearly visible.',
   'If characters are ambiguous, preserve only what is readable and set confident=false.',
+  'Never combine a code/section from one violation row with the description from another row. Keep each row internally consistent.',
+  'Never copy a date from another field to fill a missing date. A response/due date must come from its own labeled box.',
+  'Vehicle make, model, and plate must be read only from their own labeled boxes. Never infer them from appearance or common vehicle combinations.',
+  'For handwritten fields, set confident=true only when every returned character is directly legible.',
   'Do not confuse a court address with the defendant mailing address.',
   'Do not confuse an officer ID, case number, barcode, or vehicle plate with the citation number.',
   'For court information, inspect the top-of-page court block separately from the defendant information and capture the court name, street address, mailing address, city/state/ZIP, and branch name exactly when printed.',
@@ -139,6 +143,9 @@ export async function onRequestPost(context) {
     'Extract every requested field literally from the document. ' +
     'Read the entire page, including the top court information block, captions, footer/date areas, and any court-specific sections. ' +
     'For citation number, case number, driver license number, violation code/section, dates, court name, court street address, court mailing address, city/state/ZIP, branch name, bail, officer ID, and vehicle plate, copy characters exactly as printed. ' +
+    'For violation rows, keep the code/section and description from the SAME row; if there are multiple rows, use the first clearly legible row and never merge rows. ' +
+    'Read the response/due date only from the labeled response/due-date box; do not reuse the violation date when that box is unclear. ' +
+    'Read vehicle make, model, and plate from their own labeled boxes only; if handwriting is unclear, return the literal readable portion with confident=false or null. ' +
     'Keep court information separate from the defendant mailing address. ' +
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 

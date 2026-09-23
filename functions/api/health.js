@@ -19,7 +19,21 @@ export async function onRequestGet(context) {
   const stripeKeyMode = stripeSecret.startsWith('sk_live_') ? 'live' : (stripeSecret.startsWith('sk_test_') ? 'test' : (stripeSecret ? 'unknown' : 'missing'));
   const gatewayReady = !!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN);
   const openAiConfigured = !!env.OPENAI_API_KEY;
-  const scannerVisionReady = !!(openAiConfigured || env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY || gatewayReady);
+  const groqConfigured = !!env.GROQ_API_KEY;
+  const geminiConfigured = !!env.GEMINI_API_KEY;
+  const anthropicConfigured = !!env.ANTHROPIC_API_KEY;
+  const scannerProviders = [
+    openAiConfigured && 'openai',
+    groqConfigured && 'groq',
+    geminiConfigured && 'gemini',
+    anthropicConfigured && 'anthropic',
+    gatewayReady && 'gateway',
+  ].filter(Boolean);
+  const requestedScannerProvider = String(env.SCANNER_VISION_PROVIDER || '').trim().toLowerCase();
+  const effectiveScannerProvider = scannerProviders.includes(requestedScannerProvider)
+    ? requestedScannerProvider
+    : (scannerProviders[0] || 'none');
+  const scannerVisionReady = scannerProviders.length > 0;
   const casesReady = !!env.CASES;
   const r2Ready = !!env.R2;
   const googleCalendarConfigured = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REFRESH_TOKEN);
@@ -64,11 +78,13 @@ export async function onRequestGet(context) {
     scanner: {
       ready: scannerVisionReady,
       visionConfigured: scannerVisionReady,
-      provider: openAiConfigured ? 'openai' : (env.GEMINI_API_KEY ? 'gemini' : (env.ANTHROPIC_API_KEY ? 'anthropic' : (gatewayReady ? 'gateway' : 'none'))),
+      provider: effectiveScannerProvider,
+      configuredProviders: scannerProviders,
       openaiConfigured: openAiConfigured,
+      groqConfigured,
       gatewayConfigured: gatewayReady,
-      geminiConfigured: !!env.GEMINI_API_KEY,
-      anthropicConfigured: !!env.ANTHROPIC_API_KEY,
+      geminiConfigured,
+      anthropicConfigured,
     },
   }), {
     status: ok ? 200 : 503,
