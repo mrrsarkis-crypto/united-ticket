@@ -58,9 +58,9 @@ test('fallback validator rejects partial JSON and accepts a complete extraction 
   assert.equal(__visionTest.validExtractionText(JSON.stringify(complete)), true);
 });
 
-test('fallback validator rejects impossible field-state combinations', () => {
-  const invalid = completeExtraction({
+test('transport validator accepts typed field flags for deterministic normalization', () => {
+  const transportValid = completeExtraction({
     citationNumber: { value: null, found: false, confident: true },
   });
-  assert.equal(__visionTest.validExtractionText(JSON.stringify(invalid)), false);
+  assert.equal(__visionTest.validExtractionText(JSON.stringify(transportValid)), true);
 });

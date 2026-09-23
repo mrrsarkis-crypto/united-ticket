@@ -62,7 +62,9 @@ function validFieldContract(field) {
   if (!Object.prototype.hasOwnProperty.call(field, 'value')) return false;
   if (!(field.value === null || typeof field.value === 'string')) return false;
   if (typeof field.found !== 'boolean' || typeof field.confident !== 'boolean') return false;
-  if (field.found === false && field.confident === true) return false;
+  // Cross-field semantic contradictions (for example found=false with
+  // confident=true) are repaired deterministically by normalizeExtraction.
+  // This transport validator only enforces the provider JSON contract shape.
   return true;
 }
 
