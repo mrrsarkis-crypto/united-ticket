@@ -26,6 +26,7 @@ test('customer scanner renders the server scan confidence percentage without tur
   assert.match(app, /% scan confidence/i);
   assert.doesNotMatch(app, /More review signals|Some review signals|Few review signals/i);
   assert.doesNotMatch(scannerClient, /renderScanConfidence/);
+});
 test('uncertain bail never auto-fills the customer form', () => {
   assert.doesNotMatch(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.value\)/);
   assert.match(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.confident\?e\.bailAmount\.value:""\)/);
