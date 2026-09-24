@@ -12,6 +12,7 @@ const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.
 const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
 const scanStage = fs.readFileSync(path.join(root, 'public', 'scan-stage.js'), 'utf8');
 const scanPay = fs.readFileSync(path.join(root, 'public', 'scan-pay.js'), 'utf8');
+const worldclassTbd = fs.readFileSync(path.join(root, 'public', 'worldclass-tbd.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'public', 'assistant.html'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
@@ -43,6 +44,18 @@ test('uncertain scanner fields do not auto-fill the customer form', () => {
   assert.match(app, /courtOrAgency&&e\.courtOrAgency\.confident\?e\.courtOrAgency\.value:""/);
   assert.match(app, /violationCode&&e\.violationCode\.confident\?e\.violationCode\.value:""/);
   assert.match(app, /mailingAddress&&e\.mailingAddress\.confident\?e\.mailingAddress\.value:""/);
+});
+
+test('world-class TBD intake is OCR-first and displays every readable field', () => {
+  assert.doesNotThrow(() => new Function(worldclassTbd));
+  assert.match(worldclassTbd, /OCR-first intake/);
+  assert.match(worldclassTbd, /courtStreetAddress/);
+  assert.match(worldclassTbd, /vehiclePlate/);
+  assert.match(worldclassTbd, /x\.found===true/);
+  assert.match(worldclassTbd, /f\.confident===true/);
+  assert.match(worldclassTbd, /% read confidence/);
+  assert.match(worldclassTbd, /Review & continue/);
+  assert.match(index, /worldclass-tbd\.js/);
 });
 
 test('scanner result is framed as a review reveal', () => {

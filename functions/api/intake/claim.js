@@ -22,21 +22,22 @@ function scanField(extracted, name) {
 }
 
 function workflowFieldsFromScan(extracted) {
-  return {
-    jurisdiction: scanField(extracted, 'jurisdiction'),
-    courtDivision: scanField(extracted, 'courtDivision'),
-    courtOrAgency: scanField(extracted, 'courtOrAgency'),
-    violationCode: scanField(extracted, 'violationCode'),
-    violationDescription: scanField(extracted, 'violationDescription'),
-    procedureType: scanField(extracted, 'procedureType'),
-    filingMethod: scanField(extracted, 'filingMethod'),
-    eligibilityNotes: scanField(extracted, 'eligibilityNotes'),
-    due_date: scanField(extracted, 'dueDate') || scanField(extracted, 'courtDate'),
-    court_date: scanField(extracted, 'courtDate'),
-    citation_number: scanField(extracted, 'citationNumber'),
-    violation_date: scanField(extracted, 'violationDate'),
-    bail_amount: scanField(extracted, 'bailAmount'),
-  };
+  const keys = [
+    'jurisdiction','courtDivision','courtOrAgency','violationCode','violationDescription',
+    'procedureType','filingMethod','eligibilityNotes','citationNumber','caseNumber',
+    'violationDate','courtDate','dueDate','bailAmount','bailDepositedAmount',
+    'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
+    'courtStreetAddress','courtMailingAddress','courtCityStateZip','courtBranchName',
+    'officerName','officerId','location','vehicleMake','vehicleModel','vehiclePlate'
+  ];
+  const out = {};
+  for (const key of keys) out[key] = scanField(extracted, key);
+  out.due_date = out.dueDate || out.courtDate;
+  out.court_date = out.courtDate;
+  out.citation_number = out.citationNumber;
+  out.violation_date = out.violationDate;
+  out.bail_amount = out.bailAmount;
+  return out;
 }
 
 export async function onRequestPost(context) {
