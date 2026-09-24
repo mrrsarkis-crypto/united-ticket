@@ -1,6 +1,13 @@
 /*
   Link: </trust-responsive.css>; rel=stylesheet
 
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+
 /.well-known/oauth-authorization-server
   Content-Type: application/json; charset=utf-8
 
@@ -22,6 +29,9 @@
   Cache-Control: no-store, no-cache, must-revalidate
 
 /scanner-preprocess.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/worldclass-tbd.js
   Cache-Control: no-store, no-cache, must-revalidate
 
 /scanner-client.js
