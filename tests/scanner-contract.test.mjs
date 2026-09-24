@@ -15,6 +15,18 @@ const {
 } = __scannerTest;
 const SAMPLE_B64 = 'A'.repeat(80);
 
+test('conflicting precision reads keep critical fields unverified', () => {
+  const field = (value) => ({ value, found: true, confident: true });
+  const first = { citationNumber: field('AB1234'), dueDate: field('10/15/2026') };
+  const reread = { citationNumber: field('AB1284'), dueDate: field('10/15/2026') };
+  const selected = structuredClone(reread);
+  const warnings = [];
+  __scannerTest.reconcilePrecisionConflicts(first, reread, selected, warnings);
+  assert.equal(selected.citationNumber.confident, false);
+  assert.equal(selected.dueDate.confident, true);
+  assert.deepEqual(warnings, [{ field: 'citationNumber', reason: 'precision_read_conflict' }]);
+});
+
 test('accepts same-origin scanner calls and rejects cross-site browser calls', () => {
   const sameOrigin = new Request('https://unitedtraffictickets.com/api/assistant/extract', {
     headers: { origin: 'https://unitedtraffictickets.com', 'sec-fetch-site': 'same-origin' },
