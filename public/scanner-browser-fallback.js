@@ -2,6 +2,8 @@
 (() => {
   'use strict';
 
+  if (window.__UTTD_BROWSER_OCR_FALLBACK__) return;
+  window.__UTTD_BROWSER_OCR_FALLBACK__ = true;
   const nativeFetch = window.fetch.bind(window);
 
   function field(value) {
@@ -17,7 +19,8 @@
     const codeLine = findLine('vehicle code') || findLine('vc ');
     const nameLine = findLine('name:');
     const zipLine = lines.find((x) => /\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/i.test(x)) || '';
-    const citation = (citationLine.match(/[A-Z0-9-]{4,}$/i) || [])[0] || '';
+    const citationMatch = /\b(?:citation|cite|ticket)\s*(?:number|no\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9-]{3,19})\b/i.exec(citationLine);
+    const citation = citationMatch && /\d/.test(citationMatch[1]) ? citationMatch[1] : '';
     const caseNumber = (caseLine.match(/[A-Z0-9-]{4,}$/i) || [])[0] || '';
     const violationCode = (codeLine.match(/\b\d{3,6}\b/) || [])[0] || '';
     const defendantName = nameLine.replace(/^name\s*:\s*/i, '');
@@ -37,9 +40,8 @@
     out.caseNumber = field(caseNumber);
     out.violationCode = field(violationCode);
     out.courtOrAgency = field(courtLine);
-    out.courtStreetAddress = field(address);
-    out.courtMailingAddress = field(address);
-    out.courtCityStateZip = field(zipLine);
+    // An unlabeled address may belong to the driver. Keep court addresses empty.
+    // Local OCR candidates remain unverified until checked against the document.
     out.unknownFields = keys.filter((key) => !out[key].found);
     out.legibility = lines.length > 12 ? 'fair' : 'poor';
     out.scanMeta = {
@@ -107,21 +109,32 @@
   }
 
   window.fetch = async function(input, init) {
+    // Clone before native fetch consumes a Request body.
+    const requestCopy = input && typeof input.clone === 'function' ? input.clone() : null;
     const response = await nativeFetch(input, init);
     try {
-      const url = typeof input === 'string' ? input : input && input.url;
-      const path = url ? new URL(url, window.location.href).pathname : '';
-      if (path !== '/api/assistant/extract' || response.status < 500 || response.status > 599) return response;
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input && input.url;
+      const target = url ? new URL(url, window.location.href) : null;
+      const method = String(init && init.method || input && input.method || 'GET').toUpperCase();
+      if (!target || target.origin !== new URL(window.location.href).origin || target.pathname !== '/api/assistant/extract' || method !== 'POST') return response;
+      let needsFallback = response.status >= 500 && response.status <= 599;
+      if (response.ok && String(response.headers.get('content-type') || '').includes('application/json')) {
+        const data = await response.clone().json();
+        needsFallback = data && data.clientOcrFallback === true;
+      }
+      if (!needsFallback) return response;
 
       let bodyText = '';
       if (init && typeof init.body === 'string') {
         bodyText = init.body;
-      } else if (input && typeof input.clone === 'function') {
-        bodyText = await input.clone().text();
+      } else if (requestCopy) {
+        bodyText = await requestCopy.text();
       }
       const payload = bodyText ? JSON.parse(bodyText) : null;
       const image = payload && typeof payload.image === 'string' ? payload.image : '';
-      if (!image.startsWith('data:image/')) return response;
+      if (!payload || payload.consent !== true || !image.startsWith('data:image/')) return response;
+      const signal = init && init.signal || input && input.signal;
+      if (signal && signal.aborted) return response;
 
       try {
         const extracted = await window.UTTBrowserOCRFallback(image);
@@ -139,3 +152,4 @@
     }
   };
 })();
+
