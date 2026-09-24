@@ -210,9 +210,20 @@ export async function onRequestPost(context) {
           if (precisionJson) {
             const precisionExtracted = normalizeExtraction(precisionJson);
             const precisionWarnings = applyFieldPlausibility(precisionExtracted);
+            const firstRead = extracted;
             if (preferExtraction(precisionExtracted, precisionWarnings, extracted, plausibilityWarnings, requestedDocType)) {
               extracted = precisionExtracted;
               plausibilityWarnings = precisionWarnings;
+            }
+            // A fuller reread does not resolve a disagreement about a critical field.
+            for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
+              const original = firstRead[key];
+              const reread = precisionExtracted[key];
+              if (original?.value && reread?.value &&
+                  original.value.trim().toUpperCase() !== reread.value.trim().toUpperCase()) {
+                extracted[key].confident = false;
+                plausibilityWarnings.push({ field: key, reason: 'precision_read_conflict' });
+              }
             }
           }
         }
