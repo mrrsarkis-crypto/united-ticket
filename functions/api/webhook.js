@@ -27,10 +27,7 @@ export async function onRequestPost(context) {
     const session = payload.data.object;
 
     // Only fulfill when the payment actually cleared (async methods arrive unpaid).
-    const paid =
-      session.payment_status !== 'unpaid' &&
-      session.payment_status !== 'requires_payment_method' &&
-      session.payment_status !== 'no_payment_required';
+    const paid = session.payment_status === 'paid';
 
     if (paid) {
       const eventId = payload.id;
@@ -126,14 +123,13 @@ function json(data, status) {
 // prevent a captured webhook from being replayed indefinitely.
 async function verifySignature(raw, signature, secret) {
   try {
-    const parts = {};
-    signature.split(',').forEach((p) => {
-      const i = p.indexOf('=');
-      if (i > 0) parts[p.slice(0, i)] = p.slice(i + 1);
-    });
-    const timestamp = parts.t;
-    const v1 = (parts.v1 || '').toLowerCase();
-    if (!timestamp || !v1 || !/^\d+$/.test(timestamp) || !/^[0-9a-f]+$/.test(v1)) return false;
+    const parts = signature.split(',').map((part) => part.trim().split('='));
+    const timestamps = parts.filter(([name]) => name === 't').map(([, value]) => value);
+    const signatures = parts.filter(([name]) => name === 'v1').map(([, value]) => String(value || '').toLowerCase());
+    // Stripe sends multiple v1 signatures while an endpoint secret is rotated.
+    // Accept any matching v1 while retaining the timestamp replay protection.
+    if (timestamps.length !== 1 || !/^\d+$/.test(timestamps[0]) || !signatures.length) return false;
+    const timestamp = timestamps[0];
 
     const timestampSeconds = Number(timestamp);
     if (!Number.isSafeInteger(timestampSeconds)) return false;
@@ -150,10 +146,14 @@ async function verifySignature(raw, signature, secret) {
     const mac = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
     const expected = [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('');
 
-    if (v1.length !== expected.length) return false;
-    let diff = 0;
-    for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
-    return diff === 0;
+    let matched = false;
+    for (const v1 of signatures) {
+      if (v1.length !== expected.length || !/^[0-9a-f]{64}$/.test(v1)) continue;
+      let diff = 0;
+      for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
+      matched = matched || diff === 0;
+    }
+    return matched;
   } catch {
     return false;
   }
@@ -333,7 +333,7 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
         method: 'POST',
         headers: { 'authorization': 'Bearer ' + env.SEND_EMAIL_AUTH, 'content-type': 'application/json' },
         body: JSON.stringify({
-          to: email, subject: 'Your Ticket Fighter case is received',
+          to: email, subject: 'Your United Traffic Tickets Defense case is received',
           text: 'Thanks for your payment. Your case tracking code is ' + trackingCode +
             '. We will send the court result to this email when available.',
         }),
