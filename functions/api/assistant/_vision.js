@@ -12,6 +12,9 @@ const MAX_ATTEMPTS = 2;
 const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 const PROVIDER_COOLDOWN_MS = {
   billing: 21600000,
+  auth: 21600000,
+  request_validation: 300000,
+  invalid_response: 30000,
   rate_limit: 30000,
   provider_unavailable: 10000,
   timeout: 5000,
@@ -488,7 +491,10 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
           const detail = await res.text().catch(() => '');
           const error = new Error('DashScope HTTP ' + res.status + ': ' + detail.slice(0, 180));
           lastError = error;
-          if (res.status === 401) break;
+          if (res.status === 401 || res.status === 403) {
+            error.nonRetryable = true;
+            throw error;
+          }
           continue;
         }
         const data = await res.json();
@@ -497,6 +503,7 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
         return { text: text.trim(), attempts };
       } catch (error) {
         lastError = error;
+        if (error && error.nonRetryable) throw error;
         if (/timed out/i.test(String(error && error.message))) break;
       }
     }

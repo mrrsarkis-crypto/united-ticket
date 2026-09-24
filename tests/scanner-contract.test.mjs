@@ -315,6 +315,59 @@ test('rate-limited provider is cooled down for the next request', async (t) => {
   assert.equal(groqCalls, 2);
 });
 
+test('auth-failed provider is cooled down for the next request', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    __visionTest.resetProviderCooldowns();
+  });
+  __visionTest.resetProviderCooldowns();
+  let dashscopeCalls = 0;
+  let groqCalls = 0;
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes('dashscope')) {
+      dashscopeCalls++;
+      return new Response(JSON.stringify({ error: { message: 'unauthorized' } }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (target.includes('api.groq.com')) {
+      groqCalls++;
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"legibility":"good"}' } }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    throw new Error('unexpected provider URL');
+  };
+
+  const env = {
+    DASHSCOPE_API_KEY: 'test-dashscope',
+    GROQ_API_KEY: 'test-groq',
+    SCANNER_VISION_PROVIDER: 'dashscope',
+    SCANNER_PROVIDER_TIMEOUT_MS: '8000',
+  };
+  const input = {
+    system: 'x',
+    base64: SAMPLE_B64,
+    mediaType: 'image/jpeg',
+    prompt: 'x',
+    validateText: () => true,
+  };
+
+  const first = await extractVisionDocument(env, input);
+  const second = await extractVisionDocument(env, input);
+
+  assert.equal(first.provider, 'groq');
+  assert.deepEqual(first.fallbacks, [{ provider: 'dashscope', category: 'auth', status: 401 }]);
+  assert.equal(second.provider, 'groq');
+  assert.deepEqual(second.fallbacks, [{ provider: 'dashscope', category: 'auth', status: 401, cooldown: true }]);
+  assert.equal(dashscopeCalls, 1);
+  assert.equal(groqCalls, 2);
+});
+
 test('Cloudflare Workers AI OCR uses one Gemma document pass before external fallbacks', async () => {
   let model;
   let payload;
