@@ -278,30 +278,32 @@
   }
 
   function mergeCloudAndLocal(cloud, local) {
-    if (!cloud) return local;
-    const out = JSON.parse(JSON.stringify(cloud));
-    const cloudWarnings = Array.isArray(out.validationWarnings) ? out.validationWarnings : [];
-    const localWarnings = [];
-
-    for (const key of ['dueDate', 'violationDate']) {
-      const candidate = local && local[key];
-      if (candidate && candidate.value && fieldNeedsHelp(out, key)) {
-        out[key] = candidate;
-        localWarnings.push({ field: key, reason: 'browser_ocr_supplemented_verify' });
-      }
+    if (!cloud) {
+      local.scanMeta = Object.assign({}, local.scanMeta, { provisionalBrowserOcr: true, requiresHumanVerification: true });
+      return local;
     }
-    for (const key of ['citationNumber', 'violationCode']) {
+    const out = JSON.parse(JSON.stringify(cloud));
+    const warnings = Array.isArray(out.validationWarnings) ? out.validationWarnings : [];
+    const conflicts = [];
+    for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
       const current = out[key];
       const candidate = local && local[key];
-      if ((!current || !current.value) && candidate && candidate.value) {
-        out[key] = candidate;
-        localWarnings.push({ field: key, reason: 'browser_ocr_supplemented_verify' });
+      if (!candidate || !candidate.value) continue;
+      if (current && current.value && current.value.trim().toUpperCase() !== candidate.value.trim().toUpperCase()) {
+        current.confident = false;
+        conflicts.push({ field: key, reason: 'browser_ocr_conflict_verify' });
       }
+      // Browser OCR is never authoritative enough to fill a missing cloud field.
     }
-
-    out.validationWarnings = [...cloudWarnings, ...localWarnings].slice(0, 10);
+    out.validationWarnings = [...warnings, ...conflicts].slice(0, 15);
+    if (out.scanAssessment && conflicts.length) {
+      out.scanAssessment.label = 'Needs review';
+      out.scanAssessment.needsManualReview = true;
+      out.scanAssessment.summary = 'Browser OCR disagreed with the AI reading. Verify the flagged fields against the original document.';
+    }
     out.scanMeta = Object.assign({}, out.scanMeta || {}, {
-      browserOcrSupplemented: localWarnings.length > 0,
+      browserOcrSupplemented: false,
+      browserOcrConflicts: conflicts.length,
       requiresHumanVerification: true
     });
     return out;
