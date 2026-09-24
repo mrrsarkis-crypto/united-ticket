@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = fs.readFileSync(path.join(root, 'public', 'app.js'), 'utf8');
 const scannerPreprocess = fs.readFileSync(path.join(root, 'public', 'scanner-preprocess.js'), 'utf8');
+const scannerBrowserFallback = fs.readFileSync(path.join(root, 'public', 'scanner-browser-fallback.js'), 'utf8');
 const scannerClient = fs.readFileSync(path.join(root, 'public', 'scanner-client.js'), 'utf8');
 const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8');
 const scanStage = fs.readFileSync(path.join(root, 'public', 'scan-stage.js'), 'utf8');
@@ -83,6 +84,21 @@ test('scanner bridge scripts stay off the critical render path', () => {
   assert.ok(assistant.indexOf('/scanner-preprocess.js') < assistant.indexOf('/scanner-client.js'));
 });
 
+test('browser OCR fallback handles cloud fallback responses and targeted ticket regions', () => {
+  assert.doesNotThrow(() => new Function(scannerBrowserFallback));
+  assert.match(middleware, /worker-src 'self' blob: https:/);
+  assert.match(scannerBrowserFallback, /__UTTD_BROWSER_OCR_FALLBACK__/);
+  assert.match(scannerBrowserFallback, /clientOcrFallback/);
+  assert.match(scannerBrowserFallback, /fallbackContext/);
+  assert.match(scannerBrowserFallback, /mergeCloudAndLocal/);
+  assert.match(scannerBrowserFallback, /browserOcrSupplemented/);
+  assert.match(scannerBrowserFallback, /groq\|gemini\|dashscope/);
+  assert.match(scannerBrowserFallback, /cropImage/);
+  assert.match(scannerBrowserFallback, /respond\\s\+to\\s\+citation\\s\+before/i);
+  assert.match(scannerBrowserFallback, /citation\\s\+details/i);
+  assert.match(scannerBrowserFallback, /tessedit_pageseg_mode/);
+});
+
 test('scanner preprocessing covers HEIC, image quality, and conservative enhancement', () => {
   assert.doesNotThrow(() => new Function(scannerPreprocess));
   assert.match(scannerPreprocess, /heic2any/);
@@ -92,7 +108,7 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(scannerPreprocess, /contrast\(/);
   assert.match(scannerPreprocess, /brightness\(/);
   assert.match(serviceWorker, /scanner-preprocess/);
-  assert.match(serviceWorker, /utt-cache-v12/);
+  assert.match(serviceWorker, /utt-cache-v13/);
 });
 
 test('AdSense is restricted to designated informational pages', () => {
@@ -111,6 +127,8 @@ test('AdSense is restricted to designated informational pages', () => {
 });
 
 test('test command syntax-checks the scanner bridge scripts', () => {
+  assert.match(packageJson, /node --check public\/scanner-preprocess\.js/);
+  assert.match(packageJson, /node --check public\/scanner-browser-fallback\.js/);
   assert.match(packageJson, /node --check public\/score-ui\.js/);
   assert.match(packageJson, /node --check public\/scan-stage\.js/);
   assert.match(packageJson, /node --check public\/scan-pay\.js/);

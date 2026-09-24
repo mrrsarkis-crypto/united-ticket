@@ -251,7 +251,7 @@
 if (!window.UTTBrowserOCRFallback) {
   const uttFallbackReady = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = '/scanner-browser-fallback.js?bootstrap=20260922';
+    script.src = '/scanner-browser-fallback.js?bootstrap=20260923-2';
     script.async = true;
     script.onload = () => typeof window.UTTBrowserOCRFallback === 'function'
       ? resolve(window.UTTBrowserOCRFallback)
@@ -266,9 +266,9 @@ if (!window.UTTBrowserOCRFallback) {
 }
 </script>
 <script src="/scan-guard.js?v=20260921-1730" defer></script>
-<script src="/scanner-preprocess.js?v=20260923-1" defer></script>
+<script src="/scanner-preprocess.js?v=20260923-2" defer></script>
 <script src="/scanner-client.js?v=20260921-1730" defer></script>
-<script src="/scanner-browser-fallback.js?v=20260921-1730" defer></script>
+<script src="/scanner-browser-fallback.js?v=20260923-2" defer></script>
 <script src="/scanner-ui.js?v=20260921-1730" defer></script>
 <script src="/assistant.js?v=20260921-1730" defer></script>
 <script>

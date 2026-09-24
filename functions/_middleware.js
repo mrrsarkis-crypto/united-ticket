@@ -47,6 +47,7 @@ export async function onRequest(context) {
       "object-src 'none'",
       "base-uri 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+      "worker-src 'self' blob: https:",
       "img-src 'self' data: https:",
       "style-src 'self' 'unsafe-inline' https:",
       "connect-src 'self' https:",
