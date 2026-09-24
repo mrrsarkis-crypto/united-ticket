@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { caseAccessToken, hasCaseAccess } from '../functions/api/_shared.js';
 import { classifyCaliforniaWorkflow, daysUntil } from '../functions/api/cases/_tbwd.js';
 import { customerDocuments } from '../functions/api/cases/_package.js';
@@ -84,4 +86,13 @@ test('Case Center access token scopes private data to the case', async () => {
   assert.equal(await hasCaseAccess(new Request('https://example.test/case?token=wrong'), env, code), false);
   assert.equal(await hasCaseAccess(new Request('https://example.test/case'), env, code), false);
   assert.notEqual(token, await caseAccessToken(env, 'XYZ789'));
+});
+
+test('Checkout Sessions require Stripe Tax and customer tax-location collection', () => {
+  const source = fs.readFileSync(path.join(process.cwd(), 'functions', 'api', 'cases', 'index.js'), 'utf8');
+  assert.match(source, /'automatic_tax\[enabled\]': 'true'/);
+  assert.match(source, /billing_address_collection: 'auto'/);
+  assert.match(source, /customer_creation: 'always'/);
+  assert.doesNotMatch(source, /4gM14o73HbcldKz3HCefC00|7sYbJ2bjX8099ujemgefC01|fZudRa4Vz5S1fSH6TOefC02/);
+  assert.match(source, /5kQ9AUedO7em8jP02ieIw00/);
 });

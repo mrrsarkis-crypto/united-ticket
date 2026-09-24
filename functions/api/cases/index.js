@@ -6,10 +6,10 @@ import { caseAccessToken, json, listRecords, normalizeStripeSecret, priceFor, ra
 // Live Stripe Payment Link fallback used only when the production API key is
 // malformed/unavailable. The app still appends client_reference_id so the
 // existing Stripe webhook can reconcile the payment to the case.
+// Only keep a fallback link that has been verified in the live Stripe account
+// with Stripe Tax enabled. Do not fall back to stale links that could bypass tax.
 const FALLBACK_PAYMENT_LINKS = {
-  '199': 'https://buy.stripe.com/4gM14o73HbcldKz3HCefC00',
-  '149': 'https://buy.stripe.com/7sYbJ2bjX8099ujemgefC01',
-  '99': 'https://buy.stripe.com/fZudRa4Vz5S1fSH6TOefC02',
+  '199': 'https://buy.stripe.com/5kQ9AUedO7em8jP02ieIw00',
 };
 
 // GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
@@ -220,6 +220,9 @@ export async function onRequestPost(context) {
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: email,
+        customer_creation: 'always',
+        billing_address_collection: 'auto',
+        'automatic_tax[enabled]': 'true',
         client_reference_id: trackingCode,
         'line_items[0][price]': priceId,
         'line_items[0][quantity]': '1',
