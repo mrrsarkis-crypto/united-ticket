@@ -92,7 +92,7 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(scannerPreprocess, /contrast\(/);
   assert.match(scannerPreprocess, /brightness\(/);
   assert.match(serviceWorker, /scanner-preprocess/);
-  assert.match(serviceWorker, /utt-cache-v12/);
+  assert.match(serviceWorker, /utt-cache-v14/);
 });
 
 test('AdSense is restricted to designated informational pages', () => {
