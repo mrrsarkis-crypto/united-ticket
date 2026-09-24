@@ -19,13 +19,13 @@ const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'
 const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'), 'utf8');
 const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
 
-test('customer scanner source never renders a numeric score or scan confidence', () => {
+test('customer scanner renders the server scan confidence percentage without turning it into a legal outcome score', () => {
   assert.doesNotMatch(app, /\+\s*['\"]\/100['\"]/i);
-  assert.doesNotMatch(app, /\+\s*['\"]% scan confidence['\"]/i);
+  assert.match(app, /scanAssessment/);
+  assert.match(app, /scanConfidencePercent/);
+  assert.match(app, /% scan confidence/i);
   assert.doesNotMatch(app, /More review signals|Some review signals|Few review signals/i);
-  assert.doesNotMatch(scannerClient, /renderScanConfidence|scan confidence/i);
-});
-
+  assert.doesNotMatch(scannerClient, /renderScanConfidence/);
 test('uncertain bail never auto-fills the customer form', () => {
   assert.doesNotMatch(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.value\)/);
   assert.match(app, /h\("f_bail",e\.bailAmount&&e\.bailAmount\.confident\?e\.bailAmount\.value:""\)/);
