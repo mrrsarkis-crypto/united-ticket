@@ -215,16 +215,7 @@ export async function onRequestPost(context) {
               extracted = precisionExtracted;
               plausibilityWarnings = precisionWarnings;
             }
-            // A fuller reread does not resolve a disagreement about a critical field.
-            for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
-              const original = firstRead[key];
-              const reread = precisionExtracted[key];
-              if (original?.value && reread?.value &&
-                  original.value.trim().toUpperCase() !== reread.value.trim().toUpperCase()) {
-                extracted[key].confident = false;
-                plausibilityWarnings.push({ field: key, reason: 'precision_read_conflict' });
-              }
-            }
+            reconcilePrecisionConflicts(firstRead, precisionExtracted, extracted, plausibilityWarnings);
           }
         }
       } catch (precisionError) {
@@ -360,6 +351,19 @@ function preferExtraction(candidate, candidateWarnings, current, currentWarnings
   const candidateUnknown = Array.isArray(candidate && candidate.unknownFields) ? candidate.unknownFields.length : 99;
   const currentUnknown = Array.isArray(current && current.unknownFields) ? current.unknownFields.length : 99;
   return candidateUnknown < currentUnknown;
+}
+
+function reconcilePrecisionConflicts(firstRead, reread, selected, warnings) {
+  // A fuller reread does not resolve a disagreement about a critical field.
+  for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
+    const original = firstRead[key];
+    const second = reread[key];
+    if (original?.value && second?.value &&
+        original.value.trim().toUpperCase() !== second.value.trim().toUpperCase()) {
+      selected[key].confident = false;
+      warnings.push({ field: key, reason: 'precision_read_conflict' });
+    }
+  }
 }
 
 function buildNextSteps(documentType, assessment) {
@@ -630,4 +634,5 @@ export const __scannerTest = {
   shouldRunPrecisionPass,
   shouldAttemptPrecisionPass,
   preferExtraction,
+  reconcilePrecisionConflicts,
 };
