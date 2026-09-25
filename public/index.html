@@ -126,6 +126,13 @@
 </script>
 </head>
 <body>
+<button type="button" id="ambBtn" class="amb-btn" aria-pressed="false" aria-label="Play ambient sound">
+    <span class="amb-ico" aria-hidden="true">
+      <span class="amb-bar"></span><span class="amb-bar"></span><span class="amb-bar"></span><span class="amb-bar"></span>
+    </span>
+    <span class="amb-label">Sound off</span>
+  </button>
+  
 <a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
@@ -150,7 +157,6 @@
       </button>
       <div class="nav-links" id="navLinks">
         <ul class="nav-list">
-        <li><a href="#services">Services</a></li>
         <li class="drop">
           <a href="/services">We Fight</a>
           <ul>
@@ -179,20 +185,19 @@
           </ul>
         </li>
         <li><a href="#track">Track</a></li>
-          <li><a href="/resources">Resources</a></li>
-  <li class="drop">
-    <a href="#">Company</a>
-    <ul>
-      <li><a href="/about">About</a></li>
-      <li><a href="/faq">FAQ</a></li>
-      <li><a href="/contact">Contact</a></li>
-      <li><a href="/privacy">Privacy</a></li>
-      <li><a href="/terms">Terms</a></li>
-      <li><a href="/refund-policy">Refund Policy</a></li>
-    </ul>
-  </li>
-        <li><a href="/assistant">AI Ticket Analyzer</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li class="drop">
+          <a href="#">Company</a>
+          <ul>
+            <li><a href="/about">About</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/contact">Contact</a></li>
+            <li><a href="/privacy">Privacy</a></li>
+            <li><a href="/terms">Terms</a></li>
+            <li><a href="/refund-policy">Refund Policy</a></li>
+          </ul>
+        </li>
+        <li><a href="/assistant">AI Analyzer</a></li>
         <li><a class="cta" href="#build">Free Ticket Scan</a></li>
       </ul>
       </div>
@@ -683,5 +688,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<script src="/nav.js" defer></script></body>
+<script src="/nav.js" defer></script>
+<script src="/ambient.js" defer></script></body>
 </html>
