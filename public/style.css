@@ -38,7 +38,7 @@ img{max-width:100%;}
 .nav-links li.drop::after{content:'';position:absolute;left:8px;right:8px;top:100%;height:8px;}
 .nav-links li.drop > a{display:flex;align-items:center;gap:5px;}
 .nav-links li.drop > a::after{content:'';width:7px;height:7px;border-right:2px solid rgba(255,255,255,.75);border-bottom:2px solid rgba(255,255,255,.75);transform:rotate(45deg);margin-left:2px;margin-top:-3px;transition:transform .15s;}
-.nav-links li.drop > ul{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:240px;background:var(--navy-dark);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;box-shadow:0 20px 40px rgba(0,0,0,.35);z-index:200;}
+.nav-links li.drop > ul{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:240px;background:var(--navy-dark);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px;box-shadow:0 20px 40px rgba(0,0,0,.35);z-index:200;}
 .nav-links li.drop:hover > ul,
 .nav-links li.drop.open > ul,
 .nav-links li.drop > a:focus-visible + ul{display:block;}
@@ -71,7 +71,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .hero-badges{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;}
 .hero-badges span{font-size:13px;color:rgba(255,255,255,.7);}
 .hero-badges strong{display:block;font-size:20px;color:#fff;}
-.hero-img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;box-shadow:0 10px 40px -10px rgba(15,23,42,.45);}
+.hero-img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;box-shadow:0 10px 40px -10px rgba(15,23,42,.45);}
 
 /* ---- Guarantee strip ---- */
 .strip-guarantee{background:var(--amber);}
@@ -96,6 +96,6 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
   .vs-list li.pro::before{content:"\002B";position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:#E8F7EE;color:#1B7A3D;font-weight:800;line-height:22px;text-align:center;font-size:15px;}
   .vs-list li.con::before{content:"\2212";position:absolute;left:0;top:9px;width:22px;height:22px;border-radius:50%;background:#FDECEC;color:#B42318;font-weight:800;line-height:22px;text-align:center;font-size:15px;}
   .vs-note{margin:16px 0 0;font-size:14px;color:var(--muted);line-height:1.5;}
-.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px;}
 .svc h3{margin:0 0 8px;font-size:16px;color:var(--navy);}
 .svc p{margin:0;color:var(--muted);font-size:14px;line-height:1.55;}
