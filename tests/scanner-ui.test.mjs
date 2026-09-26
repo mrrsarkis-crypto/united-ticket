@@ -109,6 +109,46 @@ test('advertised price always matches the price actually charged', () => {
   assert.match(index, /Trial by Written Declaration &mdash; \$149/);
 });
 
+test('no page advertises a price that differs from the service code it links to', () => {
+  // Site-wide guard. A service code IS the price (functions/api/cases/index.js maps
+  // 99/149/199 to matching Stripe prices), so any page that renders a SKU price
+  // while linking a single service code must render that code's price. This is the
+  // invariant the TBD funnel violated when it showed $149 beside a $199 charge.
+  const SKUS = new Set(['99', '149', '199']);
+  const offenders = [];
+
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(p);
+        continue;
+      }
+      if (!/\.(html|js)$/.test(entry.name)) continue;
+      const rel = path.relative(root, p).replace(/\\/g, '/');
+      const src = fs.readFileSync(p, 'utf8');
+
+      const codes = new Set();
+      for (const m of src.matchAll(/service=(\d{2,4})/g)) codes.add(m[1]);
+      for (const m of src.matchAll(/data-utt-service="(\d{2,4})"/g)) codes.add(m[1]);
+      // Multi-SKU pages (index.html) pair each card with its own code, so the
+      // one-code rule below does not apply to them.
+      if (codes.size !== 1) continue;
+      const code = [...codes][0];
+      if (!SKUS.has(code)) continue;
+
+      for (const m of src.matchAll(/\$\s?(\d{2,4})(?!\d)/g)) {
+        if (SKUS.has(m[1]) && m[1] !== code) {
+          offenders.push(rel + ' shows $' + m[1] + ' but links service=' + code);
+        }
+      }
+    }
+  };
+  walk(path.join(root, 'public'));
+
+  assert.deepEqual(offenders, [], 'displayed price must equal the linked service code');
+});
+
 test('scanner page retains a conversion CTA and honest result disclaimer', () => {
   assert.match(index, /id="scorePanel"/);
   assert.match(index, /id="claimCta"/);
