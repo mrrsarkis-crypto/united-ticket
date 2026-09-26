@@ -21,6 +21,7 @@ function isMonetizedPath(pathname) {
   return path === '/resources' || path === '/resources.html' ||
     /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
     path === '/faq' || path === '/faq.html' ||
+    path === '/ticket-quiz' || path === '/ticket-quiz.html' ||
     path === '/courthouses' || path === '/courthouses.html' ||
     path === '/all-courthouses' || path === '/all-courthouses.html' ||
     /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
