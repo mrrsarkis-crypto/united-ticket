@@ -13,6 +13,9 @@ const scoreUi = fs.readFileSync(path.join(root, 'public', 'score-ui.js'), 'utf8'
 const scanStage = fs.readFileSync(path.join(root, 'public', 'scan-stage.js'), 'utf8');
 const scanPay = fs.readFileSync(path.join(root, 'public', 'scan-pay.js'), 'utf8');
 const worldclassTbd = fs.readFileSync(path.join(root, 'public', 'worldclass-tbd.js'), 'utf8');
+const botCourthouse = fs.readFileSync(path.join(root, 'public', 'bot-courthouse.html'), 'utf8');
+const botCourthouseJs = fs.readFileSync(path.join(root, 'public', 'bot-courthouse.js'), 'utf8');
+const allCourthouses = fs.readFileSync(path.join(root, 'public', 'all-courthouses.html'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'public', 'assistant.html'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
@@ -73,13 +76,37 @@ test('scanner result is framed as a review reveal', () => {
 
 test('scanner post-result payment bridge preserves the TBD path', () => {
   assert.match(scanPay, /PAY NOW/);
-  assert.match(scanPay, /\$149/);
+  assert.match(scanPay, /\$199/);
   assert.match(scanPay, /POTENTIAL TBD PATH DETECTED/);
   assert.match(scanPay, /Trial by Written Declaration/);
   assert.match(scanPay, /bot-courthouse\?path=tbd/);
   assert.match(scanPay, /claimCta/);
   assert.match(scanPay, /location\.href="\/bot-courthouse\?path=tbd"/);
   assert.match(scanPay, /alameda/);
+});
+
+test('advertised price always matches the price actually charged', () => {
+  // The TBD funnel charges service 199: bot-courthouse.js posts service:"199" and
+  // scan-pay.js sets f_service="199". Every price rendered on those surfaces must
+  // therefore read $199. A $149 badge beside a $199 charge is deceptive pricing
+  // (FTC Act s5 / 15 USC 8403, Cal. B&P s17500) and a chargeback magnet.
+  assert.match(botCourthouseJs, /service:"199"/);
+  assert.match(scanPay, /getElementById\("f_service"\)/);
+  assert.match(scanPay, /\.value="199"/);
+
+  for (const [name, src] of [
+    ['bot-courthouse.html', botCourthouse],
+    ['all-courthouses.html', allCourthouses],
+    ['scan-pay.js', scanPay],
+  ]) {
+    assert.doesNotMatch(src, /\$149/, name + ' advertises $149 but the funnel charges $199');
+    assert.match(src, /\$199/, name + ' must show the $199 it actually charges');
+  }
+
+  // index.html keeps a separate, genuine $149 SKU backed by a live $149 price,
+  // so its $149 copy is correct and must not be touched.
+  assert.match(index, /data-utt-service="149"/);
+  assert.match(index, /Trial by Written Declaration &mdash; \$149/);
 });
 
 test('scanner page retains a conversion CTA and honest result disclaimer', () => {
