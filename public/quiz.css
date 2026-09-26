@@ -88,6 +88,12 @@
   margin:20px 0 0;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--muted);text-align:center;line-height:1.55;
 }
+/* no-JS fallback */
+.quiz-nojs h2{font-size:19px;font-weight:800;margin:0 0 10px;color:var(--navy-dark);text-align:center;}
+.quiz-nojs p{font-size:14.5px;color:var(--muted);margin:0 0 18px;line-height:1.6;text-align:center;}
+.quiz-nojs-alt{font-size:13px !important;margin:12px 0 0 !important;}
+.quiz-nojs-alt a{color:var(--navy-mid);font-weight:700;}
+
 .quiz-badges{
   max-width:520px;margin:20px auto 0;display:flex;flex-wrap:wrap;
   gap:8px 20px;justify-content:center;
