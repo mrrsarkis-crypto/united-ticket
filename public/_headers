@@ -40,5 +40,20 @@
 /scan-guard.js
   Cache-Control: no-store, no-cache, must-revalidate
 
+/scan-progress.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scan-pay.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scan-stage.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/score-ui.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/scanner-upload.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
 /assistant.css
   Cache-Control: no-store, no-cache, must-revalidate
