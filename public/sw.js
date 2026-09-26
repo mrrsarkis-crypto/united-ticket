@@ -17,6 +17,7 @@ const CORE = [
   '/score-ui.js',
   '/scan-stage.js',
   '/scan-pay.js',
+  '/scan-progress.js',
   '/scanner-upload.js',
   '/manifest.webmanifest',
   '/icon.svg'
@@ -46,7 +47,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  const scannerAsset = /^(\/(assistant|scan-guard|scanner-preprocess|scanner-client|scanner-browser-fallback|scanner-ui)\.js|\/assistant\.css)$/.test(url.pathname);
+  const scannerAsset = /^(\/(assistant|scan-guard|scan-progress|scanner-preprocess|scanner-client|scanner-browser-fallback|scanner-ui)\.js|\/assistant\.css)$/.test(url.pathname);
   if (scannerAsset) {
     event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match(req)));
     return;

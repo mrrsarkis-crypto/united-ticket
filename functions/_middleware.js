@@ -10,6 +10,7 @@ const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js" defer></script>'
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
 const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
 const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
+const SCAN_PROGRESS_SCRIPT = '<script src="/scan-progress.js" defer></script>';
 const SCANNER_UPLOAD_SCRIPT = '<script src="/scanner-upload.js" defer></script>';
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js?v=20260917" defer></script>';
 const CONTRAST_STYLE = '<style id="utt-contrast-fix">.price .amount{color:#9A6900}.vs-card{color:#21304A}.vs-note{color:#3D4A61}.footer-legal{color:#C7CED8}.footer-legal a{color:#E4E9F1;font-weight:600;text-decoration:underline}</style>';
@@ -86,6 +87,7 @@ export async function onRequest(context) {
         element.append(SCORE_UI_SCRIPT, { html: true });
         element.append(SCAN_STAGE_SCRIPT, { html: true });
         element.append(SCAN_PAY_SCRIPT, { html: true });
+        element.append(SCAN_PROGRESS_SCRIPT, { html: true });
         element.append(SCANNER_UPLOAD_SCRIPT, { html: true });
         if (monetized) {
           element.append(ADSENSE_META, { html: true });

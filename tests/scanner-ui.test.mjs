@@ -22,6 +22,21 @@ const serviceWorker = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8'
 const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'), 'utf8');
 const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'), 'utf8');
 const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
+const scanProgress = fs.readFileSync(path.join(root, 'public', 'scan-progress.js'), 'utf8');
+const sitemap = fs.readFileSync(path.join(root, 'public', 'sitemap.xml'), 'utf8');
+
+function publicHtmlFiles() {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.html')) out.push(p);
+    }
+  };
+  walk(path.join(root, 'public'));
+  return out;
+}
 
 test('customer scanner renders the server scan confidence percentage without turning it into a legal outcome score', () => {
   assert.doesNotMatch(app, /\+\s*['\"]\/100['\"]/i);
@@ -268,4 +283,62 @@ test('every scanner fetch is bounded by a timeout so the UI can never hang forev
   // No bare native fetch may bypass the timeout wrapper.
   const bareCalls = scannerPreprocess.match(/(?<!function )nativeFetch\(/g) || [];
   assert.equal(bareCalls.length, 3, 'only the three deliberate pass-throughs inside fetchWithTimeout may call nativeFetch');
+});
+
+test('the scan progress bar animates instead of freezing at 8%', async (t) => {
+  // A vision scan takes 20-30s. app.js sets the bar to 8% and leaves it there
+  // until the request settles, which reads as a broken scanner and pushes
+  // people into reloading mid-scan.
+  assert.match(scanProgress, /__UTTD_SCAN_PROGRESS__/);
+  assert.match(middleware, /<script src="\/scan-progress\.js" defer><\/script>/);
+  assert.match(serviceWorker, /scan-progress/);
+  assert.match(serviceWorker, /\/scan-progress\.js/);
+
+  t.mock.timers.enable({ apis: ['setInterval'] });
+
+  const wrap = { style: { display: 'block' }, attrs: {}, hasAttribute: (k) => k === 'aria-valuenow', setAttribute(k, v) { this.attrs[k] = v; } };
+  const bar = { style: { width: '8%' } };
+  const document = {
+    readyState: 'complete',
+    getElementById: (id) => (id === 'progress' ? wrap : id === 'progressBar' ? bar : null),
+    addEventListener() {},
+  };
+  new Function('window', 'document', scanProgress)({ MutationObserver: null }, document);
+
+  // A scan is already in flight (app.js has shown the bar and set it to 8%).
+  const first = parseFloat(bar.style.width);
+  t.mock.timers.tick(2000);
+  const second = parseFloat(bar.style.width);
+  assert.ok(second > first, 'bar must advance while the scan is in flight');
+  assert.ok(second <= 90, 'bar must never claim completion (app.js owns 100%)');
+
+  t.mock.timers.tick(600000);
+  assert.ok(parseFloat(bar.style.width) <= 90, 'bar must asymptote below 100%');
+  assert.ok(Number(wrap.attrs['aria-valuenow']) <= 90, 'aria-valuenow must track the bar');
+
+  // app.js resolving the scan sets 100%; the animator must not pull it back.
+  bar.style.width = '100%';
+  t.mock.timers.tick(1000);
+  assert.equal(bar.style.width, '100%', 'must not regress a completed scan');
+});
+
+test('no page references Vercel-only assets on Cloudflare Pages', () => {
+  const offenders = publicHtmlFiles().filter((f) => fs.readFileSync(f, 'utf8').includes('/_vercel/'));
+  assert.deepEqual(offenders.map((f) => path.relative(root, f)), []);
+});
+
+test('every sitemap URL resolves to a real page', () => {
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+  assert.ok(locs.length > 0, 'sitemap must not be empty');
+  const missing = [];
+  for (const loc of locs) {
+    const p = new URL(loc).pathname;
+    const candidates = [
+      path.join(root, 'public', p.replace(/^\//, '')),
+      path.join(root, 'public', p.replace(/^\//, '') + '.html'),
+      path.join(root, 'public', p.replace(/^\/$/, 'index.html')),
+    ];
+    if (!candidates.some((c) => fs.existsSync(c) && fs.statSync(c).isFile())) missing.push(p);
+  }
+  assert.deepEqual(missing, [], 'sitemap lists pages that do not exist');
 });
