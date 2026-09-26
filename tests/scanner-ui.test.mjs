@@ -215,3 +215,57 @@ test('test command syntax-checks the scanner bridge scripts', () => {
   assert.match(packageJson, /node --check public\/scan-pay\.js/);
   assert.match(packageJson, /node --check scripts\/build-vercel\.js/);
 });
+
+test('every scanner fetch is bounded by a timeout so the UI can never hang forever', async (t) => {
+  // Regression guard: the claim, scan, and checkout steps each disable their
+  // button and await fetch() with no timeout. A stalled socket (mobile data drop)
+  // left the scanner frozen on "Scanning your document..." / "Saving your
+  // results..." with no cancel, no error, and no way back except a reload.
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+
+  let observed = null;
+  const fakeWindow = {
+    location: { href: 'https://unitedtraffictickets.com/' },
+    fetch(input, init) {
+      observed = init || {};
+      // Mirror real fetch: never settle on its own, reject when aborted.
+      return new Promise((_resolve, reject) => {
+        const signal = observed.signal;
+        if (signal && signal.aborted) return reject(abortError());
+        if (signal) signal.addEventListener('abort', () => reject(abortError()));
+      });
+    },
+  };
+
+  function abortError() {
+    const error = new Error('The operation was aborted.');
+    error.name = 'AbortError';
+    return error;
+  }
+
+  new Function('window', scannerPreprocess)(fakeWindow);
+
+  const pending = fakeWindow.fetch('/api/intake/claim', { method: 'POST' });
+  assert.ok(observed && observed.signal, 'an AbortSignal must be attached to the request');
+
+  assert.equal(observed.signal.aborted, false, 'request must not abort immediately');
+  t.mock.timers.tick(59_000);
+  assert.equal(observed.signal.aborted, false, 'must not abort before the deadline');
+
+  t.mock.timers.tick(2_000);
+  assert.equal(observed.signal.aborted, true, 'must abort once the deadline passes');
+
+  // The raw AbortError must be converted into a message the UI can show.
+  await assert.rejects(pending, /timed out after 60 seconds/);
+
+  // A caller-supplied signal must be honoured rather than overwritten.
+  const caller = new AbortController();
+  const passthrough = fakeWindow.fetch('/api/intake/claim', { method: 'POST', signal: caller.signal });
+  assert.equal(observed.signal, caller.signal, 'caller signal must be passed through');
+  caller.abort();
+  await assert.rejects(passthrough, (error) => error.name === 'AbortError');
+
+  // No bare native fetch may bypass the timeout wrapper.
+  const bareCalls = scannerPreprocess.match(/(?<!function )nativeFetch\(/g) || [];
+  assert.equal(bareCalls.length, 3, 'only the three deliberate pass-throughs inside fetchWithTimeout may call nativeFetch');
+});

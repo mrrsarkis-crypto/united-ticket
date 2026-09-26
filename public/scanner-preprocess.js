@@ -10,6 +10,49 @@
   var MAX_DIMENSION = 4200;
   var TARGET_BYTES = 3000000;
 
+  // Every scanner request previously had no timeout and no AbortController. If a
+  // request stalled (mobile network drop, AI vision stall, KV/Stripe write hang)
+  // the awaiting UI stayed disabled on "Scanning your document..." /
+  // "Saving your results..." / "Contacting secure payment..." forever, with no
+  // cancel and no error. This wrapper is the innermost fetch wrapper, so the
+  // ceiling applies to every network call the scanner makes.
+  var REQUEST_TIMEOUT_MS = 60000;
+
+  function fetchWithTimeout(input, init) {
+    var requestInit = Object.assign({}, init || {});
+
+    // Honour a caller-supplied signal, and allow an explicit opt-out.
+    if (requestInit.signal) return nativeFetch(input, requestInit);
+    if (requestInit.timeout === 0) {
+      delete requestInit.timeout;
+      return nativeFetch(input, requestInit);
+    }
+
+    var controller = new AbortController();
+    requestInit.signal = controller.signal;
+
+    var timer = setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS);
+
+    return nativeFetch(input, requestInit).then(
+      function (response) {
+        clearTimeout(timer);
+        return response;
+      },
+      function (error) {
+        clearTimeout(timer);
+        if (error && error.name === 'AbortError') {
+          var seconds = Math.round(REQUEST_TIMEOUT_MS / 1000);
+          var timeoutError = new Error(
+            'The request timed out after ' + seconds + ' seconds. Check your connection and try again.'
+          );
+          timeoutError.name = 'TimeoutError';
+          throw timeoutError;
+        }
+        throw error;
+      }
+    );
+  }
+
   function isScannerRequest(input) {
     try {
       var url = typeof input === 'string' ? input : input && input.url;
@@ -66,7 +109,7 @@
     var lower = String(dataUrl || '').slice(0, 48).toLowerCase();
     if (lower.indexOf('image/heic') < 0 && lower.indexOf('image/heif') < 0) return dataUrl;
 
-    var response = await nativeFetch(dataUrl);
+    var response = await fetchWithTimeout(dataUrl);
     var sourceBlob = await response.blob();
     var converter = await loadHeicConverter();
     var converted = await converter({ blob: sourceBlob, toType: 'image/jpeg', quality: 0.94 });
@@ -202,15 +245,15 @@
   }
 
   window.fetch = async function (input, init) {
-    if (!isScannerRequest(input)) return nativeFetch(input, init);
+    if (!isScannerRequest(input)) return fetchWithTimeout(input, init);
 
     var requestInit = Object.assign({}, init || {});
-    if (typeof requestInit.body !== 'string') return nativeFetch(input, requestInit);
+    if (typeof requestInit.body !== 'string') return fetchWithTimeout(input, requestInit);
 
     try {
       var body = JSON.parse(requestInit.body);
       if (!body || typeof body !== 'object' || typeof body.image !== 'string') {
-        return nativeFetch(input, requestInit);
+        return fetchWithTimeout(input, requestInit);
       }
 
       var result = await preprocessImage(body.image, body.clientQuality);
@@ -221,6 +264,6 @@
       console.warn('scanner preprocessing skipped', error && error.message || error);
     }
 
-    return nativeFetch(input, requestInit);
+    return fetchWithTimeout(input, requestInit);
   };
 })();
