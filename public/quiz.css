@@ -1,0 +1,110 @@
+/* ---- Ticket Quiz (/ticket-quiz) ----
+   Self-contained styles. Lives apart from style.css so the main site
+   stylesheet is never rewritten wholesale. */
+
+.quiz-page{
+  background:
+    radial-gradient(circle at 12% 18%, rgba(242,168,0,.10) 0, transparent 42%),
+    radial-gradient(circle at 88% 84%, rgba(0,51,160,.10) 0, transparent 46%),
+    var(--cloud);
+  min-height:100vh;
+}
+.quiz-shell{padding:44px 20px 70px;}
+.quiz-card{
+  max-width:520px;margin:0 auto;background:var(--white);
+  border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 18px 46px rgba(0,38,111,.10);
+  padding:32px 28px 30px;
+}
+.quiz-mark{display:flex;justify-content:center;margin-bottom:10px;}
+.quiz-title{
+  font-size:29px;line-height:1.2;margin:0 0 6px;text-align:center;
+  color:var(--navy-dark);letter-spacing:-.02em;
+}
+.quiz-sub{text-align:center;color:var(--muted);font-size:15px;margin:0 0 20px;font-weight:600;}
+
+/* progress */
+.quiz-progress{display:flex;justify-content:center;gap:8px;margin:0 0 24px;}
+.quiz-progress span{
+  width:34px;height:5px;border-radius:999px;background:var(--line);
+  transition:background .25s;
+}
+.quiz-progress span.done{background:var(--amber);}
+
+/* question panels */
+.quiz-panel{display:none;}
+.quiz-panel.active{display:block;animation:quizIn .28s ease both;}
+@keyframes quizIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.quiz-q{
+  font-size:19px;font-weight:800;color:var(--navy-dark);
+  margin:0 0 18px;display:flex;gap:9px;align-items:flex-start;
+}
+.quiz-opts{display:grid;gap:10px;}
+.quiz-opt{
+  display:block;width:100%;text-align:left;cursor:pointer;
+  font:600 15px/1.4 'Inter',Helvetica,Arial,sans-serif;
+  color:var(--navy-dark);background:var(--white);
+  border:1.5px solid var(--line);border-radius:12px;
+  padding:14px 16px;transition:border-color .15s,background .15s,transform .12s;
+}
+.quiz-opt:hover{border-color:var(--navy-mid);background:#F7FAFF;transform:translateY(-1px);}
+.quiz-opt:focus-visible{outline:3px solid var(--amber);outline-offset:2px;}
+
+/* results */
+.quiz-ico{
+  width:74px;height:74px;border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;font-size:34px;
+}
+.quiz-ico.strong{background:#E3F5EA;}
+.quiz-ico.moderate{background:#FFF4DA;}
+.quiz-ico.tough{background:#FDE8E8;}
+.quiz-verdict{font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;color:var(--navy-dark);}
+.quiz-body{font-size:14.5px;color:var(--muted);font-weight:500;margin:0 0 10px;line-height:1.6;}
+.quiz-why{
+  font-size:13.5px;color:var(--navy);background:#F2F6FF;
+  border-left:3px solid var(--navy-mid);border-radius:0 8px 8px 0;
+  padding:11px 13px;margin:0 0 20px;line-height:1.55;
+}
+.quiz-why b{color:var(--navy-dark);}
+.quiz-cta{
+  display:block;width:100%;text-align:center;text-decoration:none;
+  background:var(--amber);color:var(--navy-dark);
+  font:800 15px/1 'Inter',Helvetica,Arial,sans-serif;
+  padding:16px;border:0;border-radius:12px;
+  box-shadow:0 4px 0 var(--amber-dark);
+}
+.quiz-cta:hover{background:var(--amber-dark);}
+.quiz-cta:active{transform:translateY(3px);box-shadow:0 1px 0 var(--amber-dark);}
+.quiz-alt{
+  display:block;text-align:center;margin-top:12px;
+  font:700 14px/1.4 'Inter',Helvetica,Arial,sans-serif;color:var(--navy-mid);
+  text-decoration:underline;
+}
+.quiz-restart{
+  display:block;margin:16px auto 0;background:none;border:0;cursor:pointer;
+  color:var(--muted);font:600 13px/1 'Inter',Helvetica,Arial,sans-serif;text-decoration:underline;
+}
+.quiz-foot{
+  margin:20px 0 0;padding-top:16px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--muted);text-align:center;line-height:1.55;
+}
+.quiz-badges{
+  max-width:520px;margin:20px auto 0;display:flex;flex-wrap:wrap;
+  gap:8px 20px;justify-content:center;
+  font-size:12.5px;color:var(--muted);font-weight:600;
+}
+.quiz-back{
+  max-width:520px;margin:0 auto 18px;font-size:13.5px;
+}
+.quiz-back a{color:var(--navy-mid);font-weight:600;}
+
+@media (max-width:560px){
+  .quiz-shell{padding:26px 16px 52px;}
+  .quiz-card{padding:24px 20px 26px;border-radius:16px;}
+  .quiz-title{font-size:24px;}
+  .quiz-q{font-size:17px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .quiz-panel.active{animation:none;}
+  .quiz-opt:hover{transform:none;}
+}
