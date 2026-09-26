@@ -57,3 +57,6 @@
 
 /assistant.css
   Cache-Control: no-store, no-cache, must-revalidate
+
+/consent-banner.js
+  Cache-Control: no-store, no-cache, must-revalidate

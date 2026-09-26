@@ -8,6 +8,12 @@ const publisher = 'ca-pub-9943048295609395';
 const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}"
      crossorigin="anonymous"></script>`;
 const accountMeta = `<meta name="google-adsense-account" content="${publisher}">`;
+// Google Consent Mode v2. Emitted as part of the same fragment as the AdSense
+// tag so the default is always ordered before it; a returning visitor's stored
+// choice is re-applied as the default rather than an update, so ads never
+// briefly run denied. wait_for_update only applies to undecided visitors.
+const consentDefaultTag = '<script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>';
+const consentBannerTag = '<script src="/consent-banner.js" defer></script>';
 const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
 const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
 const scannerPreprocessTag = '<script src="/scanner-preprocess.js" defer></script>';
@@ -80,7 +86,14 @@ for (const file of await walk(outDir)) {
   }
 
   if (monetized && !html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
-    html = html.replace(/<head([^>]*)>/i, `$&\n${adsenseTag}`);
+    // One fragment, so the consent default is always ahead of the ad tag.
+    // accountMeta is already emitted above.
+    html = html.replace(/<head([^>]*)>/i, `$&\n${consentDefaultTag}\n${adsenseTag}`);
+    changed = true;
+  }
+
+  if (monetized && !html.includes('/consent-banner.js')) {
+    html = html.replace(/<\/head\s*>/i, `${consentBannerTag}\n$&`);
     changed = true;
   }
 

@@ -1,6 +1,18 @@
 // Cloudflare Pages Functions middleware
 
 const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
+// Google Consent Mode v2 default. MUST be emitted before ADSENSE_SCRIPT or the
+// ad tag runs with no consent state, which is the exposure we are fixing.
+// A returning visitor's stored choice is re-applied here as the *default*
+// (not an update) so ads never briefly run denied before it resolves, and
+// wait_for_update is only set for genuinely undecided visitors.
+const CONSENT_DEFAULT_SCRIPT = '<script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>';
+const CONSENT_BANNER_SCRIPT = '<script src="/consent-banner.js" defer></script>';
+// Markers used to keep injection idempotent, because the static build
+// (scripts/build-vercel.js) can inject AdSense into the same pages.
+const ADSENSE_MARKER = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+const CONSENT_MARKER = 'uttAdConsent';
+const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
 const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
@@ -26,6 +38,14 @@ function isMonetizedPath(pathname) {
     path === '/courthouses' || path === '/courthouses.html' ||
     path === '/all-courthouses' || path === '/all-courthouses.html' ||
     /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+}
+
+function insertAfterHeadOpen(html, fragment) {
+  return html.replace(/<head([^>]*)>/i, (m) => `${m}\n${fragment}`);
+}
+
+function insertBeforeHeadClose(html, fragment) {
+  return html.replace(/<\/head\s*>/i, (m) => `${fragment}\n${m}`);
 }
 
 export async function onRequest(context) {
@@ -80,6 +100,22 @@ export async function onRequest(context) {
   });
 
   if (isStandardHtml) {
+    // The consent default MUST reach the head before the AdSense tag. The
+    // static build can already have injected AdSense into the same page, so
+    // these pages are buffered and every injection is made idempotent rather
+    // than assuming this middleware is the only thing touching <head>.
+    if (monetized) {
+      let html = await output.text();
+      if (!html.includes(ADSENSE_MARKER)) {
+        html = insertAfterHeadOpen(html, ADSENSE_META + CONSENT_DEFAULT_SCRIPT + ADSENSE_SCRIPT);
+      } else if (!html.includes(CONSENT_MARKER)) {
+        html = insertAfterHeadOpen(html, ADSENSE_META + CONSENT_DEFAULT_SCRIPT);
+      }
+      if (!html.includes(CONSENT_BANNER_MARKER)) {
+        html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
+      }
+      output = new Response(html, { status: output.status, statusText: output.statusText, headers: newHeaders });
+    }
     output = new HTMLRewriter().on('head', {
       element(element) {
         element.append(SCANNER_PREPROCESS_SCRIPT, { html: true });
@@ -89,10 +125,6 @@ export async function onRequest(context) {
         element.append(SCAN_PAY_SCRIPT, { html: true });
         element.append(SCAN_PROGRESS_SCRIPT, { html: true });
         element.append(SCANNER_UPLOAD_SCRIPT, { html: true });
-        if (monetized) {
-          element.append(ADSENSE_META, { html: true });
-          element.append(ADSENSE_SCRIPT, { html: true });
-        }
         element.append(TRUST_BADGE_SCRIPT, { html: true });
         element.append(CONTRAST_STYLE, { html: true });
       }

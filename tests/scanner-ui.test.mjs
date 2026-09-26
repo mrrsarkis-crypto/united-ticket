@@ -24,6 +24,8 @@ const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'
 const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
 const scanProgress = fs.readFileSync(path.join(root, 'public', 'scan-progress.js'), 'utf8');
 const sitemap = fs.readFileSync(path.join(root, 'public', 'sitemap.xml'), 'utf8');
+const consentBanner = fs.readFileSync(path.join(root, 'public', 'consent-banner.js'), 'utf8');
+const publicHeaders = fs.readFileSync(path.join(root, 'public', '_headers'), 'utf8');
 
 function publicHtmlFiles() {
   const out = [];
@@ -341,4 +343,118 @@ test('every sitemap URL resolves to a real page', () => {
     if (!candidates.some((c) => fs.existsSync(c) && fs.statSync(c).isFile())) missing.push(p);
   }
   assert.deepEqual(missing, [], 'sitemap lists pages that do not exist');
+});
+
+
+test('consent banner is a complete, parseable IIFE (it was truncated mid-file)', () => {
+  // This file shipped truncated at 50 lines with the IIFE never closed and
+  // renderBanner called but never defined, so it threw on load.
+  assert.doesNotThrow(() => new Function(consentBanner));
+  const opens = (consentBanner.match(/\(function \(\) \{/g) || []).length;
+  const closes = (consentBanner.match(/^\}\)\(\);/gm) || []).length;
+  assert.equal(opens, closes, 'IIFE must open and close exactly once');
+  assert.ok(!/renderBanner\(\);\s*\}\s*$/.test(consentBanner), 'must not end mid-function');
+  assert.match(consentBanner, /function renderBanner\(\)/);
+  assert.match(consentBanner, /function renderReopenControl\(\)/);
+});
+
+test('the consent default is emitted before the AdSense tag on monetized pages', () => {
+  // The middleware and the static build can both inject AdSense, so ordering
+  // is asserted on the fragment each emits, not on statement order.
+  const mwFragment = middleware.match(/ADSENSE_META \+ CONSENT_DEFAULT_SCRIPT \+ ADSENSE_SCRIPT/);
+  assert.ok(mwFragment, 'middleware must emit meta + consent + adsense as one ordered fragment');
+  const buildFragment = buildScript.match(/\$\{consentDefaultTag\}\\n\$\{adsenseTag\}/);
+  assert.ok(buildFragment, 'build must emit the consent default before the ad tag');
+
+  // The default must cover every Consent Mode v2 signal, not just the old v1 pair.
+  for (const source of [middleware, buildScript]) {
+    for (const signal of ['ad_storage', 'ad_user_data', 'ad_personalization',
+      'analytics_storage', 'functionality_storage', 'personalization_storage', 'security_storage']) {
+      assert.ok(source.includes(signal), `consent default must set ${signal}`);
+    }
+    // Undecided visitors get a grace period; decided ones do not need to wait.
+    assert.match(source, /if\(s===null\)c\.wait_for_update=500/);
+    assert.match(source, /s==="granted"\)\?"granted":"denied"/);
+  }
+});
+
+test('AdSense is injected exactly once even when the build and middleware both run', () => {
+  // Both layers guard on the same marker, so a page that the build already
+  // processed must not get a second tag from the middleware.
+  assert.match(middleware, /if \(!html\.includes\(ADSENSE_MARKER\)\)/);
+  assert.match(middleware, /const ADSENSE_MARKER = 'pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js'/);
+  assert.match(buildScript, /if \(monetized && !html\.includes\(`pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=\$\{publisher\}`\)\)/);
+  // Exactly one place in the middleware may append the raw tag.
+  assert.equal((middleware.match(/\+ ADSENSE_SCRIPT/g) || []).length, 1);
+  assert.equal((buildScript.match(/\$\{adsenseTag\}/g) || []).length, 1);
+});
+
+test('consent choice is stored and pushed as a gtag update, and is re-applied as the default', () => {
+  const els = new Map();
+  const mk = (id) => ({
+    id, style: { cssText: '' }, textContent: '', children: [], attrs: {},
+    setAttribute(k, v) { this.attrs[k] = v; },
+    addEventListener(ev, fn) { (this.handlers ||= {})[ev] = fn; },
+    remove() { els.delete(this.id); },
+    appendChild(c) { this.children.push(c); els.set(c.id || 'anon', c); return c; },
+    removeChild() {},
+  });
+  const body = mk('body');
+  global.document = {
+    readyState: 'complete',
+    createElement: (tag) => mk(tag),
+    getElementById: (id) => els.get(id) || null,
+    addEventListener() {},
+    body,
+  };
+  const dataLayer = [];
+  const store = new Map();
+  const window = {
+    dataLayer,
+    localStorage: {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, v),
+      removeItem: (k) => store.delete(k),
+    },
+  };
+  window.window = window;
+  global.window = window;
+
+  // First visit: nothing stored, so the banner must appear.
+  new Function('window', 'document', consentBanner)(window, global.document);
+  const firstSignal = dataLayer.find((c) => c[0] === 'consent');
+  assert.ok(firstSignal, 'a consent signal must be pushed on first visit');
+  assert.equal(firstSignal[1], 'update');
+  assert.equal(firstSignal[2].ad_storage, 'denied', 'undecided visitors start denied');
+  assert.equal(firstSignal[2].ad_personalization, 'denied');
+  assert.ok(els.has('uttAdConsentBanner'), 'banner must be rendered for undecided visitors');
+
+  // Accepting stores the decision and flips every signal to granted.
+  const accept = els.get('uttAdConsentBanner').children[1].children[1];
+  accept.handlers.click();
+  assert.equal(store.get('uttAdConsent'), 'granted');
+  assert.ok(!els.has('uttAdConsentBanner'), 'banner must disappear after a choice');
+  const granted = dataLayer[dataLayer.length - 1];
+  assert.equal(granted[0], 'consent');
+  assert.equal(granted[1], 'update');
+  for (const k of Object.keys(granted[2])) assert.equal(granted[2][k], 'granted', `${k} must be granted`);
+
+  // Second visit: the stored choice is honoured, no banner is re-shown, and a
+  // reopen control is offered so the choice is not permanent.
+  els.clear();
+  dataLayer.length = 0;
+  window.__uttConsentBannerBooted = false;
+  new Function('window', 'document', consentBanner)(window, global.document);
+  assert.ok(!els.has('uttAdConsentBanner'), 'a decided visitor must not be asked again');
+  assert.ok(els.has('uttAdConsentReopen'), 'a reopen control must be offered');
+  assert.equal(dataLayer[dataLayer.length - 1][2].ad_storage, 'granted');
+
+  delete global.window;
+  delete global.document;
+});
+
+test('the banner is never served stale', () => {
+  assert.match(publicHeaders, /\/consent-banner\.js\r?\n {2}Cache-Control: no-store/);
+  assert.match(serviceWorker, /'\/consent-banner\.js'/);
+  assert.match(serviceWorker, /consent-banner/);
 });
