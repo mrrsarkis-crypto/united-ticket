@@ -18,7 +18,8 @@ export async function onRequestGet(context) {
   const name = String(doc.name || 'document');
   const ext = name.split('.').pop().toLowerCase();
   const safeExt = ['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : 'bin';
-  const object = await env.R2.get('cases/' + code + '/' + id + '.' + safeExt);
+  const storageKey = String(doc.r2Key || ('cases/' + code + '/' + id + '.' + safeExt));
+  const object = await env.R2.get(storageKey);
   if (!object) return json({ error: 'Document file is unavailable' }, 404);
 
   const headers = new Headers();
