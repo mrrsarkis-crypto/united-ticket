@@ -280,12 +280,14 @@ async function fulfillCase(env, session, trackingCode, caseData) {
     try {
       const r2Key = stamp + '/' + r2Tr205File;
       await env.R2.put(r2Key, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
+      const customerR2Key = 'cases/' + safeCode + '/tr205-' + safeCode + '.pdf';
+      await env.R2.put(customerR2Key, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
       const now = new Date().toISOString();
       const latest = await loadCase(env, trackingCode);
       const documents = Array.isArray(latest?.documents) ? latest.documents.slice() : [];
       const documentId = 'tr205-' + safeCode;
       const existing = documents.findIndex((doc) => doc && doc.id === documentId);
-      const doc = { id: documentId, name: 'TR-205_' + safeCode + '.pdf', type: 'application/pdf', size: tr205Bytes.byteLength, uploadedAt: now, source: 'case', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(trackingCode) + '&id=' + encodeURIComponent(documentId), r2Key };
+      const doc = { id: documentId, name: 'TR-205_' + safeCode + '.pdf', type: 'application/pdf', size: tr205Bytes.byteLength, uploadedAt: now, source: 'case', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(trackingCode) + '&id=' + encodeURIComponent(documentId), r2Key: customerR2Key };
       if (existing >= 0) documents[existing] = doc; else documents.unshift(doc);
       await env.CASES.put('case:' + trackingCode, JSON.stringify({ ...(latest || base), documents: documents.slice(0, 100), package: { ...((latest || base).package || {}), clientDocumentsReady: true, generatedAt: now, version: 'tr205-v1' }, updated_at: now }));
       try {
