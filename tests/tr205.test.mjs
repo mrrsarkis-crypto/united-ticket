@@ -22,6 +22,11 @@ test('official TR-205 template is populated across the court block and defendant
   assert.equal(get('TR-205[0].Page1[0].P1Caption[0].AttyPartyInfo[0].CrtStreet[0]'), '111 N. Hill Street');
   assert.equal(get('TR-205[0].Page1[0].P1Caption[0].AttyPartyInfo[0].CityZip_ft[0]'), 'Los Angeles, CA 90012');
   assert.equal(get('TR-205[0].Page1[0].P1Caption[0].AttyPartyInfo[0].CrtBranch[0]'), 'Central District');
+  assert.equal(get('TR-205[0].Page1[0].P1Caption[0].CaseNumber[0].CaseNumber[0]'), 'LA123456');
+  assert.equal(get('TR-205[0].Page1[0].P1Caption[0].CourtInfo[0].Party1[0]'), 'Jordan Example');
+  assert.equal(get('TR-205[0].Page1[0].List1[0].Lia[0].FillText1[0]'), '10/10/2026');
+  assert.equal(get('TR-205[0].Page1[0].List1[0].Lib[0].TextFieldbail[0]'), '$199.00');
+  assert.equal(get('TR-205[0].Page1[0].List1[0].Lic[0].DecimalField1[0]'), '$0.00');
   assert.equal(get('TR-205[0].Page2[0].List2[0].Li6[0].FillText19[0]'), '123 Main Street, Los Angeles, CA 90001');
   assert.equal(get('TR-205[0].Page2[0].List2[0].Li6[0].FillText20[0]'), 'Sample statement.');
 });
