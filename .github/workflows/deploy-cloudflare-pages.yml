@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Production scanner deployment checkpoint: runs after every main push.
+      # Deployment retry checkpoint: 2026-09-27.
       - name: Checkout
         uses: actions/checkout@v4
 
