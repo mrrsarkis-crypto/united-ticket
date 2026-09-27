@@ -234,7 +234,7 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   const dollars = raw ? (raw / 100).toFixed(2) : '0.00';
 
   // Confidential TR-205 (TBD) is only appropriate for the $149/TBWD service.
-  const isTbwd = String(base.service || '149') === '149';
+  const isTbwd = ['149', '199'].includes(String(base.service || '199'));
   let tr205Bytes = null;
   if (isTbwd) {
     try {
@@ -275,11 +275,19 @@ async function fulfillCase(env, session, trackingCode, caseData) {
   // 1) Notify the business with the appropriate paid-case document.
   await notifyPaid(env, session, trackingCode, base, tr205Bytes, r2Tr205File);
 
-  // 2) Store the TR-205 in R2 only for the TBWD service.
+  // 2) Store the TR-205 in R2 and register it in the customer's secure Case Center.
   if (isTbwd && env.R2 && tr205Bytes) {
     try {
       const r2Key = stamp + '/' + r2Tr205File;
       await env.R2.put(r2Key, tr205Bytes, { httpMetadata: { contentType: 'application/pdf' } });
+      const now = new Date().toISOString();
+      const latest = await loadCase(env, trackingCode);
+      const documents = Array.isArray(latest?.documents) ? latest.documents.slice() : [];
+      const documentId = 'tr205-' + safeCode;
+      const existing = documents.findIndex((doc) => doc && doc.id === documentId);
+      const doc = { id: documentId, name: 'TR-205_' + safeCode + '.pdf', type: 'application/pdf', size: tr205Bytes.byteLength, uploadedAt: now, source: 'case', customerVisible: true, downloadPath: '/api/case-document?code=' + encodeURIComponent(trackingCode) + '&id=' + encodeURIComponent(documentId), r2Key };
+      if (existing >= 0) documents[existing] = doc; else documents.unshift(doc);
+      await env.CASES.put('case:' + trackingCode, JSON.stringify({ ...(latest || base), documents: documents.slice(0, 100), package: { ...((latest || base).package || {}), clientDocumentsReady: true, generatedAt: now, version: 'tr205-v1' }, updated_at: now }));
       try {
         await enqueuePrintJob(env, { r2Key, filename: 'TR-205_' + safeCode + '.pdf', trackingCode });
       } catch (printQueueError) {
@@ -288,7 +296,7 @@ async function fulfillCase(env, session, trackingCode, caseData) {
     } catch (e) { console.error('R2 store failed', e); }
   }
 
-  // 3) Email the CLIENT the retainer + receipt (NOT the work product).
+  // 3) Email the CLIENT the TBD, retainer, and receipt so the paid customer receives the work product.
   await sendConfirmationEmail(custEmail, trackingCode, env, {
     retainerBytes, receiptBytes, tracking: trackingCode, fee: dollars,
   });
@@ -303,6 +311,7 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
   // Preferred: Resend (env.RESEND_API_KEY). Fallback: generic SEND_EMAIL_URL.
   const retainerBytes = docs && docs.retainerBytes;
   const receiptBytes = docs && docs.receiptBytes;
+  const tr205Bytes = docs && docs.tr205Bytes;
   const fee = (docs && docs.fee) || '';
   if (env.RESEND_API_KEY) {
     const attachments = [];
@@ -314,12 +323,15 @@ async function sendConfirmationEmail(email, trackingCode, env, docs) {
     if (receiptBytes) {
       attachments.push({ filename: 'Receipt_' + trackingCode + '.pdf', bytes: receiptBytes, type: 'application/pdf' });
     }
+    if (tr205Bytes) {
+      attachments.push({ filename: 'TR-205_' + trackingCode + '.pdf', bytes: tr205Bytes, type: 'application/pdf' });
+    }
     try {
       await resendSend(env, {
         to: email,
         subject: 'Your United Traffic Tickets Defense receipt & retainer',
         text: 'Thank you for your payment of $' + fee + ' (case ' + trackingCode + ').\n\n' +
-          'Please review and sign the attached Retainer Agreement and keep the attached Receipt for your records.\n' +
+          'Your completed Trial by Written Declaration (TR-205) is attached, along with the Retainer Agreement and Receipt. Please review the TR-205 carefully before any filing step.\n' +
           'Open your private Case Center here: ' + caseUrl + '.\n\n' +
           'If you have any questions, call (818) 205-8271.',
         attachments,
