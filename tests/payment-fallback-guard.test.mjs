@@ -95,3 +95,54 @@ test('the disabled fallback still reports a 503 to the client', () => {
   const refusals = CASES_SOURCE.match(/Payments are temporarily unavailable\. Please contact us to complete your order\./g) || [];
   assert.equal(refusals.length, 2, 'both blocked paths must surface the same safe error');
 });
+
+test('health never advertises the live fallback as available without the flag', async () => {
+  const { onRequestGet: health } = await import('../functions/api/health.js');
+
+  const response = await health({
+    env: {
+      STRIPE_SECRET_KEY: LIVE_KEY,
+      STRIPE_WEBHOOK_SECRET: 'whsec_test',
+      STRIPE_PRICE_199: 'p', STRIPE_PRICE_299: 'p', STRIPE_PRICE_999: 'p',
+      CASES: {}, R2: {}, OPENAI_API_KEY: 'k',
+    },
+    request: new Request('https://example.com/api/health'),
+  });
+  const body = await response.json();
+  assert.equal(body.stripe.checkout.paymentLinkFallbackConfigured, false);
+  assert.equal(body.stripe.checkout.paymentLinkFallbackEnabled, false);
+
+  const enabled = await health({
+    env: {
+      STRIPE_SECRET_KEY: LIVE_KEY,
+      STRIPE_WEBHOOK_SECRET: 'whsec_test',
+      STRIPE_PRICE_199: 'p', STRIPE_PRICE_299: 'p', STRIPE_PRICE_999: 'p',
+      STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK: 'true',
+      CASES: {}, R2: {}, OPENAI_API_KEY: 'k',
+    },
+    request: new Request('https://example.com/api/health'),
+  });
+  const enabledBody = await enabled.json();
+  assert.equal(enabledBody.stripe.checkout.paymentLinkFallbackEnabled, true);
+});
+
+test('health keeps the live fallback disabled when only a test key is present', async () => {
+  const { onRequestGet: health } = await import('../functions/api/health.js');
+
+  const response = await health({
+    env: {
+      STRIPE_SECRET_KEY: TEST_KEY,
+      STRIPE_WEBHOOK_SECRET: 'whsec_test',
+      STRIPE_PRICE_199: 'p', STRIPE_PRICE_299: 'p', STRIPE_PRICE_999: 'p',
+      STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK: 'true',
+      CASES: {}, R2: {}, OPENAI_API_KEY: 'k',
+    },
+    request: new Request('https://example.com/api/health'),
+  });
+  const body = await response.json();
+  assert.equal(
+    body.stripe.checkout.paymentLinkFallbackEnabled,
+    false,
+    'a test key must never be reported as live-fallback capable'
+  );
+});

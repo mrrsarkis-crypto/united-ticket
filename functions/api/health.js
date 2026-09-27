@@ -54,6 +54,9 @@ export async function onRequestGet(context) {
   if (!casesReady) safeMissing.push('case_storage');
   if (!r2Ready) safeMissing.push('document_storage');
 
+  const livePaymentLinkFallbackFlag = String(env.STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK || '').trim().toLowerCase() === 'true';
+  const effectivePaymentLinkFallback = livePaymentLinkFallbackFlag && stripeKeyMode === 'live';
+
   return new Response(JSON.stringify({
     ok,
     service: 'united-traffic-tickets-defense',
@@ -71,7 +74,11 @@ export async function onRequestGet(context) {
       cancelUrlValid: /^https?:\/\//i.test(effectiveCancelUrl),
       checkout: {
         apiConfigured: !!stripeSecret && /^sk_(live|test)_/.test(stripeSecret),
-        paymentLinkFallbackConfigured: true,
+        // A live Payment Link charges a real card, so the fallback stays inert
+        // unless it is explicitly enabled AND a live key is configured. A test
+        // key can never reach a live link.
+        paymentLinkFallbackConfigured: false,
+        paymentLinkFallbackEnabled: effectivePaymentLinkFallback,
       },
     },
     integrations: {
