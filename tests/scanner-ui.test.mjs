@@ -179,6 +179,7 @@ test('scanner bridge scripts stay off the critical render path', () => {
   assert.match(buildScript, /const scannerPreprocessTag = '<script src=\"\/scanner-preprocess\.js\" defer><\/script>'/);
   assert.match(buildScript, /const scannerClientTag = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
   assert.ok(index.indexOf('/scanner-preprocess.js') < index.indexOf('/app.js'));
+  assert.ok(index.indexOf('/scanner-browser-fallback.js') < index.indexOf('/app.js'));
   assert.ok(assistant.indexOf('/scanner-preprocess.js') < assistant.indexOf('/scanner-client.js'));
 });
 
