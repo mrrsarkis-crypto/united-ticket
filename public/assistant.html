@@ -165,10 +165,19 @@
         <div class="ast-status" id="astStatus2" role="status"></div>
       </div>
 
-      <!-- STAGE 3: ASK QUESTIONS + APPROVE -->
+      <!-- STAGE 3: REVIEW TR-205 -->
       <div class="ast-card" id="stage3" style="display:none">
-        <h2>Step 3 — Provide your details and approve</h2>
-        <p class="muted">Your verified citation details stay in the workflow. Enter your contact information, confirm the authorization, and continue to secure checkout. Nothing is filed with a court until you complete the required steps.</p>
+        <h2>Step 3 — Review the TR-205 / Trial by Written Declaration information</h2>
+        <p class="muted">Review the exact information that would be used to prepare the California TR-205. Correct anything that is wrong or incomplete. Eligibility, court instructions, evidence, signature, and filing requirements still require verification.</p>
+        <div class="ast-fields" id="astTbdFields"></div>
+        <div class="ast-status" id="astStatusTbd" role="status"></div>
+        <button type="button" class="btn btn-amber ast-btn" id="astTbdContinue">TR-205 information looks right — continue <span class="ast-arrow">&rarr;</span></button>
+      </div>
+
+      <!-- STAGE 4: ASK QUESTIONS + APPROVE -->
+      <div class="ast-card" id="stage4" style="display:none">
+        <h2>Step 4 — Provide your details and approve</h2>
+        <p class="muted">Your verified citation details stay in the workflow. Enter your contact information, confirm the authorization, and continue to secure checkout. The TR-205 information must be reviewed first. Nothing is filed with a court until you complete the required steps.</p>
 
 
         <div class="ast-contact">
@@ -190,6 +199,7 @@
             <input type="checkbox" id="astApprove">
             <span><strong>I approve</strong> — I have reviewed and verified the citation details above, and I authorize United Traffic Tickets Defense to start document preparation using those details. I understand this is a paid service (document preparation, attorney review before filing) and that no outcome is guaranteed. I understand nothing is filed with any court or sent to anyone until I complete checkout.</span>
           </label>
+          <p class="tiny">Service: <strong>Trial by Written Declaration document preparation, $149</strong>. Payment comes after you review the extracted citation and TR-205 information.</p>
           <button type="button" class="btn btn-amber ast-btn" id="astCheckout">Approve &amp; continue to secure checkout <span class="ast-arrow">&rarr;</span></button>
           <div class="ast-status" id="astCheckoutStatus" role="status"></div>
           <p class="tiny ast-caveat">Not a law firm. Document preparation and case-tracking service. Outcomes not guaranteed. See <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.</p>
