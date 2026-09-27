@@ -73,6 +73,9 @@ export async function onRequestPost(context) {
   const bailDepositedAmount = (body.bailDepositedAmount || body.bail_deposited_amount || '').trim();
   const clerkMailedOrDeliveredDate = (body.clerkMailedOrDeliveredDate || body.clerk_mailed_or_delivered_date || '').trim();
   const service = String(body.service || '199');
+  const tbdReviewed = body.tbdReviewed === true;
+  const tbdReview = body.tbdReview && typeof body.tbdReview === 'object' && !Array.isArray(body.tbdReview) ? body.tbdReview : {};
+  if (service === '149' && !tbdReviewed) return json({ error: 'TR-205 information must be reviewed before payment checkout.' }, 400);
   const dob = (body.dob || '').trim();
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
@@ -126,6 +129,8 @@ export async function onRequestPost(context) {
         court_mailing_address: courtMailingAddress,
         court_city_state_zip: courtCityStateZip,
         court_branch_name: courtBranchName,
+        tbd_reviewed: tbdReviewed,
+        tbd_review: tbdReview,
         court_date: courtDate || (priorRecord && priorRecord.court_date) || '',
         status: 'payment_pending',
         notes: JSON.parse(notes),
