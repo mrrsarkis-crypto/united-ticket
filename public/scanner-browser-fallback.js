@@ -244,7 +244,8 @@
   }
 
   window.UTTBrowserOCRFallback = async function(image) {
-    const bundle = await browserOcr(image);
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Browser OCR timed out.')), 45000));
+    const bundle = await Promise.race([browserOcr(image), timeout]);
     if (!String(bundle.text || '').trim() && !String(bundle.top || '').trim()) {
       throw new Error('Browser OCR could not read enough text from this image.');
     }
