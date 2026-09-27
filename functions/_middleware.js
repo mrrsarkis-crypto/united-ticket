@@ -19,6 +19,7 @@ const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="htt
 const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
 const SCANNER_PREPROCESS_SCRIPT = '<script src="/scanner-preprocess.js" defer></script>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js" defer></script>';
+const SCANNER_BROWSER_FALLBACK_SCRIPT = '<script src="/scanner-browser-fallback.js" defer></script>';
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
 const SCAN_STAGE_SCRIPT = '<script src="/scan-stage.js" defer></script>';
 const SCAN_PAY_SCRIPT = '<script src="/scan-pay.js" defer></script>';
@@ -120,6 +121,7 @@ export async function onRequest(context) {
       element(element) {
         element.append(SCANNER_PREPROCESS_SCRIPT, { html: true });
         element.append(SCANNER_CLIENT_SCRIPT, { html: true });
+        element.append(SCANNER_BROWSER_FALLBACK_SCRIPT, { html: true });
         element.append(SCORE_UI_SCRIPT, { html: true });
         element.append(SCAN_STAGE_SCRIPT, { html: true });
         element.append(SCAN_PAY_SCRIPT, { html: true });
