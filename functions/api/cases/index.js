@@ -19,8 +19,18 @@ const FALLBACK_PAYMENT_LINKS = {
   '199': 'https://buy.stripe.com/5kQ9AUedO7em8jP02ieIw00',
 };
 
-export function liveFallbackAllowed(env, service, stripeSecret) {
-  if (!FALLBACK_PAYMENT_LINKS[service]) return false;
+// The UI quotes a fixed price per service, so a Checkout Session that resolves
+// to a different total must never be handed to a customer. A non-numeric
+// amount_total is treated as a mismatch so an unexpected Stripe response
+// cannot silently bypass the check.
+export function checkoutAmountMatches(expectedDollars, amountTotal) {
+  const expectedCents = Math.round(Number(expectedDollars) * 100);
+  const chargedCents = Number(amountTotal);
+  if (!Number.isFinite(expectedCents) || !Number.isFinite(chargedCents)) return false;
+  return chargedCents === expectedCents;
+}
+
+export function liveFallbackAllowed(env, service, stripeSecret) {  if (!FALLBACK_PAYMENT_LINKS[service]) return false;
   const flag = String(env.STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK || '').trim().toLowerCase();
   if (flag !== 'true') return false;
   return String(stripeSecret || '').trim().startsWith('sk_live_');
@@ -274,6 +284,16 @@ export async function onRequestPost(context) {
         throw new Error('Stripe error');
       }
     } else {
+      // Guard against a misconfigured price charging the wrong amount. The UI
+      // quotes $199/$149/$99, so if Stripe resolves the line item to a
+      // different total the customer must not be able to pay it.
+      const expectedCents = Math.round(Number(dollars) * 100);
+      const chargedCents = Number(session.amount_total);
+      if (!checkoutAmountMatches(dollars, session.amount_total)) {        console.error('Stripe session price mismatch for service ' + service +
+          ': expected ' + expectedCents + ' cents, Stripe session total is ' + chargedCents +
+          ' cents (price ' + priceId + '). Refusing to hand the customer a checkout URL.');
+        return json({ error: 'Payment configuration error. Please contact us to complete your order.' }, 503);
+      }
       sessionUrl = session.url;
     }
     }
