@@ -19,3 +19,5 @@ Self-help traffic ticket defense service with AI ticket scanning, Stripe Checkou
 ```
 npx wrangler pages deploy public --project-name ticket-fighter --branch main
 ```
+
+<!-- Production deployment sync checkpoint: current main includes the live scanner implementation. -->
