@@ -75,7 +75,7 @@ export async function onRequestPost(context) {
   const service = String(body.service || '199');
   const tbdReviewed = body.tbdReviewed === true;
   const tbdReview = body.tbdReview && typeof body.tbdReview === 'object' && !Array.isArray(body.tbdReview) ? body.tbdReview : {};
-  if (service === '149' && !tbdReviewed) return json({ error: 'TR-205 information must be reviewed before payment checkout.' }, 400);
+  if (['149', '199'].includes(service) && !tbdReviewed) return json({ error: 'TR-205 information must be reviewed before payment checkout.' }, 400);
   const dob = (body.dob || '').trim();
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
