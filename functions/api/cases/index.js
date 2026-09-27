@@ -8,9 +8,23 @@ import { caseAccessToken, json, listRecords, normalizeStripeSecret, priceFor, ra
 // existing Stripe webhook can reconcile the payment to the case.
 // Only keep a fallback link that has been verified in the live Stripe account
 // with Stripe Tax enabled. Do not fall back to stale links that could bypass tax.
+//
+// SAFETY: these links charge a REAL card. Falling back silently is how a test
+// payment becomes a real charge, so the fallback is opt-in. It is allowed only
+// when STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK is exactly "true" AND the
+// configured key is a live key, so a test key can never route to a live link.
+// If a session cannot be created and the fallback is not permitted, the request
+// fails loudly instead of charging anyone.
 const FALLBACK_PAYMENT_LINKS = {
   '199': 'https://buy.stripe.com/5kQ9AUedO7em8jP02ieIw00',
 };
+
+export function liveFallbackAllowed(env, service, stripeSecret) {
+  if (!FALLBACK_PAYMENT_LINKS[service]) return false;
+  const flag = String(env.STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK || '').trim().toLowerCase();
+  if (flag !== 'true') return false;
+  return String(stripeSecret || '').trim().startsWith('sk_live_');
+}
 
 // GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
 // The canonical full admin endpoint remains /api/cases/admin.
@@ -198,14 +212,25 @@ export async function onRequestPost(context) {
     const caseUrl = origin + '/case?code=' + encodeURIComponent(trackingCode) + (accessToken ? '&token=' + encodeURIComponent(accessToken) : '');
     const stripeSecret = normalizeStripeSecret(env.STRIPE_SECRET_KEY);
     const fallbackLink = FALLBACK_PAYMENT_LINKS[service];
-    if (!fallbackLink) throw new Error('No safe Payment Link fallback is configured for service ' + service);
-    const fallbackUrl = new URL(fallbackLink);
-    fallbackUrl.searchParams.set('client_reference_id', trackingCode);
+    const fallbackAllowed = liveFallbackAllowed(env, service, stripeSecret);
+    if (fallbackLink && !fallbackAllowed) {
+      console.warn('Live Payment Link fallback is not enabled for service ' + service +
+        ' (requires STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK=true and a live key); failing instead of charging a real card');
+    }
+    let fallbackUrl = null;
+    if (fallbackAllowed) {
+      fallbackUrl = new URL(fallbackLink);
+      fallbackUrl.searchParams.set('client_reference_id', trackingCode);
+    }
     const successUrlRaw = String(env.STRIPE_SUCCESS_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
     const cancelUrlRaw = String(env.STRIPE_CANCEL_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
     const successUrl = /^https?:\/\//i.test(successUrlRaw) ? successUrlRaw : (caseUrl + '&payment=success');
     const cancelUrl = /^https?:\/\//i.test(cancelUrlRaw) ? cancelUrlRaw : (origin + '/#/cancel');
     if (!stripeSecret || !/^sk_(live|test)_/.test(stripeSecret)) {
+      if (!fallbackAllowed) {
+        console.error('Stripe API secret is unavailable and the live Payment Link fallback is disabled; refusing to charge');
+        return json({ error: 'Payments are temporarily unavailable. Please contact us to complete your order.' }, 503);
+      }
       console.warn('Stripe API secret is unavailable; using live Payment Link fallback');
       sessionUrl = fallbackUrl.toString();
     } else {
@@ -235,6 +260,11 @@ export async function onRequestPost(context) {
       const resourceMissingPrice = session && session.error && session.error.code === 'resource_missing'
         && /price|line_items/i.test(String(session.error.param || '') + ' ' + String(session.error.message || ''));
       if (stripeRes.status === 401 || stripeRes.status === 403 || stripeRes.status === 404 || resourceMissingPrice) {
+        if (!fallbackAllowed) {
+          console.error('Stripe checkout API failed with ' + stripeRes.status +
+            ' and the live Payment Link fallback is disabled; refusing to charge a real card');
+          return json({ error: 'Payments are temporarily unavailable. Please contact us to complete your order.' }, 503);
+        }
         console.warn('Stripe checkout API could not use the configured price; using matching live Payment Link fallback');
         sessionUrl = fallbackUrl.toString();
       } else {
