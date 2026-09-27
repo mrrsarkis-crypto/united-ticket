@@ -12,6 +12,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Production scanner deployment checkpoint: runs after every main push.
       - name: Checkout
         uses: actions/checkout@v4
 
