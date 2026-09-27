@@ -298,7 +298,7 @@ async function fulfillCase(env, session, trackingCode, caseData) {
 
   // 3) Email the CLIENT the TBD, retainer, and receipt so the paid customer receives the work product.
   await sendConfirmationEmail(custEmail, trackingCode, env, {
-    retainerBytes, receiptBytes, tracking: trackingCode, fee: dollars,
+    retainerBytes, receiptBytes, tr205Bytes, tracking: trackingCode, fee: dollars,
   });
 }
 
