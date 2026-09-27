@@ -85,7 +85,7 @@ export async function onRequestPost(context) {
   if (!dob || !dl) return json({ error: 'Driver\'s license number and date of birth are required' }, 400);
 
   const debug = (env.DEBUG_MODE || '0') === '1';
-  const priceId = priceFor(service);
+  const priceId = priceFor(service, env);
   if (!priceId) return json({ error: 'Unknown service type' }, 400);
 
   const trackingCode = claimedCode || ('TF-' + Date.now().toString(36).toUpperCase() + rand(3));

@@ -66,11 +66,20 @@ export function normalizeStripeSecret(value) {
   return raw.replace(/^['"]+|['"]+$/g, '').trim();
 }
 
-export function priceFor(service) {
-  if (service === '199') return 'price_1UHw68LMSqKARRUqlhvD82xl';
-  if (service === '149') return 'price_1UHw6DLMSqKARRUqDTK6w7LB';
-  if (service === '99') return 'price_1UHw6FLMSqKARRUqJ8vVNoCr';
-  return null;
+// Production price IDs, used only when no STRIPE_PRICE_<SERVICE> override is
+// configured. Overrides are what make test mode possible: a test-mode Stripe
+// account cannot use live price IDs, and passing a live price to a sk_test_
+// secret fails with resource_missing.
+const DEFAULT_PRICE_IDS = {
+  '199': 'price_1UHw68LMSqKARRUqlhvD82xl',
+  '149': 'price_1UHw6DLMSqKARRUqDTK6w7LB',
+  '99': 'price_1UHw6FLMSqKARRUqJ8vVNoCr',
+};
+
+export function priceFor(service, env) {
+  if (!Object.prototype.hasOwnProperty.call(DEFAULT_PRICE_IDS, service)) return null;
+  const override = String((env && env['STRIPE_PRICE_' + service]) || '').trim();
+  return override || DEFAULT_PRICE_IDS[service];
 }
 
 export function rand(n) {

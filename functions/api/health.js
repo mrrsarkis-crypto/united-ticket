@@ -9,10 +9,25 @@ export async function onRequestGet(context) {
   const required = [
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
-    'STRIPE_PRICE_199',
-    'STRIPE_PRICE_299',
-    'STRIPE_PRICE_999',
   ];
+
+  // Price IDs are optional. Checkout falls back to the known production price
+  // IDs when no STRIPE_PRICE_<SERVICE> override exists, so only report a
+  // problem when an override is set to something that is not a real price ID.
+  // The earlier STRIPE_PRICE_199/299/999 names were checked but never read by
+  // the checkout path and did not match the real service keys (199/149/99).
+  const priceOverrides = {};
+  const badPriceOverrides = [];
+  for (const service of ['199', '149', '99']) {
+    const key = 'STRIPE_PRICE_' + service;
+    const value = String(env[key] || '').trim();
+    if (!value) continue;
+    if (!/^price_[A-Za-z0-9_]+$/.test(value)) {
+      badPriceOverrides.push(key);
+      continue;
+    }
+    priceOverrides[key] = value;
+  }
 
   const missing = required.filter((key) => !env[key]);
   const stripeSecret = normalizeStripeSecret(env.STRIPE_SECRET_KEY);
@@ -47,12 +62,13 @@ export async function onRequestGet(context) {
   const effectiveSuccessUrl = env.STRIPE_SUCCESS_URL || (origin + '/case?code=CASE&payment=success');
   const effectiveCancelUrl = env.STRIPE_CANCEL_URL || (origin + '/#/cancel');
 
-  const ok = missing.length === 0 && casesReady && r2Ready && scannerVisionReady;
+  const ok = missing.length === 0 && badPriceOverrides.length === 0 && casesReady && r2Ready && scannerVisionReady;
   const safeMissing = [];
   if (missing.length) safeMissing.push('required_runtime_configuration');
   if (!scannerVisionReady) safeMissing.push('scanner_vision_provider');
   if (!casesReady) safeMissing.push('case_storage');
   if (!r2Ready) safeMissing.push('document_storage');
+  if (badPriceOverrides.length) safeMissing.push('invalid_stripe_price_override');
 
   const livePaymentLinkFallbackFlag = String(env.STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK || '').trim().toLowerCase() === 'true';
   const effectivePaymentLinkFallback = livePaymentLinkFallbackFlag && stripeKeyMode === 'live';
@@ -79,6 +95,8 @@ export async function onRequestGet(context) {
         // key can never reach a live link.
         paymentLinkFallbackConfigured: false,
         paymentLinkFallbackEnabled: effectivePaymentLinkFallback,
+        priceOverrides,
+        badPriceOverrides,
       },
     },
     integrations: {
