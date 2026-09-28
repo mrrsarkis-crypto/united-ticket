@@ -209,7 +209,7 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(serviceWorker, /utt-cache-v\d+/);
 });
 
-test('AdSense is restricted to designated informational pages', () => {
+test('AdSense is site-wide except for a small ad-free deny-list', () => {
   const standardGate = middleware.indexOf('if (monetized) {');
   const standardAd = middleware.indexOf('element.append(ADSENSE_META');
   const ampGate = middleware.indexOf('else if (isAmp && monetized)');
@@ -222,6 +222,17 @@ test('AdSense is restricted to designated informational pages', () => {
   assert.match(buildScript, /function isMonetizedPath\(pathname\)/);
   assert.match(buildScript, /if \(monetized && !html\.includes\('google-adsense-account'\)\)/);
   assert.match(buildScript, /if \(monetized && !html\.includes\(`pagead2\.googlesyndication\.com/);
+
+  // Monetization is a deny-list so a newly added page is monetized by default
+  // rather than silently staying ad-free. Only paths that must never pull a
+  // third-party tag are carved out: 404 (a soft-404 must not earn revenue),
+  // admin tooling, and the crawler trap.
+  for (const source of [middleware, buildScript]) {
+    assert.match(source, /const adFree = path === '\/404'/, '404 must stay ad-free');
+    assert.match(source, /\/\^\\\/admin\[\\\/-\]\//, 'admin paths must stay ad-free');
+    assert.match(source, /'\/bot-courthouse'/, 'crawler trap must stay ad-free');
+    assert.match(source, /return !adFree;/, 'default must be monetized, not allow-listed');
+  }
 });
 
 test('test command syntax-checks the scanner bridge scripts', () => {

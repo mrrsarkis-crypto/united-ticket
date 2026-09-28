@@ -23,13 +23,10 @@ function isMonetizedPath(pathname) {
   let path = (pathname || '/').replace(/\/+$/, '') || '/';
   if (path === '/amp') return false;
   if (path.startsWith('/amp/')) path = path.slice(4) || '/';
-  return path === '/resources' || path === '/resources.html' ||
-    /^\/resources\/[^/]+(?:\.html)?$/.test(path) ||
-    path === '/faq' || path === '/faq.html' ||
-    path === '/ticket-quiz' || path === '/ticket-quiz.html' ||
-    path === '/courthouses' || path === '/courthouses.html' ||
-    path === '/all-courthouses' || path === '/all-courthouses.html' ||
-    /^\/courthouses\/[^/]+(?:\.html)?$/.test(path);
+  const adFree = path === '/404' || path === '/404.html' ||
+    path === '/admin' || path === '/admin.html' || /^\/admin[\/-]/.test(path) ||
+    path === '/bot-courthouse' || path === '/bot-courthouse.html';
+  return !adFree;
 }
 
 async function walk(dir) {
