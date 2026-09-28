@@ -230,8 +230,15 @@ test('the AdSense tag is baked into the static HTML, not only injected at the ed
       continue;
     }
     if (isAmp) {
-      assert.ok(hasAmpTag, `${base} is AMP and must carry amp-auto-ads`);
+      // AMP pages intentionally carry no ad tag yet. Serving amp-auto-ads
+      // without an <amp-consent> component backed by a Google-certified CMP is
+      // a consent violation, and the standard /consent-banner.js is not a valid
+      // AMP CMP. See tests/amp-adsense-consent.test.mjs and the note in
+      // scripts/build-vercel.js before re-enabling AMP ads.
+      assert.ok(!hasAmpTag, `${base} is AMP and must not carry amp-auto-ads without a certified CMP`);
       assert.ok(!hasTag, `${base} is AMP and must not carry the standard adsbygoogle tag`);
+      // The account meta is kept so ads can be switched on without a rebuild.
+      assert.ok(html.includes('google-adsense-account'), `${base} must still declare the AdSense account`);
       continue;
     }
 
