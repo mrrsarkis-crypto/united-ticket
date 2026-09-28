@@ -202,6 +202,14 @@ test('browser OCR fallback handles cloud fallback responses and targeted ticket 
   assert.match(scannerBrowserFallback, /tessedit_pageseg_mode/);
 });
 
+test('landing-page scanner still runs local OCR after a network failure with a license photo selected', () => {
+  // `c` holds the optional license-photo upload. It must not determine whether a
+  // failed citation scan can use local OCR; a network failure should always get
+  // the same recovery path for the ticket image.
+  assert.doesNotMatch(app, /\):c\?\(v\(n,s\),o\.textContent=.*clear photo of the document/i);
+  assert.match(app, /tesseract\.js\/5\.0\.4\/tesseract\.min\.js/);
+});
+
 test('scanner preprocessing covers HEIC, image quality, and conservative enhancement', () => {
   assert.doesNotThrow(() => new Function(scannerPreprocess));
   assert.match(scannerPreprocess, /heic2any/);
