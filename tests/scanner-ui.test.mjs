@@ -209,6 +209,51 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(serviceWorker, /utt-cache-v\d+/);
 });
 
+test('the AdSense tag is baked into the static HTML, not only injected at the edge', () => {
+  // The edge injects the tag per request, but a zone-level cache rule serves
+  // HTML with a multi-hour TTL, so a cached copy made before a deploy can be
+  // handed to the AdSense crawler without the tag and fail site verification.
+  // Baking the fragment into the deployed files makes every copy self-contained.
+  const AD_FREE = new Set(['404', 'admin-cases', 'admin-funnel', 'bot-courthouse']);
+  const exempt = [];
+
+  for (const file of publicHtmlFiles()) {
+    const html = fs.readFileSync(file, 'utf8');
+    const base = path.basename(file);
+    const isAmp = file.replaceAll('\\', '/').includes('/amp/');
+    const hasTag = html.includes('adsbygoogle.js?client=ca-pub-9943048295609395');
+    const hasAmpTag = html.includes('amp-auto-ads');
+
+    if (AD_FREE.has(base.replace(/\.html$/, ''))) {
+      exempt.push(base);
+      assert.ok(!hasTag && !hasAmpTag, `${base} is on the ad-free deny-list and must carry no ad tag`);
+      continue;
+    }
+    if (isAmp) {
+      assert.ok(hasAmpTag, `${base} is AMP and must carry amp-auto-ads`);
+      assert.ok(!hasTag, `${base} is AMP and must not carry the standard adsbygoogle tag`);
+      continue;
+    }
+
+    assert.ok(hasTag, `${base} must carry the AdSense tag in the deployed HTML`);
+    assert.ok(html.includes('google-adsense-account'), `${base} must declare the AdSense account`);
+    assert.ok(html.includes('uttAdConsent'), `${base} must set the Consent Mode v2 default`);
+    // Consent Mode requires the default to be declared before the ad tag loads,
+    // or the tag runs with no consent state at all.
+    assert.ok(html.indexOf('uttAdConsent') < html.indexOf('adsbygoogle.js?client='),
+      `${base} must emit the consent default before the AdSense tag`);
+    // The charset declaration has to stay within the first bytes of the document.
+    const charset = html.match(/<meta[^>]*charset[^>]*>/i);
+    assert.ok(charset, `${base} must declare a charset`);
+    assert.ok(charset.index < html.indexOf('google-adsense-account'),
+      `${base} must keep the charset declaration ahead of the injected tags`);
+  }
+
+  assert.ok(exempt.includes('404.html') && exempt.includes('admin-cases.html') &&
+    exempt.includes('admin-funnel.html') && exempt.includes('bot-courthouse.html'),
+    'the deny-list must actually be exercised, not vacuously pass');
+});
+
 test('AdSense is site-wide except for a small ad-free deny-list', () => {
   const standardGate = middleware.indexOf('if (monetized) {');
   const standardAd = middleware.indexOf('element.append(ADSENSE_META');
