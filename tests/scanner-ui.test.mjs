@@ -175,10 +175,15 @@ test('scanner page retains a conversion CTA and honest result disclaimer', () =>
 test('scanner bridge scripts stay off the critical render path', () => {
   assert.match(middleware, /const SCANNER_PREPROCESS_SCRIPT = '<script src=\"\/scanner-preprocess\.js\" defer><\/script>'/);
   assert.match(middleware, /const SCANNER_CLIENT_SCRIPT = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
+  assert.match(middleware, /const SCANNER_BROWSER_FALLBACK_SCRIPT = '<script src=\"\/scanner-browser-fallback\.js\" defer><\/script>'/);
   assert.ok(middleware.indexOf('element.append(SCANNER_PREPROCESS_SCRIPT') < middleware.indexOf('element.append(SCANNER_CLIENT_SCRIPT'));
+  assert.ok(middleware.indexOf('element.append(SCANNER_CLIENT_SCRIPT') < middleware.indexOf('element.append(SCANNER_BROWSER_FALLBACK_SCRIPT'));
   assert.match(buildScript, /const scannerPreprocessTag = '<script src=\"\/scanner-preprocess\.js\" defer><\/script>'/);
   assert.match(buildScript, /const scannerClientTag = '<script src=\"\/scanner-client\.js\" defer><\/script>'/);
+  assert.match(buildScript, /const scannerBrowserFallbackTag = '<script src=\"\/scanner-browser-fallback\.js\" defer><\/script>'/);
   assert.ok(index.indexOf('/scanner-preprocess.js') < index.indexOf('/app.js'));
+  assert.ok(index.indexOf('/scanner-client.js') < index.indexOf('/scanner-browser-fallback.js'));
+  assert.ok(index.indexOf('/scanner-browser-fallback.js') < index.indexOf('/app.js'));
   assert.ok(assistant.indexOf('/scanner-preprocess.js') < assistant.indexOf('/scanner-client.js'));
 });
 

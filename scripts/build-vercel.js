@@ -18,6 +18,7 @@ const ampAdsenseScript = '<script async custom-element="amp-auto-ads" src="https
 const ampAdsenseUnit = `<amp-auto-ads type="adsense" data-ad-client="${publisher}"></amp-auto-ads>`;
 const scannerPreprocessTag = '<script src="/scanner-preprocess.js" defer></script>';
 const scannerClientTag = '<script src="/scanner-client.js" defer></script>';
+const scannerBrowserFallbackTag = '<script src="/scanner-browser-fallback.js" defer></script>';
 
 function isMonetizedPath(pathname) {
   let path = (pathname || '/').replace(/\/+$/, '') || '/';
@@ -79,6 +80,10 @@ for (const file of await walk(outDir)) {
   }
   if (!html.includes('/scanner-client.js')) {
     html = html.replace(/<head([^>]*)>/i, `$&\n${scannerClientTag}`);
+    changed = true;
+  }
+  if (!html.includes('/scanner-browser-fallback.js')) {
+    html = html.replace(/<head([^>]*)>/i, `$&\n${scannerBrowserFallbackTag}`);
     changed = true;
   }
 
