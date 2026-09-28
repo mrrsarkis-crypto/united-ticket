@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       # Production scanner deployment checkpoint: runs after every main push.
-      # Deployment retry checkpoint: 2026-09-27.
+      # Deployment checkpoint: production scanner/TR-205 serving verification.
+      # Source-of-truth build is already on main; this commit re-triggers connected deployment automation.
       - name: Checkout
         uses: actions/checkout@v4
 
