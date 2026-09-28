@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       # Production scanner deployment checkpoint: runs after every main push.
       # Deployment checkpoint: production scanner/TR-205 serving verification.
