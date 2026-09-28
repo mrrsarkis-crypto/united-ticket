@@ -21,3 +21,4 @@ npx wrangler pages deploy public --project-name ticket-fighter --branch main
 ```
 
 <!-- Production deployment sync checkpoint: current main includes the live scanner implementation. -->
+<!-- AdSense deployment checkpoint: public HTML contains the publisher tag and ads.txt; push triggers the Cloudflare Pages production deployment. -->
