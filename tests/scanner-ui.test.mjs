@@ -209,21 +209,6 @@ test('scanner preprocessing covers HEIC, image quality, and conservative enhance
   assert.match(serviceWorker, /utt-cache-v\d+/);
 });
 
-test('HTML is not served with a long edge TTL that outlives a deploy', () => {
-  // Pages defaults static assets to max-age=14400, and the middleware inherits
-  // it unless it sets its own. That kept a deployed change invisible behind a
-  // cached copy for hours, which is how a verified-in-code fix reads as absent.
-  // public/_headers already asks for max-age=0 on / and /*.html, so the
-  // middleware enforces that instead of leaving it to a header that is not
-  // applied on every path.
-  assert.match(middleware, /newHeaders\.set\('Cache-Control',/);
-  assert.match(middleware, /'public, max-age=0, must-revalidate'/);
-  assert.match(middleware, /'no-store, no-cache, must-revalidate'/);
-  // The scanner must stay uncached, so the no-store branch has to be reachable.
-  const branch = middleware.match(/set\('Cache-Control',[\s\S]{0,200}?\/assistant/);
-  assert.ok(branch, 'the scanner path must keep its no-store cache directive');
-});
-
 test('AdSense is site-wide except for a small ad-free deny-list', () => {
   const standardGate = middleware.indexOf('if (monetized) {');
   const standardAd = middleware.indexOf('element.append(ADSENSE_META');

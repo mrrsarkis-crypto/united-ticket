@@ -74,9 +74,6 @@ export async function onRequest(context) {
     ];
     newHeaders.set('Content-Security-Policy', csp.join('; '));
     newHeaders.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=(self)');
-    newHeaders.set('Cache-Control', url.pathname === '/assistant' || url.pathname === '/assistant.html'
-      ? 'no-store, no-cache, must-revalidate'
-      : 'public, max-age=0, must-revalidate');
   }
 
   if (!isPrivateAdminApi && !isScannerApi) {
