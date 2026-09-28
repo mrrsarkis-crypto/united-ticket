@@ -132,7 +132,7 @@
           </select>
         </div>
         <div class="ast-drop" id="astDrop" role="button" tabindex="0" aria-label="Upload traffic ticket, driver license, or court notice">
-          <input type="file" id="astFile" accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.heic,.heif,.pdf" hidden>
+          <input type="file" id="astFile" accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.heic,.heif,.pdf" capture="environment" hidden>
           <p><strong>Click to upload</strong> or drag your traffic document here</p>
           <p class="tiny">On a phone, this opens your gallery or camera so you can choose an existing photo or take a new one. Use good light, avoid glare, and keep the full document in frame.</p>
           <img id="astPreview" class="ast-preview" style="display:none" alt="Uploaded document preview">
@@ -261,7 +261,7 @@
 if (!window.UTTBrowserOCRFallback) {
   const uttFallbackReady = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = '/scanner-browser-fallback.js?bootstrap=20260927-3';
+    script.src = '/scanner-browser-fallback.js?bootstrap=20260927-4';
     script.async = true;
     script.onload = () => typeof window.UTTBrowserOCRFallback === 'function'
       ? resolve(window.UTTBrowserOCRFallback)
@@ -278,9 +278,9 @@ if (!window.UTTBrowserOCRFallback) {
 <script src="/scan-guard.js?v=20260921-1730" defer></script>
 <script src="/scanner-preprocess.js?v=20260923-2" defer></script>
 <script src="/scanner-client.js?v=20260927-2" defer></script>
-<script src="/scanner-browser-fallback.js?v=20260927-3" defer></script>
+<script src="/scanner-browser-fallback.js?v=20260927-4" defer></script>
 <script src="/scanner-ui.js?v=20260927-1" defer></script>
-<script src="/assistant.js?v=20260927-4" defer></script>
+<script src="/assistant.js?v=20260927-5" defer></script>
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
 (function(){
