@@ -207,7 +207,12 @@
   async function recognize(worker, source, status, label) {
     if (!source) return '';
     if (status) status.textContent = label;
-    const result = await worker.recognize(source);
+    // Some mobile/WASM combinations can stop emitting progress without
+    // rejecting the OCR promise. Never leave the customer frozen at 72%.
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('This OCR pass took too long.')), 20000)
+    );
+    const result = await Promise.race([worker.recognize(source), timeout]);
     return result && result.data && result.data.text ? result.data.text : '';
   }
 
