@@ -1,5 +1,5 @@
 // Service worker for United Traffic Tickets Defense (PWA)
-const CACHE = 'utt-cache-v14';
+const CACHE = 'utt-cache-v15';
 const CORE = [
   '/',
   '/index.html',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  const scannerAsset = /^(\/(assistant|scan-guard|scan-progress|scanner-preprocess|scanner-client|scanner-browser-fallback|scanner-ui|consent-banner)\.js|\/assistant\.css)$/.test(url.pathname);
+  const scannerAsset = /^(\/(assistant|app|scan-guard|scan-progress|scanner-preprocess|scanner-client|scanner-browser-fallback|scanner-ui|consent-banner)\.js|\/assistant\.css)$/.test(url.pathname);
   if (scannerAsset) {
     event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match(req)));
     return;
