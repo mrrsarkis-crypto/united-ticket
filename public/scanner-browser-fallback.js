@@ -189,7 +189,7 @@
     const sy = Math.max(0, Math.round(image.naturalHeight * y0));
     const sw = Math.max(2, Math.round(image.naturalWidth * (x1 - x0)));
     const sh = Math.max(2, Math.round(image.naturalHeight * (y1 - y0)));
-    const scale = Math.min(1.8, Math.max(1.15, 2400 / Math.max(sw, sh)));
+    const scale = Math.min(1.35, Math.max(0.9, 1800 / Math.max(sw, sh)));
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(sw * scale);
     canvas.height = Math.round(sh * scale);
@@ -204,16 +204,30 @@
     ctx.filter = 'none';
     return canvas.toDataURL('image/jpeg', 0.94);
   }
-  async function recognize(worker, source, status, label) {
+  async function recognize(worker, source, status, label, timeoutMs = 12000) {
     if (!source) return '';
     if (status) status.textContent = label;
-    // Some mobile/WASM combinations can stop emitting progress without
-    // rejecting the OCR promise. Never leave the customer frozen at 72%.
+    // Tesseract can stop reporting progress while WASM is still busy. Race
+    // every pass and let the caller terminate the worker, so the UI can never
+    // remain parked at an arbitrary percentage such as 72%.
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('This OCR pass took too long.')), 20000)
+      setTimeout(() => reject(new Error('This OCR pass took too long.')), timeoutMs)
     );
     const result = await Promise.race([worker.recognize(source), timeout]);
     return result && result.data && result.data.text ? result.data.text : '';
+  }
+
+  async function createOcrWorker(Tesseract, status) {
+    return Tesseract.createWorker('eng', 1, {
+      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+      corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+      logger: (m) => {
+        if (status && m && m.status === 'recognizing text' && m.progress) {
+          status.textContent = 'Reading locally... ' + Math.round(m.progress * 100) + '%';
+        }
+      }
+    });
   }
 
   async function browserOcr(image) {
@@ -224,16 +238,7 @@
       status.className = 'ast-status';
     }
 
-    const worker = await Tesseract.createWorker('eng', 1, {
-      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
-      corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
-      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-      logger: (m) => {
-        if (status && m && m.status === 'recognizing text' && m.progress) {
-          status.textContent = 'Reading locally... ' + Math.round(m.progress * 100) + '%';
-        }
-      }
-    });
+    let worker = await createOcrWorker(Tesseract, status);
 
     try {
       await worker.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
@@ -244,7 +249,21 @@
       } catch (error) {
         console.warn('browser OCR full-image resize skipped', error && error.message || error);
       }
-      const full = await recognize(worker, fullSource, status, 'Reading the full ticket locally...');
+      let full = '';
+      try {
+        full = await recognize(worker, fullSource, status, 'Reading the ticket locally...', 12000);
+      } catch (error) {
+        console.warn('primary browser OCR timed out, retrying with a smaller image', error && error.message || error);
+        try { await worker.terminate(); } catch (_) {}
+        worker = await createOcrWorker(Tesseract, status);
+        await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
+        let compactSource = fullSource;
+        try {
+          const compactImage = await loadImage(image);
+          compactSource = cropImage(compactImage, 0, 0, 1, 1) || fullSource;
+        } catch (_) {}
+        full = await recognize(worker, compactSource, status, 'Finishing a quick local read...', 10000);
+      }
       let top = '';
       let violations = '';
       try {
@@ -255,8 +274,8 @@
           const topCrop = cropImage(sourceImage, 0.00, 0.04, 1.00, 0.34);
           const violationCrop = cropImage(sourceImage, 0.00, 0.43, 1.00, 0.69);
           await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
-          top = await recognize(worker, topCrop, status, 'Reading dates and citation number locally...');
-          violations = await recognize(worker, violationCrop, status, 'Reading the first violation row locally...');
+          top = await recognize(worker, topCrop, status, 'Checking dates and citation number...', 5000);
+          violations = await recognize(worker, violationCrop, status, 'Checking the violation row...', 5000);
         }
       } catch (error) {
         console.warn('targeted browser OCR skipped', error && error.message || error);
