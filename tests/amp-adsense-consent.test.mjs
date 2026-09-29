@@ -77,6 +77,38 @@ test('build script still injects the standard AdSense loader and consent banner'
   assert.match(buildScript, /consent",\s*"default"/);
 });
 
+test('edge middleware does not re-inject amp-auto-ads into live AMP pages', () => {
+  // The static files and the build script were cleaned first, but production
+  // serves through this middleware, which re-injected the tag at the edge and
+  // kept live AMP pages serving ads. This is the assertion that was missing.
+  const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'), 'utf8');
+  const code = middleware
+    .split('\n')
+    .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+    .join('\n');
+
+  assert.equal(
+    /custom-element="amp-auto-ads"/.test(code),
+    false,
+    '_middleware.js still injects the amp-auto-ads extension'
+  );
+  assert.equal(
+    /<amp-auto-ads/.test(code),
+    false,
+    '_middleware.js still injects an <amp-auto-ads> unit'
+  );
+  assert.equal(
+    /const\s+AMP_ADSENSE_SCRIPT\b/.test(code),
+    false,
+    '_middleware.js still defines AMP_ADSENSE_SCRIPT'
+  );
+  assert.equal(
+    /const\s+AMP_ADSENSE_UNIT\b/.test(code),
+    false,
+    '_middleware.js still defines AMP_ADSENSE_UNIT'
+  );
+});
+
 test('AMP pages remain valid AMP documents after the strip', () => {
   for (const file of ampFiles) {
     const html = fs.readFileSync(path.join(ampDir, file), 'utf8');

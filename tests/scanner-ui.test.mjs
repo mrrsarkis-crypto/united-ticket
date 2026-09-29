@@ -265,11 +265,24 @@ test('AdSense is site-wide except for a small ad-free deny-list', () => {
   const standardGate = middleware.indexOf('if (monetized) {');
   const standardAd = middleware.indexOf('element.append(ADSENSE_META');
   const ampGate = middleware.indexOf('else if (isAmp && monetized)');
-  const ampAd = middleware.indexOf('element.append(AMP_ADSENSE_SCRIPT');
   assert.notEqual(standardGate, -1);
   assert.ok(standardAd > standardGate);
   assert.notEqual(ampGate, -1);
-  assert.ok(ampAd > ampGate);
+  // AMP declares the account but must serve NO ad tag: AMP pages carry no CMP,
+  // so ads there cannot be consent-gated. The edge middleware used to
+  // re-inject amp-auto-ads, which kept live AMP serving ads after the static
+  // files were cleaned; this guards that regression.
+  const ampBranch = middleware.slice(ampGate);
+  assert.equal(
+    ampBranch.includes('AMP_ADSENSE_SCRIPT'),
+    false,
+    'the AMP branch must not inject the amp-auto-ads extension'
+  );
+  assert.equal(
+    /<amp-auto-ads/.test(ampBranch),
+    false,
+    'the AMP branch must not inject an amp-auto-ads unit'
+  );
   assert.match(middleware, /function isMonetizedPath\(pathname\)/);
   assert.match(buildScript, /function isMonetizedPath\(pathname\)/);
   assert.match(buildScript, /if \(monetized && !html\.includes\('google-adsense-account'\)\)/);

@@ -14,6 +14,7 @@ const accountMeta = `<meta name="google-adsense-account" content="${publisher}">
 // briefly run denied. wait_for_update only applies to undecided visitors.
 const consentDefaultTag = '<script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>';
 const consentBannerTag = '<script src="/consent-banner.js" defer></script>';
+const serviceViewTrackingTag = '<script src="/service-view-tracking.js" defer></script>';
 // AMP AdSense auto-ads are intentionally NOT emitted. AMP serves ads to users
 // in consent-regulated regions only when the page supplies an <amp-consent>
 // component pointing at a Google-certified CMP, and the custom
@@ -70,6 +71,13 @@ for (const file of await walk(outDir)) {
     if (changed) await writeFile(file, html, 'utf8');
     ampHtml++;
     continue;
+  }
+
+  // Service view tracking. Only on monetized pages, and only standard pages:
+  // AMP pages carry no consent component, so gtag there would be ungated.
+  if (monetized && !html.includes('/service-view-tracking.js')) {
+    html = html.replace(/<\/head\s*>/i, `${serviceViewTrackingTag}\n$&`);
+    changed = true;
   }
 
   if (!html.includes('/scanner-preprocess.js')) {

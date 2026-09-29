@@ -15,8 +15,15 @@ const CONSENT_MARKER = 'uttAdConsent';
 const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_SCRIPT = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_ACCOUNT + '" crossorigin="anonymous"></script>';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
-const AMP_ADSENSE_SCRIPT = '<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>';
-const AMP_ADSENSE_UNIT = '<amp-auto-ads type="adsense" data-ad-client="' + ADSENSE_ACCOUNT + '"></amp-auto-ads>';
+// AMP ads are intentionally NOT served. amp-auto-ads is a Google ad tag, but
+// AMP pages here carry no CMP, so there is no way to obtain consent for
+// personalized advertising before it runs. The static AMP files had the tag
+// removed, but this middleware re-injected it at the edge, which is why live
+// AMP kept serving ads after that fix. Only the account *declaration* is left
+// in place; re-enable the tag only alongside a Google-certified amp-consent
+// vendor, never on its own.
+const SERVICE_VIEW_TRACKING_SCRIPT = '<script src="/service-view-tracking.js" defer></script>';
+const SERVICE_VIEW_MARKER = '/service-view-tracking.js';
 const SCANNER_PREPROCESS_SCRIPT = '<script src="/scanner-preprocess.js" defer></script>';
 const SCANNER_CLIENT_SCRIPT = '<script src="/scanner-client.js" defer></script>';
 const SCORE_UI_SCRIPT = '<script src="/score-ui.js" defer></script>';
@@ -111,6 +118,12 @@ export async function onRequest(context) {
       if (!html.includes(CONSENT_BANNER_MARKER)) {
         html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
       }
+      // Service view tracking is consent-gated by Consent Mode v2 (see
+      // service-view-tracking.js) and must only ride on pages that received the
+      // consent default above.
+      if (!html.includes(SERVICE_VIEW_MARKER)) {
+        html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
+      }
       output = new Response(html, { status: output.status, statusText: output.statusText, headers: newHeaders });
     }
     output = new HTMLRewriter().on('head', {
@@ -127,16 +140,12 @@ export async function onRequest(context) {
       }
     }).transform(output);
   } else if (isAmp && monetized) {
+    // Account declaration only. No amp-auto-ads unit or extension: see the
+    // note above the constants for why AMP ads stay off.
     output = new HTMLRewriter()
       .on('head', {
         element(element) {
           element.append(ADSENSE_META, { html: true });
-          element.append(AMP_ADSENSE_SCRIPT, { html: true });
-        }
-      })
-      .on('body', {
-        element(element) {
-          element.prepend(AMP_ADSENSE_UNIT, { html: true });
         }
       })
       .transform(output);
