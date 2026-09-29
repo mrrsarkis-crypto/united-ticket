@@ -15,6 +15,7 @@ jobs:
       # Production scanner deployment checkpoint: runs after every main push.
       # Deployment checkpoint: production scanner/TR-205 serving verification.
       # Source-of-truth build is already on main; this commit re-triggers connected deployment automation.
+      # 2026-09-29 production publish trigger: run the completed scanner build now.
       - name: Checkout
         uses: actions/checkout@v4
 
