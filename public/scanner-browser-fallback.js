@@ -159,8 +159,16 @@
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
       script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Browser OCR could not load.'));
+      let settled = false;
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        error ? reject(error) : resolve();
+      };
+      const timer = setTimeout(() => finish(new Error('Browser OCR engine took too long to load.')), 15000);
+      script.onload = () => finish();
+      script.onerror = () => finish(new Error('Browser OCR could not load.'));
       document.head.appendChild(script);
     });
     if (!window.Tesseract) throw new Error('Browser OCR is unavailable.');
@@ -224,16 +232,27 @@
 
     try {
       await worker.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
-      const full = await recognize(worker, image, status, 'Reading the full ticket locally...');
+      let fullSource = image;
+      try {
+        const sourceImage = await loadImage(image);
+        fullSource = cropImage(sourceImage, 0.00, 0.00, 1.00, 1.00) || image;
+      } catch (error) {
+        console.warn('browser OCR full-image resize skipped', error && error.message || error);
+      }
+      const full = await recognize(worker, fullSource, status, 'Reading the full ticket locally...');
       let top = '';
       let violations = '';
       try {
-        const sourceImage = await loadImage(image);
-        const topCrop = cropImage(sourceImage, 0.00, 0.04, 1.00, 0.34);
-        const violationCrop = cropImage(sourceImage, 0.00, 0.43, 1.00, 0.69);
-        await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
-        top = await recognize(worker, topCrop, status, 'Reading dates and citation number locally...');
-        violations = await recognize(worker, violationCrop, status, 'Reading the first violation row locally...');
+        const preliminary = buildExtraction({ text: full, top: full, violations: full });
+        const needsTargeted = !preliminary.citationNumber.value || !preliminary.violationCode.value;
+        if (needsTargeted) {
+          const sourceImage = await loadImage(image);
+          const topCrop = cropImage(sourceImage, 0.00, 0.04, 1.00, 0.34);
+          const violationCrop = cropImage(sourceImage, 0.00, 0.43, 1.00, 0.69);
+          await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
+          top = await recognize(worker, topCrop, status, 'Reading dates and citation number locally...');
+          violations = await recognize(worker, violationCrop, status, 'Reading the first violation row locally...');
+        }
       } catch (error) {
         console.warn('targeted browser OCR skipped', error && error.message || error);
       }
