@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>United Traffic Tickets Defense — Stone Preview</title>
+<style>
+  :root{
+    --limestone:#f6f1e7; --sandstone:#ece3d0; --stone-line:#d9cdb4;
+    --ink:#2e2a24; --muted:#7a6e5c; --bronze:#8a5a2b; --bronze-dark:#6f4520;
+    --card:#fffdf8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--limestone);color:var(--ink);line-height:1.6}
+  a{color:var(--bronze)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* header — single clean bar */
+  header{background:var(--card);border-bottom:1px solid var(--stone-line);
+    position:sticky;top:0;z-index:50}
+  .head{display:flex;align-items:center;gap:28px;padding:16px 0}
+  .logo{font-weight:800;font-size:17px;letter-spacing:.04em;text-decoration:none;color:var(--ink)}
+  .logo small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.08em}
+  nav{display:flex;gap:22px;margin-left:auto}
+  nav a{text-decoration:none;color:var(--ink);font-size:15px;font-weight:500}
+  nav a:hover{color:var(--bronze)}
+  .btn{display:inline-block;background:var(--bronze);color:#fff;text-decoration:none;
+    padding:12px 26px;border-radius:10px;font-weight:700;font-size:15px;border:none;cursor:pointer}
+  .btn:hover{background:var(--bronze-dark)}
+  .head .btn{margin-left:8px;padding:10px 20px}
+  .phone{font-weight:700;color:var(--ink);text-decoration:none;font-size:15px;white-space:nowrap}
+
+  /* hero — calm, one message */
+  .hero{padding:84px 0 72px;background:
+    linear-gradient(180deg,var(--limestone),var(--sandstone))}
+  .hero h1{font-size:clamp(34px,5vw,54px);line-height:1.12;letter-spacing:-.01em;max-width:640px}
+  .hero h1 span{color:var(--bronze)}
+  .hero p{margin:20px 0 28px;max-width:560px;color:var(--muted);font-size:18px}
+  .hero-cta{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .trust{margin-top:26px;font-size:14px;color:var(--muted)}
+
+  /* sections */
+  section{padding:64px 0}
+  h2{font-size:clamp(24px,3.4vw,34px);margin-bottom:12px;letter-spacing:-.01em}
+  .lede{color:var(--muted);max-width:620px;margin-bottom:36px;font-size:17px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--stone-line);border-radius:14px;padding:28px}
+  .card h3{font-size:18px;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:15px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;counter-reset:step}
+  .step{background:var(--card);border:1px solid var(--stone-line);border-radius:14px;padding:26px}
+  .step::before{counter-increment:step;content:counter(step);
+    display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--bronze);color:#fff;
+    align-items:center;justify-content:center;font-weight:700;margin-bottom:14px}
+  .step h3{font-size:17px;margin-bottom:6px}
+  .step p{color:var(--muted);font-size:14.5px}
+
+  /* final cta */
+  .cta{background:var(--ink);color:var(--limestone);border-radius:20px;padding:56px 40px;text-align:center}
+  .cta h2{color:#fff}
+  .cta p{color:#c9bfae;max-width:520px;margin:0 auto 28px}
+  .cta .btn{background:var(--bronze)}
+
+  footer{border-top:1px solid var(--stone-line);padding:32px 0;color:var(--muted);font-size:13.5px}
+  footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
+  @media(max-width:720px){nav{display:none}.hero{padding:56px 0}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head">
+    <a class="logo" href="/">UNITED TRAFFIC TICKETS<small>DEFENSE · EST. 2015</small></a>
+    <nav>
+      <a href="/how-it-works">How It Works</a>
+      <a href="/courthouses">Courthouses</a>
+      <a href="/faq">FAQ</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <a class="phone" href="tel:+18182058271">(818) 205-8271</a>
+    <a class="btn" href="/assistant">Free Ticket Scan</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Fight your California traffic ticket <span>without going to court.</span></h1>
+    <p>Snap a photo of your citation. Our system scans every field, flags potential issues, and our team prepares your Trial by Written Declaration — all by mail.</p>
+    <div class="hero-cta">
+      <a class="btn" href="/assistant">Scan My Ticket — Free</a>
+      <a class="phone" href="tel:+18182058271">or call (818) 205-8271</a>
+    </div>
+    <div class="trust">SBE Certified · Serving California drivers since 2015 · Document preparation service — not a law firm</div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>What we do</h2>
+    <p class="lede">One service, done well: we help you contest eligible California traffic tickets by mail.</p>
+    <div class="cards">
+      <div class="card"><h3>Free AI ticket scan</h3><p>Upload your citation and get a plain-language breakdown — violation, fine estimate, points, and options.</p></div>
+      <div class="card"><h3>Trial by Written Declaration</h3><p>We prepare your TR-205 defense documents. You review, sign, and mail — no courtroom.</p></div>
+      <div class="card"><h3>Case tracking</h3><p>We follow your case through the courthouse and keep you updated at every step.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--sandstone)">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="lede">Three steps. Most of it happens from your phone.</p>
+    <div class="steps">
+      <div class="step"><h3>Scan</h3><p>Photograph your ticket. Our AI reads every field in seconds.</p></div>
+      <div class="step"><h3>Review</h3><p>We prepare your defense documents. You approve everything before it's filed.</p></div>
+      <div class="step"><h3>Track</h3><p>We monitor your case and update you until it's resolved.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta">
+      <h2>Got a ticket? Start with a free scan.</h2>
+      <p>No commitment. See what you're facing before you decide anything.</p>
+      <a class="btn" href="/assistant">Scan My Ticket — Free</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 United Traffic Tickets Defense</span>
+    <span>Document preparation service. Not a law firm. No outcome guaranteed.</span>
+  </div>
+</footer>
+
+</body>
+</html>
