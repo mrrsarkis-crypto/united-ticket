@@ -64,3 +64,18 @@ footer a{color:#d9cdb4 !important;}
 
 /* step numbers: bronze discs */
 .step-num{background:#8a5a2b !important;color:#fff !important;}
+
+/* ---------- nav dropdowns: light stone panels, not dark ---------- */
+.nav-links li.drop > ul{background:#fffdf8 !important;border:1px solid #d9cdb4 !important;box-shadow:0 20px 40px rgba(46,42,36,.16) !important;}
+.nav-links li.drop ul a{color:#2e2a24 !important;}
+.nav-links li.drop ul a:hover{color:#6f4520 !important;background:#f6f1e7 !important;}
+/* dropdown caret: dark chevron on the light nav (was invisible white) */
+.nav-links li.drop > a::after{border-right-color:#2e2a24 !important;border-bottom-color:#2e2a24 !important;}
+/* mobile menu + hamburger: visible on the light nav */
+.nav-toggle-bar{background:#2e2a24 !important;}
+@media(max-width:860px){
+  .nav-links{background:#fffdf8 !important;box-shadow:0 14px 30px rgba(46,42,36,.18) !important;}
+  .nav-links a{color:#2e2a24 !important;border-bottom-color:#d9cdb4 !important;}
+  .nav-links a:hover{background:#f6f1e7 !important;color:#6f4520 !important;}
+  .nav-links li.drop > ul a{border-bottom-color:#ece3d0 !important;}
+}
