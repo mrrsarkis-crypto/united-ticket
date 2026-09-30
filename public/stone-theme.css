@@ -1,7 +1,7 @@
 /* stone-theme.css — Rustic stone reskin for United Traffic Tickets
  * Overrides the navy/amber palette with warm limestone, sandstone & bronze.
  * Also declutters: hides topbar, AI strips, and hero badge clutter.
- * Load AFTER style.css: <link rel="stylesheet" href="/stone-theme.css?v=1">
+ * Load AFTER style.css: <link rel="stylesheet" href="/stone-theme.css?v=3">
  */
 :root{
   --arm-red:#a03a2a; --arm-blue:#4a4238; --arm-blue-dark:#2e2a24; --arm-blue-mid:#5c5347;

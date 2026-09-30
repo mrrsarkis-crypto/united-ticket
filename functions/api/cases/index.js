@@ -239,7 +239,7 @@ export async function onRequestPost(context) {
     }
     const successUrlRaw = String(env.STRIPE_SUCCESS_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
     const cancelUrlRaw = String(env.STRIPE_CANCEL_URL || '').trim().replace(/^['"]+|['"]+$/g, '').trim();
-    const successUrl = /^https?:\/\//i.test(successUrlRaw) ? successUrlRaw : (caseUrl + '&payment=success');
+    const successUrl = /^https?:\/\//i.test(successUrlRaw) ? successUrlRaw : (origin + '/thank-you?tracking=' + encodeURIComponent(trackingCode) + '&session_id={CHECKOUT_SESSION_ID}');
     const cancelUrl = /^https?:\/\//i.test(cancelUrlRaw) ? cancelUrlRaw : (origin + '/#/cancel');
     if (!stripeSecret || !/^sk_(live|test)_/.test(stripeSecret)) {
       if (!fallbackAllowed) {
@@ -264,6 +264,14 @@ export async function onRequestPost(context) {
         billing_address_collection: 'auto',
         'automatic_tax[enabled]': 'true',
         client_reference_id: trackingCode,
+        'metadata[tracking_code]': trackingCode,
+        'metadata[client_name]': fullName,
+        'metadata[citation_number]': citation,
+        'metadata[service]': service,
+        'payment_intent_data[metadata][tracking_code]': trackingCode,
+        'payment_intent_data[metadata][client_name]': fullName,
+        'payment_intent_data[metadata][citation_number]': citation,
+        'payment_intent_data[metadata][service]': service,
         'line_items[0][price]': priceId,
         'line_items[0][quantity]': '1',
         allow_promotion_codes: 'true',
