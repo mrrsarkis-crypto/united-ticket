@@ -1,1 +1,66 @@
-Lyogc3RvbmUtdGhlbWUuY3NzIOKAlCBSdXN0aWMgc3RvbmUgcmVza2luIGZvciBVbml0ZWQgVHJhZmZpYyBUaWNrZXRzCiAqIE92ZXJyaWRlcyB0aGUgbmF2eS9hbWJlciBwYWxldHRlIHdpdGggd2FybSBsaW1lc3RvbmUsIHNhbmRzdG9uZSAmIGJyb256ZS4KICogQWxzbyBkZWNsdXR0ZXJzOiBoaWRlcyB0b3BiYXIsIEFJIHN0cmlwcywgYW5kIGhlcm8gYmFkZ2UgY2x1dHRlci4KICogTG9hZCBBRlRFUiBzdHlsZS5jc3M6IDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iL3N0b25lLXRoZW1lLmNzcz92PTQiPgogKi8KOnJvb3R7CiAgLS1hcm0tcmVkOiNhMDNhMmE7IC0tYXJtLWJsdWU6IzRhNDIzODsgLS1hcm0tYmx1ZS1kYXJrOiMyZTJhMjQ7IC0tYXJtLWJsdWUtbWlkOiM1YzUzNDc7CiAgLS1hcm0tb3JhbmdlOiM4YTVhMmI7IC0tYXJtLW9yYW5nZS1kYXJrOiM2ZjQ1MjA7CiAgLS1uYXZ5OiM0YTQyMzg7IC0tbmF2eS1kYXJrOiMyZTJhMjQ7IC0tbmF2eS1taWQ6IzVjNTM0NzsKICAtLWFtYmVyOiM4YTVhMmI7IC0tYW1iZXItZGFyazojNmY0NTIwOyAtLWFtYmVyLWluazojNmY0NTIwOwogIC0taW5rOiMyZTJhMjQ7IC0tY2xvdWQ6I2Y2ZjFlNzsgLS1saW5lOiNkOWNkYjQ7IC0tbXV0ZWQ6IzdhNmU1YzsKfQoKLyogcGFnZSBiYXNlICovCmJvZHl7YmFja2dyb3VuZDojZjZmMWU3ICFpbXBvcnRhbnQ7Y29sb3I6IzJlMmEyNCAhaW1wb3J0YW50O30KCi8qIC0tLS0tLS0tLS0gZGVjbHV0dGVyOiBoaWRlIG5vaXN5IGhlYWRlci9taWRkbGUgZWxlbWVudHMgLS0tLS0tLS0tLSAqLwoudG9wYmFye2Rpc3BsYXk6bm9uZSAhaW1wb3J0YW50O30KLmFpLXN0cmlwLXRvcHtkaXNwbGF5Om5vbmUgIWltcG9ydGFudDt9Ci5haS1zdHJpcHtkaXNwbGF5Om5vbmUgIWltcG9ydGFudDt9CnNlY3Rpb24uYWktc3RyaXB7ZGlzcGxheTpub25lICFpbXBvcnRhbnQ7fQouaGVyby1haS1jaGlwc3tkaXNwbGF5Om5vbmUgIWltcG9ydGFudDt9Ci5oZXJvLWJhZGdlc3tkaXNwbGF5Om5vbmUgIWltcG9ydGFudDt9CiN1dHQtY29udHJhc3QtZml4e2Rpc3BsYXk6bm9uZSAhaW1wb3J0YW50O30KCi8qIC0tLS0tLS0tLS0gaGVhZGVyOiBsaWdodCBzdG9uZSwgbm90IG5hdnkgLS0tLS0tLS0tLSAqLwouc2l0ZS1oZWFkZXIsIGhlYWRlci5zaXRlLWhlYWRlcntiYWNrZ3JvdW5kOiNmZmZkZjggIWltcG9ydGFudDtib3JkZXItYm90dG9tOjFweCBzb2xpZCAjZDljZGI0ICFpbXBvcnRhbnQ7fQoubmF2e2JhY2tncm91bmQ6I2ZmZmRmOCAhaW1wb3J0YW50O30KLm5hdiBhLCAubmF2LWxpbmtzIGF7Y29sb3I6IzJlMmEyNCAhaW1wb3J0YW50O30KLm5hdiBhOmhvdmVye2NvbG9yOiM4YTVhMmIgIWltcG9ydGFudDt9Ci5zaXRlLWhlYWRlcjo6YWZ0ZXJ7YmFja2dyb3VuZDpsaW5lYXItZ3JhZGllbnQoOTBkZWcsI2EwM2EyYSAwIDMzLjMzMyUsIzRhNDIzOCAzMy4zMzMlIDY2LjY2NiUsIzhhNWEyYiA2Ni42NjYlIDEwMCUpICFpbXBvcnRhbnQ7fQoKLyogLS0tLS0tLS0tLSBoZXJvOiB3YXJtIHN0b25lIGdyYWRpZW50LCBjYWxtIHR5cGUgLS0tLS0tLS0tLSAqLwouaGVybywuc3ViLWhlcm97YmFja2dyb3VuZDpsaW5lYXItZ3JhZGllbnQoMTgwZGVnLCNmNmYxZTcsI2VjZTNkMCkgIWltcG9ydGFudDt9Ci5oZXJvIGgxLC5oZXJvIGgyLC5zdWItaGVybyBoMXtjb2xvcjojMmUyYTI0ICFpbXBvcnRhbnQ7fQouaGVybyBwLC5oZXJvIC5tdXRlZCwuc3ViLWhlcm8gcC5zdWIsLnN1Yi1oZXJvIC5icmVhZGNydW1iLC5zdWItaGVybyAuYnJlYWRjcnVtYiBhe2NvbG9yOiM3YTZlNWMgIWltcG9ydGFudDt9Ci5zdWItaGVybyAuZXllYnJvd3tjb2xvcjojOGE1YTJiICFpbXBvcnRhbnQ7fQoKLyogLS0tLS0tLS0tLSBidXR0b25zOiBicm9uemUsIG5vdCBicmlnaHQgYW1iZXIgLS0tLS0tLS0tLSAqLwouYnRuLWFtYmVyLC5idG4tcHJpbWFyeSwudXR0LXNjYW4tcGF5LWJ0biwuYnRuW2hyZWYqPSJhc3Npc3RhbnQiXXsKICBiYWNrZ3JvdW5kOiM4YTVhMmIgIWltcG9ydGFudDtib3JkZXItY29sb3I6IzhhNWEyYiAhaW1wb3J0YW50O2NvbG9yOiNmZmYgIWltcG9ydGFudDt9Ci5idG4tYW1iZXI6aG92ZXIsLmJ0bi1wcmltYXJ5OmhvdmVye2ZpbHRlcjpicmlnaHRuZXNzKC45Mik7fQoKLyogLS0tLS0tLS0tLSBjYXJkcyAmIHNlY3Rpb25zOiB3YXJtIHBhcGVyIC0tLS0tLS0tLS0gKi8KLmNhcmQsLmRvYy1jYXJkLC5hc3QtY2FyZCwuc3RlcC1jYXJke2JhY2tncm91bmQ6I2ZmZmRmOCAhaW1wb3J0YW50O2JvcmRlci1jb2xvcjojZDljZGI0ICFpbXBvcnRhbnQ7fQouc2VjdGlvbi1saWdodHtiYWNrZ3JvdW5kOiNmNmYxZTcgIWltcG9ydGFudDt9Ci5zZWN0aW9uLWRhcmt7YmFja2dyb3VuZDojMmUyYTI0ICFpbXBvcnRhbnQ7fQouc2VjdGlvbi1kYXJrIGgyLC5zZWN0aW9uLWRhcmsgaDN7Y29sb3I6I2Y2ZjFlNyAhaW1wb3J0YW50O30KLnNlY3Rpb24tZGFyayBwe2NvbG9yOiNjOWJmYWUgIWltcG9ydGFudDt9Ci5zdHJpcC1ndWFyYW50ZWV7YmFja2dyb3VuZDojZWNlM2QwICFpbXBvcnRhbnQ7fQoKLyoga2lsbCBoYXJzaCBuYXZ5IHBhbmVscyBzdGlsbCB1c2luZyByYXcgaGV4ICovCltzdHlsZSo9IjA0MUM0RCJdLFtzdHlsZSo9IjEwMjMzRiJde2JhY2tncm91bmQtY29sb3I6IzJlMmEyNCAhaW1wb3J0YW50O30KCi8qIGZvb3RlciBjYWxtICovCmZvb3RlcntiYWNrZ3JvdW5kOiMyZTJhMjQgIWltcG9ydGFudDtjb2xvcjojYzliZmFlICFpbXBvcnRhbnQ7fQpmb290ZXIgYXtjb2xvcjojZDljZGI0ICFpbXBvcnRhbnQ7fQouZm9vdGVyLWxlZ2Fse2JhY2tncm91bmQ6IzI0MWYxOCAhaW1wb3J0YW50O2NvbG9yOiNhODlhODMgIWltcG9ydGFudDt9CgovKiAtLS0tLS0tLS0tIENUQSBiYW5kOiB3YXJtIHN0b25lLCByZWFkYWJsZSB0ZXh0IC0tLS0tLS0tLS0gKi8KLnNlY3Rpb24tY3Rhe2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDEzNWRlZywjZWNlM2QwLCNlMGQyYjYpICFpbXBvcnRhbnQ7Y29sb3I6IzJlMmEyNCAhaW1wb3J0YW50O30KLnNlY3Rpb24tY3RhIGgxLC5zZWN0aW9uLWN0YSBoMiwuc2VjdGlvbi1jdGEgaDN7Y29sb3I6IzJlMmEyNCAhaW1wb3J0YW50O30KLnNlY3Rpb24tY3RhIHAsLnNlY3Rpb24tY3RhIC5tdXRlZHtjb2xvcjojNWM1MzQ3ICFpbXBvcnRhbnQ7fQoKLyogc3RlcCBudW1iZXJzOiBicm9uemUgZGlzY3MgKi8KLnN0ZXAtbnVte2JhY2tncm91bmQ6IzhhNWEyYiAhaW1wb3J0YW50O2NvbG9yOiNmZmYgIWltcG9ydGFudDt9Cg==
+/* stone-theme.css — Rustic stone reskin for United Traffic Tickets
+ * Overrides the navy/amber palette with warm limestone, sandstone & bronze.
+ * Also declutters: hides topbar, AI strips, and hero badge clutter.
+ * Load AFTER style.css: <link rel="stylesheet" href="/stone-theme.css?v=4">
+ */
+:root{
+  --arm-red:#a03a2a; --arm-blue:#4a4238; --arm-blue-dark:#2e2a24; --arm-blue-mid:#5c5347;
+  --arm-orange:#8a5a2b; --arm-orange-dark:#6f4520;
+  --navy:#4a4238; --navy-dark:#2e2a24; --navy-mid:#5c5347;
+  --amber:#8a5a2b; --amber-dark:#6f4520; --amber-ink:#6f4520;
+  --ink:#2e2a24; --cloud:#f6f1e7; --line:#d9cdb4; --muted:#7a6e5c;
+}
+
+/* page base */
+body{background:#f6f1e7 !important;color:#2e2a24 !important;}
+
+/* ---------- declutter: hide noisy header/middle elements ---------- */
+.topbar{display:none !important;}
+.ai-strip-top{display:none !important;}
+.ai-strip{display:none !important;}
+section.ai-strip{display:none !important;}
+.hero-ai-chips{display:none !important;}
+.hero-badges{display:none !important;}
+#utt-contrast-fix{display:none !important;}
+
+/* ---------- header: light stone, not navy ---------- */
+.site-header, header.site-header{background:#fffdf8 !important;border-bottom:1px solid #d9cdb4 !important;}
+.nav{background:#fffdf8 !important;}
+.nav a, .nav-links a{color:#2e2a24 !important;}
+.nav a:hover{color:#8a5a2b !important;}
+.site-header::after{background:linear-gradient(90deg,#a03a2a 0 33.333%,#4a4238 33.333% 66.666%,#8a5a2b 66.666% 100%) !important;}
+
+/* ---------- hero: warm stone gradient, calm type ---------- */
+.hero,.sub-hero{background:linear-gradient(180deg,#f6f1e7,#ece3d0) !important;}
+.hero h1,.hero h2,.sub-hero h1{color:#2e2a24 !important;}
+.hero p,.hero .muted,.sub-hero p.sub,.sub-hero .breadcrumb,.sub-hero .breadcrumb a{color:#7a6e5c !important;}
+.sub-hero .eyebrow{color:#8a5a2b !important;}
+
+/* ---------- buttons: bronze, not bright amber ---------- */
+.btn-amber,.btn-primary,.utt-scan-pay-btn,.btn[href*="assistant"]{
+  background:#8a5a2b !important;border-color:#8a5a2b !important;color:#fff !important;}
+.btn-amber:hover,.btn-primary:hover{filter:brightness(.92);}
+
+/* ---------- cards & sections: warm paper ---------- */
+.card,.doc-card,.ast-card,.step-card{background:#fffdf8 !important;border-color:#d9cdb4 !important;}
+.section-light{background:#f6f1e7 !important;}
+.section-dark{background:#2e2a24 !important;}
+.section-dark h2,.section-dark h3{color:#f6f1e7 !important;}
+.section-dark p{color:#c9bfae !important;}
+.strip-guarantee{background:#ece3d0 !important;}
+
+/* kill harsh navy panels still using raw hex */
+[style*="041C4D"],[style*="10233F"]{background-color:#2e2a24 !important;}
+
+/* footer calm */
+footer{background:#2e2a24 !important;color:#c9bfae !important;}
+footer a{color:#d9cdb4 !important;}
+.footer-legal{background:#241f18 !important;color:#a89a83 !important;}
+
+/* ---------- CTA band: warm stone, readable text ---------- */
+.section-cta{background:linear-gradient(135deg,#ece3d0,#e0d2b6) !important;color:#2e2a24 !important;}
+.section-cta h1,.section-cta h2,.section-cta h3{color:#2e2a24 !important;}
+.section-cta p,.section-cta .muted{color:#5c5347 !important;}
+
+/* step numbers: bronze discs */
+.step-num{background:#8a5a2b !important;color:#fff !important;}
