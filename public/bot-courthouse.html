@@ -1,1 +1,363 @@
-PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xIj4KPG1ldGEgbmFtZT0idGhlbWUtY29sb3IiIGNvbnRlbnQ9IiMwMDMzQTAiPgo8dGl0bGU+Qm90IENvdXJ0aG91c2Ug4oCUIEZpZ2h0IFlvdXIgQ2FsaWZvcm5pYSBUcmFmZmljIFRpY2tldCDigJQgVW5pdGVkIFRyYWZmaWMgVGlja2V0cyBEZWZlbnNlPC90aXRsZT4KPG1ldGEgbmFtZT0iZGVzY3JpcHRpb24iIGNvbnRlbnQ9IkludGVyYWN0aXZlIEJvdCBDb3VydGhvdXNlIGZvciBDYWxpZm9ybmlhIHRyYWZmaWMgdGlja2V0cy4gUGljayB5b3VyIGNvdW50eSwgY2hvb3NlIGEgcGF0aCAoZmlnaHQsIHRyYWZmaWMgc2Nob29sLCBmaXgtaXQsIGNhbid0IGFmZm9yZCksIGdldCBwbGFpbi1sYW5ndWFnZSBndWlkYW5jZSwgYW5kIG9wdGlvbmFsbHkgZHJhZnQgYSB3cml0dGVuIGRlY2xhcmF0aW9uLiBFZHVjYXRpb25hbCBvbmx5IOKAlCBub3QgYSBsYXcgZmlybS4iPgo8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Ii9zdHlsZS5jc3MiPgo8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Ii9zdG9uZS10aGVtZS5jc3M/dj00Ij4KPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSIvcGFnZXMuY3NzIj4KPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSIvYm90LWNvdXJ0aG91c2UuY3NzIj4KPGxpbmsgcmVsPSJpY29uIiB0eXBlPSJpbWFnZS9wbmciIGhyZWY9Ii9mYXZpY29uLnBuZyI+CjxsaW5rIHJlbD0iYXBwbGUtdG91Y2gtaWNvbiIgaHJlZj0iL2FwcGxlLXRvdWNoLWljb24ucG5nIj4KICA8bGluayByZWw9ImNhbm9uaWNhbCIgaHJlZj0iaHR0cHM6Ly91bml0ZWR0cmFmZmljdGlja2V0cy5jb20vYm90LWNvdXJ0aG91c2UiPgo8L2hlYWQ+Cjxib2R5Pgo8YSBjbGFzcz0ic2tpcC1saW5rIiBocmVmPSIjYmMtbWFpbiI+U2tpcCB0byBjb250ZW50PC9hPgo8aGVhZGVyIGNsYXNzPSJzaXRlLWhlYWRlciI+CiAgPGRpdiBjbGFzcz0idG9wYmFyIj4KICAgIDxkaXYgY2xhc3M9IndyYXAgdG9wYmFyLWlubmVyIj4KICAgICAgPHNwYW4gY2xhc3M9InRvcGJhci10YWciPlNlcnZpbmcgZHJpdmVycyBhY3Jvc3MgQ2FsaWZvcm5pYSAmYW1wOyBuYXRpb253aWRlPC9zcGFuPgogICAgICA8YSBjbGFzcz0idG9wYmFyLXBob25lIiBocmVmPSJ0ZWw6KzE4MTgyMDU4MjcxIj4oODE4KSAyMDUtODI3MSDigJQgRnJlZSBDb25zdWx0YXRpb248L2E+CiAgICA8L2Rpdj4KICA8L2Rpdj4KICA8bmF2IGNsYXNzPSJuYXYiPgogICAgPGRpdiBjbGFzcz0id3JhcCBuYXYtaW5uZXIiPgogICAgICA8YSBjbGFzcz0iYnJhbmQiIGhyZWY9Ii9hc3Npc3RhbnQiPgogICAgICAgIDxpbWcgc3JjPSIvYXNzZXRzL2xvZ28tZGVmZW5zZS0xNjAud2VicCIgYWx0PSJVbml0ZWQgVHJhZmZpYyBUaWNrZXRzIERlZmVuc2UiIGNsYXNzPSJicmFuZC1sb2dvIiB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgZGVjb2Rpbmc9ImFzeW5jIj4KICAgICAgPC9hPgogICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9Im5hdi10b2dnbGUiIGlkPSJuYXZUb2dnbGUiIGFyaWEtbGFiZWw9Ik9wZW4gbWVudSIgYXJpYS1leHBhbmRlZD0iZmFsc2UiPgogICAgICAgIDxzcGFuIGNsYXNzPSJuYXYtdG9nZ2xlLWJhciI+PC9zcGFuPjxzcGFuIGNsYXNzPSJuYXYtdG9nZ2xlLWJhciI+PC9zcGFuPjxzcGFuIGNsYXNzPSJuYXYtdG9nZ2xlLWJhciI+PC9zcGFuPgogICAgICA8L2J1dHRvbj4KICAgICAgPGRpdiBjbGFzcz0ibmF2LWxpbmtzIiBpZD0ibmF2TGlua3MiPgogICAgICAgIDx1bCBjbGFzcz0ibmF2LWxpc3QiPgogICAgICAgIDxsaT48YSBocmVmPSIvI3NlcnZpY2VzIj5TZXJ2aWNlczwvYT48L2xpPgogICAgICAgIDxsaSBjbGFzcz0iZHJvcCI+CiAgICAgICAgICA8YSBocmVmPSIvc2VydmljZXMiPldlIEZpZ2h0PC9hPgogICAgICAgICAgPHVsPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL3NwZWVkaW5nLXRpY2tldCI+U3BlZWRpbmcgVGlja2V0czwvYT48L2xpPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL3JlZC1saWdodC10aWNrZXQiPlJlZCBMaWdodCBUaWNrZXRzPC9hPjwvbGk+CiAgICAgICAgICAgIDxsaT48YSBocmVmPSIvZmFpbHVyZS10by1hcHBlYXIiPkZhaWx1cmUgdG8gQXBwZWFyPC9hPjwvbGk+CiAgICAgICAgICAgIDxsaT48YSBocmVmPSIvc3VzcGVuZGVkLWxpY2Vuc2UiPlN1c3BlbmRlZCBMaWNlbnNlPC9hPjwvbGk+CiAgICAgICAgICAgIDxsaT48YSBocmVmPSIvZml4LWl0LXRpY2tldCI+Rml4LUl0IFRpY2tldDwvYT48L2xpPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL3JlY2tsZXNzLWRyaXZpbmciPlJlY2tsZXNzIC8gQ2FyZWxlc3MgRHJpdmluZzwvYT48L2xpPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL2NlbGwtcGhvbmUtdGlja2V0Ij5DZWxsIFBob25lIC8gRGlzdHJhY3RlZCBEcml2aW5nPC9hPjwvbGk+CiAgICAgICAgICAgIDxsaT48YSBocmVmPSIvc3RvcC1zaWduLXRpY2tldCI+U3RvcCBTaWduIFZpb2xhdGlvbnM8L2E+PC9saT4KICAgICAgICAgICAgPGxpPjxhIGhyZWY9Ii9jZGwtdGlja2V0Ij5DREwgVGlja2V0PC9hPjwvbGk+CiAgICAgICAgICA8L3VsPgogICAgICAgIDwvbGk+CiAgICAgICAgPGxpPjxhIGhyZWY9Ii8jaG93Ij5Ib3cgSXQgV29ya3M8L2E+PC9saT4KICAgICAgICA8bGkgY2xhc3M9ImRyb3AiPgogICAgICAgICAgPGEgaHJlZj0iL2NvdXJ0aG91c2VzIj5Db3VydGhvdXNlczwvYT4KICAgICAgICAgIDx1bD4KICAgICAgICAgICAgPGxpPjxhIGhyZWY9Ii9ib3QtY291cnRob3VzZSI+Qm90IENvdXJ0aG91c2U8L2E+PC9saT4KICAgICAgICAgICAgPGxpPjxhIGhyZWY9Ii9hbGwtY291cnRob3VzZXMiPkFsbCA1OCBDQSBDb3VudGllczwvYT48L2xpPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL2NvdXJ0aG91c2VzL3N0YW5sZXktbW9zayI+U3RhbmxleSBNb3NrIChEVExBKTwvYT48L2xpPgogICAgICAgICAgICA8bGk+PGEgaHJlZj0iL2NvdXJ0aG91c2VzL2NoYXRzd29ydGgiPkNoYXRzd29ydGg8L2E+PC9saT4KICAgICAgICAgICAgPGxpPjxhIGhyZWY9Ii9jb3VydGhvdXNlcy9sb3MtYW5nZWxlcy1tZXRyb3BvbGl0YW4iPk1ldHJvcG9saXRhbiAoTEEpPC9hPjwvbGk+CiAgICAgICAgICAgIDxsaT48YSBocmVmPSIvY291cnRob3VzZXMvdmFuLW51eXMiPlZhbiBOdXlzPC9hPjwvbGk+CiAgICAgICAgICA8L3VsPgogICAgICAgIDwvbGk+CiAgICAgICAgPGxpPjxhIGhyZWY9Ii8jdHJhY2siPlRyYWNrPC9hPjwvbGk+CiAgICAgICAgPGxpPjxhIGhyZWY9Ii9yZXNvdXJjZXMiPlJlc291cmNlczwvYT48L2xpPgogICAgICAgIDxsaT48YSBocmVmPSIvZmFxIj5GQVE8L2E+PC9saT4KICAgICAgICA8bGk+PGEgaHJlZj0iL2Fib3V0Ij5BYm91dDwvYT48L2xpPgogICAgICAgIDxsaT48YSBocmVmPSIvYXNzaXN0YW50Ij5Bc3Npc3RhbnQ8L2E+PC9saT4KICAgICAgICA8bGk+PGEgaHJlZj0iLyNjb250YWN0Ij5Db250YWN0PC9hPjwvbGk+CiAgICAgICAgPGxpPjxhIGNsYXNzPSJjdGEiIGhyZWY9Ii9hc3Npc3RhbnQiPkZyZWUgVGlja2V0IFNjYW48L2E+PC9saT4KICAgICAgPC91bD4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICA8L25hdj4KPC9oZWFkZXI+CjxkaXYgY2xhc3M9ImJjLXRyaWNvbG9yIiBhcmlhLWhpZGRlbj0idHJ1ZSI+PC9kaXY+Cgo8bWFpbiBjbGFzcz0ic3VicGFnZSIgaWQ9ImJjLW1haW4iPgogIDxzZWN0aW9uIGNsYXNzPSJzdWItaGVybyI+CiAgICA8ZGl2IGNsYXNzPSJ3cmFwIj4KICAgICAgPGRpdiBjbGFzcz0iYnJlYWRjcnVtYiI+PGEgaHJlZj0iLyI+SG9tZTwvYT4gJnJzYXF1bzsgPGEgaHJlZj0iL2NvdXJ0aG91c2VzIj5Db3VydGhvdXNlczwvYT4gJnJzYXF1bzsgQm90IENvdXJ0aG91c2U8L2Rpdj4KICAgICAgPHAgY2xhc3M9ImV5ZWJyb3ciPkJvdCBDb3VydGhvdXNlPC9wPgogICAgICA8aDE+RmlnaHQgeW91ciBDYWxpZm9ybmlhIHRyYWZmaWMgdGlja2V0PC9oMT4KICAgICAgPHAgY2xhc3M9InN1YiI+UGljayB5b3VyIGNvdW50eSwgY2hvb3NlIGEgcGF0aCwgYW5kIGNvbXBsZXRlIHlvdXIgVHJpYWwgYnkgV3JpdHRlbiBEZWNsYXJhdGlvbiBpbnRha2UgYmVmb3JlIHBheW1lbnQuIFJldmlldyB5b3VyIGRyYWZ0IGZpcnN0LCB0aGVuIHBheSB0byB1bmxvY2sgcHJvZmVzc2lvbmFsIHJldmlldywgZmluYWwgZG9jdW1lbnQgcHJlcGFyYXRpb24sIGFuZCBjYXNlIHRyYWNraW5nLiBObyBhY2NvdW50IG5lZWRlZCwgYW5kIHlvdSBjYW4gdXNlIGl0IG9uIGFueSBkZXZpY2UuPC9wPgogICAgPC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0iYWktc3RyaXAiIGFyaWEtbGFiZWw9IkFydGlmaWNpYWwgaW50ZWxsaWdlbmNlIHRvb2xzIC0gZnJlZSB0byB1c2UiPgogICAgPGRpdiBjbGFzcz0id3JhcCI+CiAgICAgIDxkaXYgY2xhc3M9ImFpLXN0cmlwLXRvcCI+CiAgICAgICAgPHNwYW4gY2xhc3M9ImFpLWxpdmUiPjxpPjwvaT4gVU5JVEVEIEFJIElOVEVMTElHRU5DRSAmbWRhc2g7IExJVkU8L3NwYW4+CiAgICAgICAgPHNwYW4gY2xhc3M9ImFpLW5vdGUiPkZyZWUgJm1pZGRvdDsgcHJpdmF0ZSAmbWlkZG90OyBubyBjb21taXRtZW50PC9zcGFuPgogICAgICA8L2Rpdj4KICAgICAgPG5hdiBjbGFzcz0iYWktdGlsZXMiIGFyaWEtbGFiZWw9IkFJIHRvb2xzIj4KICAgICAgICA8YSBjbGFzcz0iYWktdGlsZSIgaHJlZj0iLyNidWlsZCI+CiAgICAgICAgICA8c3BhbiBjbGFzcz0iYWktdGlsZS1pY29uIj4mIzEyODI0Nzs8L3NwYW4+CiAgICAgICAgICA8c3BhbiBjbGFzcz0iYWktdGlsZS1ib2R5Ij48c3Ryb25nPkZyZWUgQUkgVGlja2V0IFNjYW48L3N0cm9uZz48c21hbGw+SW5zdGFudCBpc3N1ZSBmbGFncyBmcm9tIGEgcGhvdG88L3NtYWxsPjwvc3Bhbj4KICAgICAgICA8L2E+CiAgICAgICAgPGEgY2xhc3M9ImFpLXRpbGUiIGhyZWY9Ii9hc3Npc3RhbnQiPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtaWNvbiI+JiMxMjkzMDI7PC9zcGFuPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtYm9keSI+PHN0cm9uZz5BSSBBc3Npc3RhbnQ8L3N0cm9uZz48c21hbGw+QXNrIGFueXRoaW5nIGFib3V0IHlvdXIgY2l0YXRpb248L3NtYWxsPjwvc3Bhbj4KICAgICAgICA8L2E+CiAgICAgICAgPGEgY2xhc3M9ImFpLXRpbGUiIGhyZWY9IiNzdGFnZXMiPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtaWNvbiI+JiM5ODc4OyYjNjUwMzk7PC9zcGFuPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtYm9keSI+PHN0cm9uZz5Cb3QgQ291cnRob3VzZTwvc3Ryb25nPjxzbWFsbD5TdGVwLWJ5LXN0ZXAgdmlydHVhbCBjb3VydGhvdXNlPC9zbWFsbD48L3NwYW4+CiAgICAgICAgPC9hPgogICAgICAgIDxhIGNsYXNzPSJhaS10aWxlIiBocmVmPSIvY291cnRob3VzZXMiPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtaWNvbiI+JiMxMjc5Nzg7PC9zcGFuPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtYm9keSI+PHN0cm9uZz5BSSBDb3VydGhvdXNlIEV4cGxvcmVyPC9zdHJvbmc+PHNtYWxsPjU4IENBIGNvdW50aWVzICZhbXA7IGNvdXJ0aG91c2UgQUk8L3NtYWxsPjwvc3Bhbj4KICAgICAgICA8L2E+CiAgICAgICAgPGEgY2xhc3M9ImFpLXRpbGUiIGhyZWY9Ii9hc3Npc3RhbnQjYXNzaXN0YW50LWZvcm0iPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtaWNvbiI+JiMxMjgyMDM7PC9zcGFuPgogICAgICAgICAgPHNwYW4gY2xhc3M9ImFpLXRpbGUtYm9keSI+PHN0cm9uZz5BSSBEb2N1bWVudCBQcmVwPC9zdHJvbmc+PHNtYWxsPkF0dG9ybmV5LXJldmlld2VkIGRyYWZ0czwvc21hbGw+PC9zcGFuPgogICAgICAgIDwvYT4KICAgICAgPC9uYXY+CiAgICAgIDxwIGNsYXNzPSJhaS1jb21wbGlhbmNlIj5TdGF0ZSBTQkUtY2VydGlmaWVkICMyMDUzODU0ICZtaWRkb3Q7IGNvdXJ0LXJlZmVycmVkICZtaWRkb3Q7IDxzdHJvbmc+bm90IGEgbGF3IGZpcm08L3N0cm9uZz4sIG5vdCBhIGdvdmVybm1lbnQgYWdlbmN5LCBub3QgYWZmaWxpYXRlZCB3aXRoIGFueSBjb3VydC4gRnJlZSBzY2FuICZtZGFzaDsgbm8gY29tbWl0bWVudCwgcmVzdWx0cyBuZXZlciBndWFyYW50ZWVkLiA8YSBocmVmPSJodHRwczovL2NhbGVwcm9jdXJlLmNhLmdvdi9wYWdlcy9QdWJsaWNTZWFyY2gvc3VwcGxpZXItc2VhcmNoLmFzcHgiIHRhcmdldD0iX2JsYW5rIiByZWw9Im5vb3BlbmVyIj5DYWwgZVByb2N1cmU8L2E+ICZtaWRkb3Q7IDxhIGhyZWY9Imh0dHBzOi8vd3d3LmRncy5jYS5nb3YvUEQtT1NEUyIgdGFyZ2V0PSJfYmxhbmsiIHJlbD0ibm9vcGVuZXIiPkRHUyBPU0RTPC9hPiAmbWlkZG90OyA8YSBocmVmPSJodHRwczovL29wZW5nb3Z1cy5jb20vbG9zLWFuZ2VsZXMtYnVzaW5lc3MvMDAwMjQzODgxOC0wMDAxLTIiIHRhcmdldD0iX2JsYW5rIiByZWw9Im5vb3BlbmVyIj5MQSBDaXR5IGJ1c2luZXNzIHJlY29yZDwvYT4gJm1pZGRvdDsgUGFydG5lciB0cmFmZmljIHNjaG9vbDogPGEgaHJlZj0iL2dvL215aW1wcm92IiB0YXJnZXQ9Il9ibGFuayIgcmVsPSJub29wZW5lciI+bXlpbXByb3Y8L2E+IChDQSBETVYgRTE1MTUpLjwvcD4KICAgIDwvZGl2PgogIDwvc2VjdGlvbj4KCiAgPHNlY3Rpb24gY2xhc3M9InBnLXNlY3Rpb24gYWx0Ij4KICAgIDxkaXYgY2xhc3M9IndyYXAiPgogICAgICA8ZGl2IGNsYXNzPSJiYy1kaXNjbGFpbWVyIiByb2xlPSJub3RlIj4KICAgICAgICA8c3Ryb25nPkVkdWNhdGlvbmFsIGd1aWRhbmNlIG9ubHkuPC9zdHJvbmc+IFVuaXRlZCBUcmFmZmljIFRpY2tldHMgRGVmZW5zZSBpcyA8c3Ryb25nPm5vdCBhIGxhdyBmaXJtPC9zdHJvbmc+IGFuZCBkb2VzIG5vdCBwcm92aWRlIGxlZ2FsIGFkdmljZS4gVGhpcyB0b29sIGRvZXMgbm90IGd1YXJhbnRlZSBhbnkgb3V0Y29tZS4gQ291cnQgcHJvY2VkdXJlcyBhbmQgZGVhZGxpbmVzIHZhcnkgYnkgY291bnR5IOKAlCBhbHdheXMgY29uZmlybSBvbiB0aGUgb2ZmaWNpYWwgY291cnQgc2l0ZS4gPHN0cm9uZz5Db3VydHMgbmV2ZXIgY29sZC10ZXh0IHlvdSBmb3IgcGF5bWVudC48L3N0cm9uZz4gVXNlIG9ubHkgb2ZmaWNpYWwgY291cnQgd2Vic2l0ZXMgYW5kIHBob25lIG51bWJlcnMuCiAgICAgIDwvZGl2PgoKICAgICAgPG9sIGNsYXNzPSJiYy1zdGVwcyIgYXJpYS1sYWJlbD0iUHJvZ3Jlc3MiPgogICAgICAgIDxsaSBjbGFzcz0iaXMtYWN0aXZlIj48c3BhbiBjbGFzcz0iYmMtc3RlcC1udW0iPjE8L3NwYW4+IENvdW50eTwvbGk+CiAgICAgICAgPGxpPjxzcGFuIGNsYXNzPSJiYy1zdGVwLW51bSI+Mjwvc3Bhbj4gUGF0aDwvbGk+CiAgICAgICAgPGxpPjxzcGFuIGNsYXNzPSJiYy1zdGVwLW51bSI+Mzwvc3Bhbj4gR3VpZGFuY2U8L2xpPgogICAgICAgIDxsaT48c3BhbiBjbGFzcz0iYmMtc3RlcC1udW0iPjQ8L3NwYW4+IFRCRCBEcmFmdDwvbGk+CiAgICAgIDwvb2w+CgogICAgICA8IS0tIFNURVAgMSAtLT4KICAgICAgPGRpdiBjbGFzcz0iYmMtcGFuZWwiIGlkPSJiY0NvdW50eVBhbmVsIj4KICAgICAgICA8aDI+U3RlcCAxIOKAlCBDaG9vc2UgeW91ciBjb3VudHk8L2gyPgogICAgICAgIDxwIGNsYXNzPSJiYy1sZWFkIj5TZWxlY3QgdGhlIENhbGlmb3JuaWEgY291bnR5IHdoZXJlIHlvdSByZWNlaXZlZCB0aGUgdGlja2V0LiBBbGwgNTggU3VwZXJpb3IgQ291cnRzIGFyZSBsaXN0ZWQuIERlZXAgbGluazogPGNvZGU+P2NvdW50eT1zbHVnPC9jb2RlPiAoZS5nLiA8Y29kZT4/Y291bnR5PWxvcy1hbmdlbGVzPC9jb2RlPikuPC9wPgogICAgICAgIDxkaXYgY2xhc3M9ImJjLXNlYXJjaC13cmFwIj4KICAgICAgICAgIDxsYWJlbCBmb3I9ImJjRmlsdGVyIj5TZWFyY2ggY291bnRpZXM8L2xhYmVsPgogICAgICAgICAgPGlucHV0IHR5cGU9InNlYXJjaCIgaWQ9ImJjRmlsdGVyIiBjbGFzcz0iYmMtc2VhcmNoIiBwbGFjZWhvbGRlcj0iVHlwZSBhIGNvdW50eSwgZS5nLiBSaXZlcnNpZGUiIGF1dG9jb21wbGV0ZT0ib2ZmIiBlbnRlcmtleWhpbnQ9InNlYXJjaCI+CiAgICAgICAgPC9kaXY+CiAgICAgICAgPGRpdiBpZD0iYmNDb3VudHlHcmlkIiBjbGFzcz0iYmMtY291bnR5LWdyaWQiIHJvbGU9Imxpc3Rib3giIGFyaWEtbGFiZWw9IkNhbGlmb3JuaWEgY291bnRpZXMiPjwvZGl2PgogICAgICAgIDxkaXYgaWQ9ImJjTm9NYXRjaCIgY2xhc3M9ImJjLWVtcHR5Ij5ObyBjb3VudHkgbWF0Y2hlZC4gVHJ5IHRoZSBmdWxsIG5hbWUgb3IgYW5vdGhlciBzcGVsbGluZy48L2Rpdj4KICAgICAgICA8ZGl2IGlkPSJiY1NlbGVjdGVkQmFyIiBjbGFzcz0iYmMtc2VsZWN0ZWQtYmFyIj4KICAgICAgICAgIDxzcGFuPlNlbGVjdGVkOiA8c3Ryb25nIGlkPSJiY1NlbGVjdGVkTmFtZSI+PC9zdHJvbmc+PC9zcGFuPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJiYy1jaGFuZ2UiIGlkPSJiY0NoYW5nZUNvdW50eSI+Q2hhbmdlIGNvdW50eTwvYnV0dG9uPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KCiAgICAgIDwhLS0gU1RFUCAyIC0tPgogICAgICA8ZGl2IGNsYXNzPSJiYy1wYW5lbCIgaWQ9ImJjUGF0aFBhbmVsIiBzdHlsZT0iZGlzcGxheTpub25lIj4KICAgICAgICA8aDI+U3RlcCAyIOKAlCBXaGF0IGRvIHlvdSB3YW50IHRvIGRvPzwvaDI+CiAgICAgICAgPHAgY2xhc3M9ImJjLWxlYWQiPlRhcCB0aGUgcGF0aCB0aGF0IGJlc3QgbWF0Y2hlcyB5b3VyIGdvYWwuIFlvdSBjYW4gc3dpdGNoIGFueXRpbWUuPC9wPgogICAgICAgIDxkaXYgY2xhc3M9ImJjLXBhdGgtZ3JpZCI+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJjLXBhdGgtYnRuIGJjLXBhdGgtaG90IiBkYXRhLXBhdGg9InRiZCIgYXJpYS1wcmVzc2VkPSJmYWxzZSI+RmlnaHQgYnkgVEJEIOKAlCAkMTk5PHNwYW4+VHJpYWwgYnkgV3JpdHRlbiBEZWNsYXJhdGlvbiAoVFItMjA1KSBwcmVwICsgY2FzZSB0cmFja2luZzwvc3Bhbj48L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYmMtcGF0aC1idG4iIGRhdGEtcGF0aD0iZmlnaHQiIGFyaWEtcHJlc3NlZD0iZmFsc2UiPkZpZ2h0IHRpY2tldDxzcGFuPkNvbnRlc3QgaW4gY291cnQgb3IgYnkgd3JpdHRlbiBkZWNsYXJhdGlvbjwvc3Bhbj48L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYmMtcGF0aC1idG4iIGRhdGEtcGF0aD0ic2Nob29sIiBhcmlhLXByZXNzZWQ9ImZhbHNlIj5UcmFmZmljIHNjaG9vbDxzcGFuPkVsaWdpYmlsaXR5IGJhc2ljcyAmYW1wOyB0eXBpY2FsIHN0ZXBzPC9zcGFuPjwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJiYy1wYXRoLWJ0biIgZGF0YS1wYXRoPSJmaXhpdCIgYXJpYS1wcmVzc2VkPSJmYWxzZSI+Rml4LWl0PHNwYW4+Q29ycmVjdGFibGUgZXF1aXBtZW50IC8gcmVnaXN0cmF0aW9uPC9zcGFuPjwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJiYy1wYXRoLWJ0biIgZGF0YS1wYXRoPSJhZmZvcmQiIGFyaWEtcHJlc3NlZD0iZmFsc2UiPkNhbid0IGFmZm9yZDxzcGFuPkFiaWxpdHkgdG8gcGF5ICZhbXA7IHBheW1lbnQgb3B0aW9uczwvc3Bhbj48L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYmMtcGF0aC1idG4iIGRhdGEtcGF0aD0iZXhwbGFpbiIgYXJpYS1wcmVzc2VkPSJmYWxzZSI+RXhwbGFpbiBvcHRpb25zPHNwYW4+UGxhaW4tbGFuZ3VhZ2Ugb3ZlcnZpZXcgb2YgYWxsIHBhdGhzPC9zcGFuPjwvYnV0dG9uPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KCiAgICAgIDwhLS0gU1RFUCAzIC0tPgogICAgICA8ZGl2IGNsYXNzPSJiYy1wYW5lbCBiYy1ndWlkYW5jZSIgaWQ9ImJjR3VpZGFuY2VQYW5lbCIgc3R5bGU9ImRpc3BsYXk6bm9uZSI+CiAgICAgICAgPGgyPlN0ZXAgMyDigJQgUGxhaW4tbGFuZ3VhZ2UgZ3VpZGFuY2U8L2gyPgogICAgICAgIDxwIGNsYXNzPSJiYy1sZWFkIj5TdGF0ZXdpZGUgQ2FsaWZvcm5pYSBydWxlcyBzdW1tYXJpemVkIGZvciBlZHVjYXRpb24uIENvbmZpcm0gZXZlcnkgZGVhZGxpbmUgb24geW91ciBjb3VudHnigJlzIG9mZmljaWFsIHRyYWZmaWMgcGFnZS48L3A+CiAgICAgICAgPGRpdiBpZD0iYmNHdWlkYW5jZUJvZHkiPjwvZGl2PgogICAgICAgIDxkaXYgY2xhc3M9ImJjLW9mZmljaWFsLWxpbmtzIiBpZD0iYmNPZmZpY2lhbExpbmtzIj48L2Rpdj4KICAgICAgPC9kaXY+CgogICAgICA8IS0tIFRCRCBPRkZFUiAtLT4KICAgICAgPGRpdiBjbGFzcz0iYmMtcGFuZWwgYmMtb2ZmZXIiIGlkPSJiY09mZmVyUGFuZWwiIHN0eWxlPSJkaXNwbGF5Om5vbmUiIGhpZGRlbj4KICAgICAgICA8ZGl2IGlkPSJiY1BhaWRUaGFua3MiIGNsYXNzPSJiYy1wYWlkLXRoYW5rcyIgc3R5bGU9ImRpc3BsYXk6bm9uZSIgcm9sZT0ic3RhdHVzIj48L2Rpdj4KICAgICAgICA8cCBjbGFzcz0iYmMtb2ZmZXItZXllYnJvdyI+U3RhbmRhcmQgVGlja2V0ICZtaWRkb3Q7IFRyaWFsIGJ5IFdyaXR0ZW4gRGVjbGFyYXRpb248L3A+CiAgICAgICAgPGgyPkZpZ2h0IHlvdXIgdGlja2V0IGJ5IFdyaXR0ZW4gRGVjbGFyYXRpb248L2gyPgogICAgICAgIDxkaXYgY2xhc3M9ImJjLW9mZmVyLXByaWNlIj48c3BhbiBjbGFzcz0iYmMtcHJpY2UtYW10Ij4kMTk5PC9zcGFuPiA8c3BhbiBjbGFzcz0iYmMtcHJpY2Utbm90ZSI+ZG9jdW1lbnQgcHJlcCArIGNhc2UgdHJhY2tpbmc8L3NwYW4+PC9kaXY+CiAgICAgICAgPHVsIGNsYXNzPSJiYy1vZmZlci1idWxsZXRzIj4KICAgICAgICAgIDxsaT5BSSBzY2FuIG9mIHlvdXIgY2l0YXRpb248L2xpPgogICAgICAgICAgPGxpPlByZWZpbGxlZCBUUi0yMDUgZHJhZnQgZm9yIFRyaWFsIGJ5IFdyaXR0ZW4gRGVjbGFyYXRpb248L2xpPgogICAgICAgICAgPGxpPkNhbGlmb3JuaWEgQ2VydGlmaWVkIFBhcmFsZWdhbCByZXZpZXc8L2xpPgogICAgICAgICAgPGxpPkF0dG9ybmV5IHJldmlldyBiZWZvcmUgZmlsaW5nPC9saT4KICAgICAgICAgIDxsaT5DYXNlIHRyYWNraW5nIHNvIHlvdSBrbm93IHdoYXQgaGFwcGVucyBuZXh0PC9saT4KICAgICAgICA8L3VsPgogICAgICAgIDxwIGNsYXNzPSJiYy1vZmZlci1zY2FyY2l0eSI+Q29tcGxldGUgYW5kIHJldmlldyB5b3VyIFRCRCBpbmZvcm1hdGlvbiBmaXJzdCAmbWlkZG90OyBTZWN1cmUgU3RyaXBlIGNoZWNrb3V0IGNvbWVzIGFmdGVyPC9wPgogICAgICAgIDxkaXYgY2xhc3M9ImJjLW9mZmVyLWFjdGlvbnMiPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJiYy1jdGEtcGF5IiBpZD0iYmNQYXlDdGEiPkNvbXBsZXRlIFRCRCBkcmFmdCDihpIgQ29udGludWUgdG8gcGF5bWVudDwvYnV0dG9uPgogICAgICAgICAgPGEgY2xhc3M9ImJjLWN0YS1zZWNvbmRhcnkiIGlkPSJiY1NjYW5GcmVlIiBocmVmPSIvYXNzaXN0YW50P3NlcnZpY2U9MTk5JmFtcDtpbnRlbnQ9dGJkIj5TY2FuIGZyZWUgZmlyc3Q8L2E+CiAgICAgICAgPC9kaXY+CiAgICAgICAgPHAgY2xhc3M9ImJjLW9mZmVyLWxlZ2FsIj5Zb3VyIFRCRCBpbnRha2UgYW5kIGRyYWZ0IHJldmlldyBoYXBwZW4gYmVmb3JlIHBheW1lbnQuIFBheW1lbnQgdW5sb2NrcyB0aGUgcHJvZmVzc2lvbmFsIHJldmlldywgZmluYWwgZG9jdW1lbnQgcHJlcGFyYXRpb24sIGFuZCBjYXNlIHRyYWNraW5nIHBhY2thZ2UuIERvY3VtZW50IHByZXBhcmF0aW9uIGlzIG5vdCBsZWdhbCBhZHZpY2UgYW5kIG91dGNvbWVzIGFyZSBuZXZlciBndWFyYW50ZWVkLjwvcD4KICAgICAgPC9kaXY+CgogICAgICA8IS0tIENIRUNLT1VUIC0tPgogICAgICA8ZGl2IGNsYXNzPSJiYy1wYW5lbCBiYy1jaGVja291dCIgaWQ9ImJjQ2hlY2tvdXRQYW5lbCIgc3R5bGU9ImRpc3BsYXk6bm9uZSIgaGlkZGVuPgogICAgICAgIDxoMj5TZWN1cmUgY2hlY2tvdXQg4oCUICQxOTkgVEJEPC9oMj4KICAgICAgICA8cCBjbGFzcz0iYmMtbGVhZCI+RW50ZXIgdGhlIGRldGFpbHMgd2UgbmVlZCB0byBvcGVuIHlvdXIgY2FzZSBhbmQgc2VuZCB5b3UgdG8gU3RyaXBlLiBSZXF1aXJlZCBmaWVsZHMgYXJlIG1hcmtlZC48L3A+CiAgICAgICAgPGZvcm0gaWQ9ImJjQ2hlY2tvdXRGb3JtIiBub3ZhbGlkYXRlPgogICAgICAgICAgPGRpdiBjbGFzcz0iYmMtZm9ybS1ncmlkIj4KICAgICAgICAgICAgPGRpdiBjbGFzcz0iYmMtZmllbGQiPgogICAgICAgICAgICAgIDxsYWJlbCBmb3I9ImJjRmlyc3ROYW1lIj5GaXJzdCBuYW1lIDxhYmJyIHRpdGxlPSJyZXF1aXJlZCI+KjwvYWJicj48L2xhYmVsPgogICAgICAgICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0iYmNGaXJzdE5hbWUiIG5hbWU9ImZpcnN0TmFtZSIgYXV0b2NvbXBsZXRlPSJnaXZlbi1uYW1lIiByZXF1aXJlZD4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWZpZWxkIj4KICAgICAgICAgICAgICA8bGFiZWwgZm9yPSJiY0xhc3ROYW1lIj5MYXN0IG5hbWUgPGFiYnIgdGl0bGU9InJlcXVpcmVkIj4qPC9hYmJyPjwvbGFiZWw+CiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9InRleHQiIGlkPSJiY0xhc3ROYW1lIiBuYW1lPSJsYXN0TmFtZSIgYXV0b2NvbXBsZXRlPSJmYW1pbHktbmFtZSIgcmVxdWlyZWQ+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJiYy1maWVsZCI+CiAgICAgICAgICAgICAgPGxhYmVsIGZvcj0iYmNFbWFpbCI+RW1haWwgPGFiYnIgdGl0bGU9InJlcXVpcmVkIj4qPC9hYmJyPjwvbGFiZWw+CiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9ImVtYWlsIiBpZD0iYmNFbWFpbCIgbmFtZT0iZW1haWwiIGF1dG9jb21wbGV0ZT0iZW1haWwiIHJlcXVpcmVkPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdiBjbGFzcz0iYmMtZmllbGQiPgogICAgICAgICAgICAgIDxsYWJlbCBmb3I9ImJjUGhvbmUiPlBob25lPC9sYWJlbD4KICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0idGVsIiBpZD0iYmNQaG9uZSIgbmFtZT0icGhvbmUiIGF1dG9jb21wbGV0ZT0idGVsIj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWZpZWxkIj4KICAgICAgICAgICAgICA8bGFiZWwgZm9yPSJiY0NpdGF0aW9uIj5DaXRhdGlvbiAvIGNhc2UgbnVtYmVyIDxhYmJyIHRpdGxlPSJyZXF1aXJlZCI+KjwvYWJicj48L2xhYmVsPgogICAgICAgICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0iYmNDaXRhdGlvbiIgbmFtZT0iY2l0YXRpb24iIGF1dG9jb21wbGV0ZT0ib2ZmIiByZXF1aXJlZD4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWZpZWxkIj4KICAgICAgICAgICAgICA8bGFiZWwgZm9yPSJiY0NvdXJ0Ij5Db3VydDwvbGFiZWw+CiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9InRleHQiIGlkPSJiY0NvdXJ0IiBuYW1lPSJjb3VydCIgcmVhZG9ubHk+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJiYy1maWVsZCI+CiAgICAgICAgICAgICAgPGxhYmVsIGZvcj0iYmNEb2IiPkRhdGUgb2YgYmlydGggPGFiYnIgdGl0bGU9InJlcXVpcmVkIj4qPC9hYmJyPjwvbGFiZWw+CiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9InRleHQiIGlkPSJiY0RvYiIgbmFtZT0iZG9iIiBhdXRvY29tcGxldGU9ImJkYXkiIHBsYWNlaG9sZGVyPSJNTS9ERC9ZWVlZIiByZXF1aXJlZD4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWZpZWxkIj4KICAgICAgICAgICAgICA8bGFiZWwgZm9yPSJiY0RsIj5Ecml2ZXIncyBsaWNlbnNlICMgPGFiYnIgdGl0bGU9InJlcXVpcmVkIj4qPC9hYmJyPjwvbGFiZWw+CiAgICAgICAgICAgICAgPGlucHV0IHR5cGU9InRleHQiIGlkPSJiY0RsIiBuYW1lPSJkbCIgYXV0b2NvbXBsZXRlPSJvZmYiIHJlcXVpcmVkPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdiBjbGFzcz0iYmMtZmllbGQiPgogICAgICAgICAgICAgIDxsYWJlbCBmb3I9ImJjQ29kZSI+VmlvbGF0aW9uIGNvZGUgPGk+b3B0aW9uYWw8L2k+PC9sYWJlbD4KICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgaWQ9ImJjQ29kZSIgbmFtZT0iY29kZSIgYXV0b2NvbXBsZXRlPSJvZmYiIHBsYWNlaG9sZGVyPSJlLmcuIFZDIDIyMzUwIj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWZpZWxkIGJjLWZpZWxkLWZ1bGwiPgogICAgICAgICAgICAgIDxsYWJlbCBmb3I9ImJjTm90ZXMiPk5vdGVzIDxpPm9wdGlvbmFsPC9pPjwvbGFiZWw+CiAgICAgICAgICAgICAgPHRleHRhcmVhIGlkPSJiY05vdGVzIiBuYW1lPSJub3RlcyIgcm93cz0iMyIgcGxhY2Vob2xkZXI9IkFueXRoaW5nIGhlbHBmdWwgYWJvdXQgeW91ciBzdG9wIG9yIGRlYWRsaW5lIj48L3RleHRhcmVhPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPGxhYmVsIGNsYXNzPSJiYy1jb25zZW50Ij4KICAgICAgICAgICAgPGlucHV0IHR5cGU9ImNoZWNrYm94IiBpZD0iYmNDb25zZW50IiBuYW1lPSJjb25zZW50IiByZXF1aXJlZD4KICAgICAgICAgICAgPHNwYW4+SSB1bmRlcnN0YW5kIHRoaXMgaXMgPHN0cm9uZz5kb2N1bWVudCBwcmVwYXJhdGlvbjwvc3Ryb25nPiwgbm90IGxlZ2FsIGFkdmljZSwgYW5kIG91dGNvbWVzIGFyZSA8c3Ryb25nPm5vdCBndWFyYW50ZWVkPC9zdHJvbmc+Ljwvc3Bhbj4KICAgICAgICAgIDwvbGFiZWw+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9InN1Ym1pdCIgY2xhc3M9ImJjLWN0YS1wYXkiIGlkPSJiY0NoZWNrb3V0U3VibWl0Ij5Db250aW51ZSB0byBzZWN1cmUgY2hlY2tvdXQ8L2J1dHRvbj4KICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLWNoZWNrb3V0LXN0YXR1cyIgaWQ9ImJjQ2hlY2tvdXRTdGF0dXMiIHJvbGU9InN0YXR1cyIgYXJpYS1saXZlPSJwb2xpdGUiPjwvZGl2PgogICAgICAgIDwvZm9ybT4KICAgICAgPC9kaXY+CgogICAgICA8IS0tIFNURVAgNCAtLT4KICAgICAgPGRpdiBjbGFzcz0iYmMtcGFuZWwgYmMtZHJhZnQiIGlkPSJiY0RyYWZ0UGFuZWwiPgogICAgICAgIDxkaXYgY2xhc3M9ImJjLWRyYWZ0LXVwc2VsbCI+Q29tcGxldGUgeW91ciBUQkQgaW50YWtlIGFuZCByZXZpZXcgdGhlIGRyYWZ0IDxzdHJvbmc+YmVmb3JlIHBheWluZzwvc3Ryb25nPi4gV2hlbiB5b3UgYXJlIHNhdGlzZmllZCB3aXRoIHRoZSBpbmZvcm1hdGlvbiwgcGF5bWVudCB1bmxvY2tzIHRoZSBwcm9mZXNzaW9uYWwgcmV2aWV3IGFuZCBmaW5hbCBUUi0yMDUgcHJlcGFyYXRpb24uPC9kaXY+CiAgICAgICAgPGgyPlN0ZXAgNCDigJQgQ29tcGxldGUgeW91ciBUQkQgZHJhZnQgYmVmb3JlIHBheW1lbnQ8L2gyPgogICAgICAgIDxwIGNsYXNzPSJiYy1sZWFkIj5FbnRlciB5b3VyIGZhY3RzIGFuZCBnZW5lcmF0ZSBhIHByaW50YWJsZSBkcmFmdCA8c3Ryb25nPmxvY2FsbHkgaW4geW91ciBicm93c2VyPC9zdHJvbmc+LiBOb3RoaW5nIGlzIHVwbG9hZGVkIGJ5IHRoaXMgZHJhZnQgc3RlcC4gUmV2aWV3IGV2ZXJ5IGZpZWxkIGJlZm9yZSBwcm9jZWVkaW5nLiBUaGUgZmluYWwgb2ZmaWNpYWwgVFItMjA1IGlzIHByZXBhcmVkIGFmdGVyIHBheW1lbnQgYW5kIHByb2Zlc3Npb25hbCByZXZpZXcuIE5vdCBsZWdhbCBhZHZpY2UuPC9wPgogICAgICAgIDxsYWJlbCBmb3I9ImJjRGVjbE5hbWUiPllvdXIgZnVsbCBsZWdhbCBuYW1lPC9sYWJlbD4KICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgaWQ9ImJjRGVjbE5hbWUiIGF1dG9jb21wbGV0ZT0ibmFtZSIgcGxhY2Vob2xkZXI9IkphbmUgUS4gRHJpdmVyIj4KICAgICAgICA8bGFiZWwgZm9yPSJiY0RlY2xDaXRlIj5DaXRhdGlvbiAvIGNhc2UgbnVtYmVyPC9sYWJlbD4KICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgaWQ9ImJjRGVjbENpdGUiIGF1dG9jb21wbGV0ZT0ib2ZmIiBwbGFjZWhvbGRlcj0iQXMgc2hvd24gb24gdGhlIHRpY2tldCI+CiAgICAgICAgPGxhYmVsIGZvcj0iYmNEZWNsRGF0ZSI+RGF0ZSBvZiB2aW9sYXRpb248L2xhYmVsPgogICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0iYmNEZWNsRGF0ZSIgYXV0b2NvbXBsZXRlPSJvZmYiIHBsYWNlaG9sZGVyPSJNTS9ERC9ZWVlZIj4KICAgICAgICA8bGFiZWwgZm9yPSJiY0RlY2xMb2MiPkxvY2F0aW9uIG9mIHN0b3A8L2xhYmVsPgogICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0iYmNEZWNsTG9jIiBhdXRvY29tcGxldGU9Im9mZiIgcGxhY2Vob2xkZXI9IlN0cmVldCAvIGhpZ2h3YXkgJmFtcDsgY2l0eSI+CiAgICAgICAgPGxhYmVsIGZvcj0iYmNEZWNsRmFjdHMiPldoYXQgaGFwcGVuZWQgKHlvdXIgZmFjdHMpPC9sYWJlbD4KICAgICAgICA8dGV4dGFyZWEgaWQ9ImJjRGVjbEZhY3RzIiBwbGFjZWhvbGRlcj0iV3JpdGUgb25seSBmYWN0cyB5b3UgcGVyc29uYWxseSBrbm93LiBCZSBjbGVhciBhbmQgcmVzcGVjdGZ1bC4gRG8gbm90IGludmVudCBldmlkZW5jZS4iPjwvdGV4dGFyZWE+CiAgICAgICAgPGRpdiBjbGFzcz0iYmMtZHJhZnQtYWN0aW9ucyI+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBiYy1idG4tYW1iZXIiIGlkPSJiY0dlbkRyYWZ0Ij5HZW5lcmF0ZSAmYW1wOyByZXZpZXcgVEJEIGRyYWZ0PC9idXR0b24+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBiYy1idG4tbmF2eSIgaWQ9ImJjUHJpbnREcmFmdCI+UHJpbnQgZHJhZnQ8L2J1dHRvbj4KICAgICAgICA8L2Rpdj4KICAgICAgICA8ZGl2IGNsYXNzPSJiYy1wcmV2aWV3IiBpZD0iYmNQcmV2aWV3Ij4KICAgICAgICAgIDxkaXYgY2xhc3M9ImJjLXByZXZpZXctdGl0bGUiPllvdXIgZHJhZnQgc3RhdGVtZW50PC9kaXY+CiAgICAgICAgICA8ZGl2IGlkPSJiY1ByZXZpZXdUZXh0Ij48L2Rpdj4KICAgICAgICA8L2Rpdj4KICAgICAgPC9kaXY+CgogICAgICA8IS0tIEZJTkFMIENUQXMgLS0+CiAgICAgIDxkaXYgY2xhc3M9ImJjLXBhbmVsIiBpZD0iYmNGaW5hbFBhbmVsIiBzdHlsZT0iZGlzcGxheTpub25lIj4KICAgICAgICA8aDI+TmV4dCBzdGVwczwvaDI+CiAgICAgICAgPHAgY2xhc3M9ImJjLWxlYWQiPkFmdGVyIHlvdSByZXZpZXcgeW91ciBUQkQgZHJhZnQsIGNvbnRpbnVlIHRvIHNlY3VyZSBwYXltZW50LiBQYXltZW50IHVubG9ja3MgcHJvZmVzc2lvbmFsIHJldmlldywgZmluYWwgVFItMjA1IHByZXBhcmF0aW9uLCBhbmQgY2FzZSB0cmFja2luZy48L3A+CiAgICAgICAgPGRpdiBjbGFzcz0iYmMtZmluYWwtY3RhcyI+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJjLWN0YS1hbWJlciIgaWQ9ImJjRmluYWxQYXkiPkNvbXBsZXRlIFRCRCBkcmFmdCDihpIgQ29udGludWUgdG8gcGF5bWVudDwvYnV0dG9uPgogICAgICAgICAgPGEgY2xhc3M9ImJjLWN0YS1uYXZ5IiBocmVmPSJ0ZWw6KzE4MTgyMDU4MjcxIj5DYWxsICg4MTgpIDIwNS04MjcxPC9hPgogICAgICAgICAgPGEgY2xhc3M9ImJjLWN0YS1vdXRsaW5lIiBpZD0iYmNGaW5hbEFzc2lzdGFudCIgaHJlZj0iL2Fzc2lzdGFudD9zZXJ2aWNlPTE5OSZhbXA7aW50ZW50PXRiZCI+U2NhbiBmcmVlIOKAlCBBc3Npc3RhbnQ8L2E+CiAgICAgICAgICA8YSBjbGFzcz0iYmMtY3RhLW91dGxpbmUiIGlkPSJiY0JhY2tPZmZpY2lhbCIgaHJlZj0iL2FsbC1jb3VydGhvdXNlcyIgdGFyZ2V0PSJfYmxhbmsiIHJlbD0ibm9vcGVuZXIiPkJhY2sgdG8gY291bnR5IG9mZmljaWFsIHNpdGU8L2E+CiAgICAgICAgPC9kaXY+CiAgICAgICAgPHAgY2xhc3M9ImJjLWtpb3NrLW5vdGUiPllvdXIgVEJEIGRyYWZ0IGlzIHJldmlld2VkIGJlZm9yZSBwYXltZW50LiBOb3RoaW5nIGlzIGZpbGVkIGF0IHRoaXMgc3RhZ2UuIFBheW1lbnQgdW5sb2NrcyB0aGUgcHJvZmVzc2lvbmFsIHJldmlldyBhbmQgZmluYWwgZG9jdW1lbnQtcHJlcGFyYXRpb24gd29ya2Zsb3cuIE91dGNvbWVzIGFyZSBuZXZlciBndWFyYW50ZWVkLjwvcD4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICA8L3NlY3Rpb24+CgogIDxzZWN0aW9uIGNsYXNzPSJwYWdlLWN0YSI+CiAgICA8ZGl2IGNsYXNzPSJ3cmFwIj4KICAgICAgPGgyPlJlYWR5IHRvIHByZXBhcmUgeW91ciBXcml0dGVuIERlY2xhcmF0aW9uPzwvaDI+CiAgICAgIDxwPkNvbXBsZXRlIHlvdXIgVEJEIGRyYWZ0IGZpcnN0LiBSZXZpZXcgaXQsIHRoZW4gY29udGludWUgdG8gdGhlICQxOTkgcGFja2FnZSB3aGVuIHlvdSBhcmUgcmVhZHkuPC9wPgogICAgICA8YSBjbGFzcz0iYnRuIGJ0bi1hbWJlciIgaHJlZj0iI2JjUGF0aFBhbmVsIiBpZD0iYmNQYWdlQ3RhUGF5Ij5GSUdIVCBUQkQg4oCUICQxOTk8L2E+CiAgICAgIDxhIGNsYXNzPSJidG4gYnRuLWFtYmVyIiBocmVmPSIvYXNzaXN0YW50P3NlcnZpY2U9MTk5JmFtcDtpbnRlbnQ9dGJkIiBzdHlsZT0ibWFyZ2luLWxlZnQ6MTBweDsiPlNDQU4gTVkgVElDS0VUIOKAlCBGUkVFPC9hPgogICAgPC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8IS0tIFN0aWNreSBtb2JpbGUgY29udmVyc2lvbiBiYXIgLS0+CiAgPGRpdiBjbGFzcz0iYmMtc3RpY2t5LWJhciIgaWQ9ImJjU3RpY2t5QmFyIiBoaWRkZW4+CiAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJjLXN0aWNreS1wYXkiIGlkPSJiY1N0aWNreVBheSI+Q29tcGxldGUgVEJEIGRyYWZ0IOKGkiBDb250aW51ZTwvYnV0dG9uPgogIDwvZGl2Pgo8L21haW4+Cgo8Zm9vdGVyIGNsYXNzPSJzaXRlLWZvb3RlciI+CiAgPGRpdiBjbGFzcz0id3JhcCBmb290ZXItaW5uZXIiPgogICAgPGRpdj4KICAgICAgPGltZyBzcmM9Ii9hc3NldHMvbG9nby1saWdodC53ZWJwIiBhbHQ9IlVuaXRlZCBUcmFmZmljIFRpY2tldHMgRGVmZW5zZSIgY2xhc3M9ImZvb3Rlci1sb2dvIiB3aWR0aD0iNjQwIiBoZWlnaHQ9IjY0MCIgbG9hZGluZz0ibGF6eSIgZGVjb2Rpbmc9ImFzeW5jIj4KICAgICAgPHA+RG9jdW1lbnQgcHJlcGFyYXRpb24gYW5kIGNhc2UgdHJhY2tpbmcsIHdpdGggYXR0b3JuZXkgcmV2aWV3IGJlZm9yZSBmaWxpbmcuIE5vdCBhIGxhdyBmaXJtLiBPdXRjb21lcyBub3QgZ3VhcmFudGVlZC48L3A+CiAgICA8L2Rpdj4KICAgIDxkaXYgY2xhc3M9ImZvb3Rlci1saW5rcyI+CiAgICAgIDxzdHJvbmc+V2UgRmlnaHQ8L3N0cm9uZz4KICAgICAgPGEgaHJlZj0iL3NwZWVkaW5nLXRpY2tldCI+U3BlZWRpbmcgVGlja2V0czwvYT4KICAgICAgPGEgaHJlZj0iL3JlZC1saWdodC10aWNrZXQiPlJlZCBMaWdodCBUaWNrZXRzPC9hPgogICAgICA8YSBocmVmPSIvc3VzcGVuZGVkLWxpY2Vuc2UiPlN1c3BlbmRlZCBMaWNlbnNlPC9hPgogICAgICA8YSBocmVmPSIvZmFpbHVyZS10by1hcHBlYXIiPkZhaWx1cmUgdG8gQXBwZWFyIChGVEEpPC9hPgogICAgICA8YSBocmVmPSIvY2RsLXRpY2tldCI+Q29tbWVyY2lhbCBEcml2ZXIgKENETCk8L2E+CiAgICAgIDxhIGhyZWY9Ii9zZXJ2aWNlcyI+QWxsIFRpY2tldCBUeXBlczwvYT4KICAgIDwvZGl2PgogICAgPGRpdiBjbGFzcz0iZm9vdGVyLWxpbmtzIj4KICAgICAgPHN0cm9uZz5SZXNvdXJjZXM8L3N0cm9uZz4KICAgICAgPGEgaHJlZj0iL3Jlc291cmNlcyI+VHJhZmZpYyBUaWNrZXQgSGVscCBHdWlkZXM8L2E+CiAgICAgIDxhIGhyZWY9Ii9mYXEiPkZBUTwvYT4KICAgICAgPGEgaHJlZj0iL2NvdXJ0aG91c2VzIj5DYWxpZm9ybmlhIENvdXJ0aG91c2VzPC9hPgogICAgICA8YSBocmVmPSIvYm90LWNvdXJ0aG91c2UiPkJvdCBDb3VydGhvdXNlPC9hPgogICAgICA8YSBocmVmPSIvYWxsLWNvdXJ0aG91c2VzIj5BbGwgNTggQ0EgQ291bnRpZXM8L2E+CiAgICAgIDxhIGhyZWY9Imh0dHBzOi8vd3d3LmNvdXJ0cy5jYS5nb3YvZm9ybXMuaHRtIiByZWw9Im5vb3BlbmVyIiB0YXJnZXQ9Il9ibGFuayI+Q0EgQ291cnQgRm9ybXMgKG91dGJvdW5kKTwvYT4KICAgICAgPGEgaHJlZj0iaHR0cHM6Ly9zZWxmaGVscC5jb3VydHMuY2EuZ292L3RyYWZmaWMiIHJlbD0ibm9vcGVuZXIiIHRhcmdldD0iX2JsYW5rIj5DQSBTZWxmLUhlbHAgVHJhZmZpYyAob3V0Ym91bmQpPC9hPgogICAgPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJmb290ZXItbGlua3MiPgogICAgICA8c3Ryb25nPkNvbXBhbnk8L3N0cm9uZz4KICAgICAgPGEgaHJlZj0iL2FjY2Vzc2liaWxpdHkiPkFjY2Vzc2liaWxpdHk8L2E+CiAgICAgIDxhIGhyZWY9Ii8iPkhvbWU8L2E+CiAgICAgIDxhIGhyZWY9Ii8jaG93Ij5Ib3cgSXQgV29ya3M8L2E+CiAgICAgIDxhIGhyZWY9Ii8jdHJhY2siPlRyYWNrIGEgQ2FzZTwvYT4KICAgICAgPGEgaHJlZj0iLyNjb250YWN0Ij5Db250YWN0IFVzPC9hPgogICAgICA8YSBocmVmPSJ0ZWw6KzE4MTgyMDU4MjcxIj4oODE4KSAyMDUtODI3MTwvYT4gJm1pZGRvdDsgPGEgaHJlZj0idGVsOisxNDI0NDUwNjM4NyI+KDQyNCkgNDUwLTYzODc8L2E+CiAgICAgIDxhIGhyZWY9Im1haWx0bzp1bml0ZWR0cmFmZmljdGlja2V0c0BnbWFpbC5jb20iPnVuaXRlZHRyYWZmaWN0aWNrZXRzQGdtYWlsLmNvbTwvYT4KICAgICAgPGEgaHJlZj0iL2Fib3V0Ij5BYm91dDwvYT4KICAgIDwvZGl2PgogIDwvZGl2PgogIDxkaXYgY2xhc3M9ImZvb3Rlci1sZWdhbCI+CiAgICA8ZGl2IGNsYXNzPSJ3cmFwIj4KICAgICAgPHA+JmNvcHk7IDxzcGFuIGlkPSJ5ZWFyIj48L3NwYW4+IFVuaXRlZCBUcmFmZmljIFRpY2tldHMgRGVmZW5zZS4gQWxsIHJpZ2h0cyByZXNlcnZlZC48L3A+CiAgICAgIDxwIGNsYXNzPSJ0aW55Ij5Vbml0ZWQgVHJhZmZpYyBUaWNrZXRzIERlZmVuc2UgcHJvdmlkZXMgZG9jdW1lbnQgcHJlcGFyYXRpb24gYW5kIGNhc2UtdHJhY2tpbmcgc2VydmljZXMgd2l0aCBhdHRvcm5leSByZXZpZXcgYmVmb3JlIGZpbGluZy4gSXQgZG9lcyBub3QgcHJvdmlkZSBsZWdhbCBhZHZpY2UsIGlzIG5vdCBhIGxhdyBmaXJtLCBhbmQgZG9lcyBub3QgZ3VhcmFudGVlIHJlc3VsdHMuIE91dGNvbWVzIHZhcnkgYnkgY291cnQgYW5kIGNhc2UuIENvdXJ0cyBuZXZlciBjb2xkLXRleHQgZm9yIHBheW1lbnQuPC9wPgogICAgPC9kaXY+CiAgPC9kaXY+CjwvZm9vdGVyPgoKPHNjcmlwdD4KZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3llYXInKS50ZXh0Q29udGVudCA9IG5ldyBEYXRlKCkuZ2V0RnVsbFllYXIoKTsKKGZ1bmN0aW9uKCl7CiAgdmFyIHYgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbmF2VG9nZ2xlJyksIGwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbmF2TGlua3MnKTsKICBpZiAodiAmJiBsKSB7CiAgICB2LmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgZnVuY3Rpb24oKXsgdmFyIG89bC5jbGFzc0xpc3QudG9nZ2xlKCdvcGVuJyk7IHYuY2xhc3NMaXN0LnRvZ2dsZSgnb3Blbicsbyk7IHYuc2V0QXR0cmlidXRlKCdhcmlhLWV4cGFuZGVkJyxvPyd0cnVlJzonZmFsc2UnKTsgfSk7CiAgfQp9KSgpOwo8L3NjcmlwdD4KPHNjcmlwdCBzcmM9Ii9ib3QtY291cnRob3VzZS5qcz92PTIwMjYwOTIxLTMiIGRlZmVyPjwvc2NyaXB0Pgo8c2NyaXB0PgppZiAoJ3NlcnZpY2VXb3JrZXInIGluIG5hdmlnYXRvcikgeyB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIGZ1bmN0aW9uKCl7IG5hdmlnYXRvci5zZXJ2aWNlV29ya2VyLnJlZ2lzdGVyKCcvc3cuanMnKS5jYXRjaChmdW5jdGlvbigpe30pOyB9KTsgfQo8L3NjcmlwdD4KCgo8c2NyaXB0IHNyYz0iL25hdi5qcyIgZGVmZXI+PC9zY3JpcHQ+PC9ib2R5Pgo8L2h0bWw+Cg==
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0033A0">
+<title>Bot Courthouse — Fight Your California Traffic Ticket — United Traffic Tickets Defense</title>
+<meta name="description" content="Interactive Bot Courthouse for California traffic tickets. Pick your county, choose a path (fight, traffic school, fix-it, can't afford), get plain-language guidance, and optionally draft a written declaration. Educational only — not a law firm.">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/stone-theme.css?v=4">
+<link rel="stylesheet" href="/pages.css">
+<link rel="stylesheet" href="/bot-courthouse.css">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="canonical" href="https://unitedtraffictickets.com/bot-courthouse">
+</head>
+<body>
+<a class="skip-link" href="#bc-main">Skip to content</a>
+<header class="site-header">
+  <div class="topbar">
+    <div class="wrap topbar-inner">
+      <span class="topbar-tag">Serving drivers across California &amp; nationwide</span>
+      <a class="topbar-phone" href="tel:+18182058271">(818) 205-8271 — Free Consultation</a>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/assistant">
+        <img src="/assets/logo-defense-160.webp" alt="United Traffic Tickets Defense" class="brand-logo" width="160" height="160" decoding="async">
+      </a>
+      <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
+      </button>
+      <div class="nav-links" id="navLinks">
+        <ul class="nav-list">
+        <li><a href="/#services">Services</a></li>
+        <li class="drop">
+          <a href="/services">We Fight</a>
+          <ul>
+            <li><a href="/speeding-ticket">Speeding Tickets</a></li>
+            <li><a href="/red-light-ticket">Red Light Tickets</a></li>
+            <li><a href="/failure-to-appear">Failure to Appear</a></li>
+            <li><a href="/suspended-license">Suspended License</a></li>
+            <li><a href="/fix-it-ticket">Fix-It Ticket</a></li>
+            <li><a href="/reckless-driving">Reckless / Careless Driving</a></li>
+            <li><a href="/cell-phone-ticket">Cell Phone / Distracted Driving</a></li>
+            <li><a href="/stop-sign-ticket">Stop Sign Violations</a></li>
+            <li><a href="/cdl-ticket">CDL Ticket</a></li>
+          </ul>
+        </li>
+        <li><a href="/#how">How It Works</a></li>
+        <li class="drop">
+          <a href="/courthouses">Courthouses</a>
+          <ul>
+            <li><a href="/bot-courthouse">Bot Courthouse</a></li>
+            <li><a href="/all-courthouses">All 58 CA Counties</a></li>
+            <li><a href="/courthouses/stanley-mosk">Stanley Mosk (DTLA)</a></li>
+            <li><a href="/courthouses/chatsworth">Chatsworth</a></li>
+            <li><a href="/courthouses/los-angeles-metropolitan">Metropolitan (LA)</a></li>
+            <li><a href="/courthouses/van-nuys">Van Nuys</a></li>
+          </ul>
+        </li>
+        <li><a href="/#track">Track</a></li>
+        <li><a href="/resources">Resources</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/assistant">Assistant</a></li>
+        <li><a href="/#contact">Contact</a></li>
+        <li><a class="cta" href="/assistant">Free Ticket Scan</a></li>
+      </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="bc-tricolor" aria-hidden="true"></div>
+
+<main class="subpage" id="bc-main">
+  <section class="sub-hero">
+    <div class="wrap">
+      <div class="breadcrumb"><a href="/">Home</a> &rsaquo; <a href="/courthouses">Courthouses</a> &rsaquo; Bot Courthouse</div>
+      <p class="eyebrow">Bot Courthouse</p>
+      <h1>Fight your California traffic ticket</h1>
+      <p class="sub">Pick your county, choose a path, and complete your Trial by Written Declaration intake before payment. Review your draft first, then pay to unlock professional review, final document preparation, and case tracking. No account needed, and you can use it on any device.</p>
+    </div>
+  </section>
+
+  <section class="ai-strip" aria-label="Artificial intelligence tools - free to use">
+    <div class="wrap">
+      <div class="ai-strip-top">
+        <span class="ai-live"><i></i> UNITED AI INTELLIGENCE &mdash; LIVE</span>
+        <span class="ai-note">Free &middot; private &middot; no commitment</span>
+      </div>
+      <nav class="ai-tiles" aria-label="AI tools">
+        <a class="ai-tile" href="/#build">
+          <span class="ai-tile-icon">&#128247;</span>
+          <span class="ai-tile-body"><strong>Free AI Ticket Scan</strong><small>Instant issue flags from a photo</small></span>
+        </a>
+        <a class="ai-tile" href="/assistant">
+          <span class="ai-tile-icon">&#129302;</span>
+          <span class="ai-tile-body"><strong>AI Assistant</strong><small>Ask anything about your citation</small></span>
+        </a>
+        <a class="ai-tile" href="#stages">
+          <span class="ai-tile-icon">&#9878;&#65039;</span>
+          <span class="ai-tile-body"><strong>Bot Courthouse</strong><small>Step-by-step virtual courthouse</small></span>
+        </a>
+        <a class="ai-tile" href="/courthouses">
+          <span class="ai-tile-icon">&#127978;</span>
+          <span class="ai-tile-body"><strong>AI Courthouse Explorer</strong><small>58 CA counties &amp; courthouse AI</small></span>
+        </a>
+        <a class="ai-tile" href="/assistant#assistant-form">
+          <span class="ai-tile-icon">&#128203;</span>
+          <span class="ai-tile-body"><strong>AI Document Prep</strong><small>Attorney-reviewed drafts</small></span>
+        </a>
+      </nav>
+      <p class="ai-compliance">State SBE-certified #2053854 &middot; court-referred &middot; <strong>not a law firm</strong>, not a government agency, not affiliated with any court. Free scan &mdash; no commitment, results never guaranteed. <a href="https://caleprocure.ca.gov/pages/PublicSearch/supplier-search.aspx" target="_blank" rel="noopener">Cal eProcure</a> &middot; <a href="https://www.dgs.ca.gov/PD-OSDS" target="_blank" rel="noopener">DGS OSDS</a> &middot; <a href="https://opengovus.com/los-angeles-business/0002438818-0001-2" target="_blank" rel="noopener">LA City business record</a> &middot; Partner traffic school: <a href="/go/myimprov" target="_blank" rel="noopener">myimprov</a> (CA DMV E1515).</p>
+    </div>
+  </section>
+
+  <section class="pg-section alt">
+    <div class="wrap">
+      <div class="bc-disclaimer" role="note">
+        <strong>Educational guidance only.</strong> United Traffic Tickets Defense is <strong>not a law firm</strong> and does not provide legal advice. This tool does not guarantee any outcome. Court procedures and deadlines vary by county — always confirm on the official court site. <strong>Courts never cold-text you for payment.</strong> Use only official court websites and phone numbers.
+      </div>
+
+      <ol class="bc-steps" aria-label="Progress">
+        <li class="is-active"><span class="bc-step-num">1</span> County</li>
+        <li><span class="bc-step-num">2</span> Path</li>
+        <li><span class="bc-step-num">3</span> Guidance</li>
+        <li><span class="bc-step-num">4</span> TBD Draft</li>
+      </ol>
+
+      <!-- STEP 1 -->
+      <div class="bc-panel" id="bcCountyPanel">
+        <h2>Step 1 — Choose your county</h2>
+        <p class="bc-lead">Select the California county where you received the ticket. All 58 Superior Courts are listed. Deep link: <code>?county=slug</code> (e.g. <code>?county=los-angeles</code>).</p>
+        <div class="bc-search-wrap">
+          <label for="bcFilter">Search counties</label>
+          <input type="search" id="bcFilter" class="bc-search" placeholder="Type a county, e.g. Riverside" autocomplete="off" enterkeyhint="search">
+        </div>
+        <div id="bcCountyGrid" class="bc-county-grid" role="listbox" aria-label="California counties"></div>
+        <div id="bcNoMatch" class="bc-empty">No county matched. Try the full name or another spelling.</div>
+        <div id="bcSelectedBar" class="bc-selected-bar">
+          <span>Selected: <strong id="bcSelectedName"></strong></span>
+          <button type="button" class="bc-change" id="bcChangeCounty">Change county</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="bc-panel" id="bcPathPanel" style="display:none">
+        <h2>Step 2 — What do you want to do?</h2>
+        <p class="bc-lead">Tap the path that best matches your goal. You can switch anytime.</p>
+        <div class="bc-path-grid">
+          <button type="button" class="bc-path-btn bc-path-hot" data-path="tbd" aria-pressed="false">Fight by TBD — $199<span>Trial by Written Declaration (TR-205) prep + case tracking</span></button>
+          <button type="button" class="bc-path-btn" data-path="fight" aria-pressed="false">Fight ticket<span>Contest in court or by written declaration</span></button>
+          <button type="button" class="bc-path-btn" data-path="school" aria-pressed="false">Traffic school<span>Eligibility basics &amp; typical steps</span></button>
+          <button type="button" class="bc-path-btn" data-path="fixit" aria-pressed="false">Fix-it<span>Correctable equipment / registration</span></button>
+          <button type="button" class="bc-path-btn" data-path="afford" aria-pressed="false">Can't afford<span>Ability to pay &amp; payment options</span></button>
+          <button type="button" class="bc-path-btn" data-path="explain" aria-pressed="false">Explain options<span>Plain-language overview of all paths</span></button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="bc-panel bc-guidance" id="bcGuidancePanel" style="display:none">
+        <h2>Step 3 — Plain-language guidance</h2>
+        <p class="bc-lead">Statewide California rules summarized for education. Confirm every deadline on your county’s official traffic page.</p>
+        <div id="bcGuidanceBody"></div>
+        <div class="bc-official-links" id="bcOfficialLinks"></div>
+      </div>
+
+      <!-- TBD OFFER -->
+      <div class="bc-panel bc-offer" id="bcOfferPanel" style="display:none" hidden>
+        <div id="bcPaidThanks" class="bc-paid-thanks" style="display:none" role="status"></div>
+        <p class="bc-offer-eyebrow">Standard Ticket &middot; Trial by Written Declaration</p>
+        <h2>Fight your ticket by Written Declaration</h2>
+        <div class="bc-offer-price"><span class="bc-price-amt">$199</span> <span class="bc-price-note">document prep + case tracking</span></div>
+        <ul class="bc-offer-bullets">
+          <li>AI scan of your citation</li>
+          <li>Prefilled TR-205 draft for Trial by Written Declaration</li>
+          <li>California Certified Paralegal review</li>
+          <li>Attorney review before filing</li>
+          <li>Case tracking so you know what happens next</li>
+        </ul>
+        <p class="bc-offer-scarcity">Complete and review your TBD information first &middot; Secure Stripe checkout comes after</p>
+        <div class="bc-offer-actions">
+          <button type="button" class="bc-cta-pay" id="bcPayCta">Complete TBD draft → Continue to payment</button>
+          <a class="bc-cta-secondary" id="bcScanFree" href="/assistant?service=199&amp;intent=tbd">Scan free first</a>
+        </div>
+        <p class="bc-offer-legal">Your TBD intake and draft review happen before payment. Payment unlocks the professional review, final document preparation, and case tracking package. Document preparation is not legal advice and outcomes are never guaranteed.</p>
+      </div>
+
+      <!-- CHECKOUT -->
+      <div class="bc-panel bc-checkout" id="bcCheckoutPanel" style="display:none" hidden>
+        <h2>Secure checkout — $199 TBD</h2>
+        <p class="bc-lead">Enter the details we need to open your case and send you to Stripe. Required fields are marked.</p>
+        <form id="bcCheckoutForm" novalidate>
+          <div class="bc-form-grid">
+            <div class="bc-field">
+              <label for="bcFirstName">First name <abbr title="required">*</abbr></label>
+              <input type="text" id="bcFirstName" name="firstName" autocomplete="given-name" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcLastName">Last name <abbr title="required">*</abbr></label>
+              <input type="text" id="bcLastName" name="lastName" autocomplete="family-name" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcEmail">Email <abbr title="required">*</abbr></label>
+              <input type="email" id="bcEmail" name="email" autocomplete="email" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcPhone">Phone</label>
+              <input type="tel" id="bcPhone" name="phone" autocomplete="tel">
+            </div>
+            <div class="bc-field">
+              <label for="bcCitation">Citation / case number <abbr title="required">*</abbr></label>
+              <input type="text" id="bcCitation" name="citation" autocomplete="off" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcCourt">Court</label>
+              <input type="text" id="bcCourt" name="court" readonly>
+            </div>
+            <div class="bc-field">
+              <label for="bcDob">Date of birth <abbr title="required">*</abbr></label>
+              <input type="text" id="bcDob" name="dob" autocomplete="bday" placeholder="MM/DD/YYYY" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcDl">Driver's license # <abbr title="required">*</abbr></label>
+              <input type="text" id="bcDl" name="dl" autocomplete="off" required>
+            </div>
+            <div class="bc-field">
+              <label for="bcCode">Violation code <i>optional</i></label>
+              <input type="text" id="bcCode" name="code" autocomplete="off" placeholder="e.g. VC 22350">
+            </div>
+            <div class="bc-field bc-field-full">
+              <label for="bcNotes">Notes <i>optional</i></label>
+              <textarea id="bcNotes" name="notes" rows="3" placeholder="Anything helpful about your stop or deadline"></textarea>
+            </div>
+          </div>
+          <label class="bc-consent">
+            <input type="checkbox" id="bcConsent" name="consent" required>
+            <span>I understand this is <strong>document preparation</strong>, not legal advice, and outcomes are <strong>not guaranteed</strong>.</span>
+          </label>
+          <button type="submit" class="bc-cta-pay" id="bcCheckoutSubmit">Continue to secure checkout</button>
+          <div class="bc-checkout-status" id="bcCheckoutStatus" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="bc-panel bc-draft" id="bcDraftPanel">
+        <div class="bc-draft-upsell">Complete your TBD intake and review the draft <strong>before paying</strong>. When you are satisfied with the information, payment unlocks the professional review and final TR-205 preparation.</div>
+        <h2>Step 4 — Complete your TBD draft before payment</h2>
+        <p class="bc-lead">Enter your facts and generate a printable draft <strong>locally in your browser</strong>. Nothing is uploaded by this draft step. Review every field before proceeding. The final official TR-205 is prepared after payment and professional review. Not legal advice.</p>
+        <label for="bcDeclName">Your full legal name</label>
+        <input type="text" id="bcDeclName" autocomplete="name" placeholder="Jane Q. Driver">
+        <label for="bcDeclCite">Citation / case number</label>
+        <input type="text" id="bcDeclCite" autocomplete="off" placeholder="As shown on the ticket">
+        <label for="bcDeclDate">Date of violation</label>
+        <input type="text" id="bcDeclDate" autocomplete="off" placeholder="MM/DD/YYYY">
+        <label for="bcDeclLoc">Location of stop</label>
+        <input type="text" id="bcDeclLoc" autocomplete="off" placeholder="Street / highway &amp; city">
+        <label for="bcDeclFacts">What happened (your facts)</label>
+        <textarea id="bcDeclFacts" placeholder="Write only facts you personally know. Be clear and respectful. Do not invent evidence."></textarea>
+        <div class="bc-draft-actions">
+          <button type="button" class="btn bc-btn-amber" id="bcGenDraft">Generate &amp; review TBD draft</button>
+          <button type="button" class="btn bc-btn-navy" id="bcPrintDraft">Print draft</button>
+        </div>
+        <div class="bc-preview" id="bcPreview">
+          <div class="bc-preview-title">Your draft statement</div>
+          <div id="bcPreviewText"></div>
+        </div>
+      </div>
+
+      <!-- FINAL CTAs -->
+      <div class="bc-panel" id="bcFinalPanel" style="display:none">
+        <h2>Next steps</h2>
+        <p class="bc-lead">After you review your TBD draft, continue to secure payment. Payment unlocks professional review, final TR-205 preparation, and case tracking.</p>
+        <div class="bc-final-ctas">
+          <button type="button" class="bc-cta-amber" id="bcFinalPay">Complete TBD draft → Continue to payment</button>
+          <a class="bc-cta-navy" href="tel:+18182058271">Call (818) 205-8271</a>
+          <a class="bc-cta-outline" id="bcFinalAssistant" href="/assistant?service=199&amp;intent=tbd">Scan free — Assistant</a>
+          <a class="bc-cta-outline" id="bcBackOfficial" href="/all-courthouses" target="_blank" rel="noopener">Back to county official site</a>
+        </div>
+        <p class="bc-kiosk-note">Your TBD draft is reviewed before payment. Nothing is filed at this stage. Payment unlocks the professional review and final document-preparation workflow. Outcomes are never guaranteed.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-cta">
+    <div class="wrap">
+      <h2>Ready to prepare your Written Declaration?</h2>
+      <p>Complete your TBD draft first. Review it, then continue to the $199 package when you are ready.</p>
+      <a class="btn btn-amber" href="#bcPathPanel" id="bcPageCtaPay">FIGHT TBD — $199</a>
+      <a class="btn btn-amber" href="/assistant?service=199&amp;intent=tbd" style="margin-left:10px;">SCAN MY TICKET — FREE</a>
+    </div>
+  </section>
+
+  <!-- Sticky mobile conversion bar -->
+  <div class="bc-sticky-bar" id="bcStickyBar" hidden>
+    <button type="button" class="bc-sticky-pay" id="bcStickyPay">Complete TBD draft → Continue</button>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div>
+      <img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo" width="640" height="640" loading="lazy" decoding="async">
+      <p>Document preparation and case tracking, with attorney review before filing. Not a law firm. Outcomes not guaranteed.</p>
+    </div>
+    <div class="footer-links">
+      <strong>We Fight</strong>
+      <a href="/speeding-ticket">Speeding Tickets</a>
+      <a href="/red-light-ticket">Red Light Tickets</a>
+      <a href="/suspended-license">Suspended License</a>
+      <a href="/failure-to-appear">Failure to Appear (FTA)</a>
+      <a href="/cdl-ticket">Commercial Driver (CDL)</a>
+      <a href="/services">All Ticket Types</a>
+    </div>
+    <div class="footer-links">
+      <strong>Resources</strong>
+      <a href="/resources">Traffic Ticket Help Guides</a>
+      <a href="/faq">FAQ</a>
+      <a href="/courthouses">California Courthouses</a>
+      <a href="/bot-courthouse">Bot Courthouse</a>
+      <a href="/all-courthouses">All 58 CA Counties</a>
+      <a href="https://www.courts.ca.gov/forms.htm" rel="noopener" target="_blank">CA Court Forms (outbound)</a>
+      <a href="https://selfhelp.courts.ca.gov/traffic" rel="noopener" target="_blank">CA Self-Help Traffic (outbound)</a>
+    </div>
+    <div class="footer-links">
+      <strong>Company</strong>
+      <a href="/accessibility">Accessibility</a>
+      <a href="/">Home</a>
+      <a href="/#how">How It Works</a>
+      <a href="/#track">Track a Case</a>
+      <a href="/#contact">Contact Us</a>
+      <a href="tel:+18182058271">(818) 205-8271</a> &middot; <a href="tel:+14244506387">(424) 450-6387</a>
+      <a href="mailto:unitedtraffictickets@gmail.com">unitedtraffictickets@gmail.com</a>
+      <a href="/about">About</a>
+    </div>
+  </div>
+  <div class="footer-legal">
+    <div class="wrap">
+      <p>&copy; <span id="year"></span> United Traffic Tickets Defense. All rights reserved.</p>
+      <p class="tiny">United Traffic Tickets Defense provides document preparation and case-tracking services with attorney review before filing. It does not provide legal advice, is not a law firm, and does not guarantee results. Outcomes vary by court and case. Courts never cold-text for payment.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+(function(){
+  var v = document.getElementById('navToggle'), l = document.getElementById('navLinks');
+  if (v && l) {
+    v.addEventListener('click', function(){ var o=l.classList.toggle('open'); v.classList.toggle('open',o); v.setAttribute('aria-expanded',o?'true':'false'); });
+  }
+})();
+</script>
+<script src="/bot-courthouse.js?v=20260921-3" defer></script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
+</script>
+
+
+<script src="/nav.js" defer></script></body>
+</html>
