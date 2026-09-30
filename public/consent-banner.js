@@ -119,3 +119,48 @@
     renderBanner();
   }
 })();
+
+/* ---- UTT manual AdSense units: every page except the homepage ----
+ * Display unit (3445149853) goes below the hero/first section;
+ * multiplex unit (5026833996) goes above the footer.
+ * Homepage is skipped (it has hardcoded units); thank-you and admin
+ * pages never get ads. */
+(function () {
+  var path = location.pathname.replace(/\/$/, '') || '/';
+  if (path === '/' || path === '/index.html') return;
+  if (/^\/thank-you/.test(path) || /^\/admin-/.test(path)) return;
+
+  function makeIns(slot, format) {
+    var ins = document.createElement('ins');
+    ins.className = 'adsbygoogle';
+    ins.style.display = 'block';
+    ins.setAttribute('data-ad-client', 'ca-pub-9943048295609395');
+    ins.setAttribute('data-ad-slot', slot);
+    if (format) ins.setAttribute('data-ad-format', format);
+    return ins;
+  }
+  function wrap(el) {
+    var d = document.createElement('div');
+    d.className = 'wrap';
+    d.style.margin = '2rem auto';
+    d.appendChild(el);
+    return d;
+  }
+  function run() {
+    var hero = document.querySelector('main .hero, main .sub-hero, main section');
+    if (hero && hero.parentNode) {
+      hero.parentNode.insertBefore(wrap(makeIns('3445149853')), hero.nextSibling);
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+    }
+    var footer = document.querySelector('footer.site-footer, footer');
+    if (footer && footer.parentNode) {
+      footer.parentNode.insertBefore(wrap(makeIns('5026833996', 'autorelaxed')), footer);
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+})();
