@@ -15,16 +15,16 @@
   /* ---------------- Traffic-law facts (California) ---------------- */
   var FACTS = [
     "In California you can fight most traffic tickets BY MAIL with a Trial by Written Declaration — no court appearance needed.",
-    "A speeding ticket can sit on your California driving record for 3 years and push insurance up 20–40%.",
-    "Vehicle Code 22350 — the 'basic speed law' — is the most-cited speeding violation in California.",
-    "Red-light camera tickets need a clear photo of your face AND your plate. Blurry? That's a defense.",
-    "Traffic school can hide a ticket from your public record — but only once every 18 months.",
-    "A 'fix-it' ticket can be dismissed for about $25 once you correct the issue and get it signed off.",
+    "A speeding conviction can stay on your California driving record for years — and insurers often raise rates after a moving violation.",
+    "Vehicle Code 22350 — the 'basic speed law' — is one of the most-cited speeding violations in California.",
+    "Red-light camera tickets generally require identifying the driver — unclear photos can sometimes be challenged.",
+    "Traffic school can keep a ticket off your public record — typically once every 18 months.",
+    "A 'fix-it' ticket can often be dismissed for a small fee once you correct the issue and get it signed off.",
     "California has 400+ vehicle code sections that can earn you a ticket. Yes, really.",
-    "If the officer doesn't show up to your trial, the ticket is usually dismissed on the spot.",
-    "You generally have until your court date to act — ignoring a ticket can add a failure-to-appear charge.",
+    "If the citing officer doesn't appear at an in-person trial, judges often dismiss the case — one reason deadlines and appearances matter.",
+    "Missing your court date can add failure-to-appear penalties on top of the original fine.",
     "Radar readings can be challenged: calibration records, officer training, and traffic conditions all matter.",
-    "A Trial by Written Declaration lets you tell your side in writing — and if you lose, you still get a fresh in-person trial.",
+    "A Trial by Written Declaration lets you tell your side in writing — and if you lose, you can usually request a fresh in-person trial.",
     "Points on your license can trigger a negligent-operator suspension. Every point counts."
   ];
 
@@ -72,6 +72,9 @@
     "animation:utt-slide 1.6s ease-in-out infinite;}",
     "@keyframes utt-slide{0%{margin-left:-30%;}100%{margin-left:100%;}}",
     ".utt-note{font-size:12.5px;color:#8ea2ff;margin-top:14px;}",
+    "@media (prefers-reduced-motion: reduce){",
+    ".utt-road::before,.utt-car,.utt-ring,.utt-dots i,.utt-bar>div{animation:none !important;}",
+    ".utt-loadcard{transition:none;}}",
     "@media (max-width:480px){.utt-loadcard{padding:26px 20px;}.utt-fact{font-size:14px;min-height:110px;}}"
   ].join("\n");
 
@@ -102,7 +105,7 @@
   var factNumEl = veil.querySelector('#uttFactNum');
   var stepEl = veil.querySelector('#uttStep');
 
-  var factTimer = null, stepTimer = null, factIdx = 0, stepIdx = 0;
+  var factTimer = null, stepTimer = null, safetyTimer = null, factIdx = 0, stepIdx = 0;
 
   function showFact(i) {
     factEl.innerHTML = '<span>' + FACTS[i % FACTS.length] + '</span>';
@@ -116,18 +119,20 @@
     stepEl.textContent = STEPS[0];
     veil.classList.add('on');
     document.body.style.overflow = 'hidden';
-    clearInterval(factTimer); clearInterval(stepTimer);
+    clearInterval(factTimer); clearInterval(stepTimer); clearTimeout(safetyTimer);
     factTimer = setInterval(function () { factIdx++; showFact(factIdx); }, 4500);
     stepTimer = setInterval(function () {
       stepIdx = Math.min(stepIdx + 1, STEPS.length - 1);
       stepEl.textContent = STEPS[stepIdx];
     }, 3200);
+    // Safety: never trap the user behind the veil (resets on every open).
+    safetyTimer = setTimeout(hide, 90000);
   }
 
   function hide() {
     veil.classList.remove('on');
     document.body.style.overflow = '';
-    clearInterval(factTimer); clearInterval(stepTimer);
+    clearInterval(factTimer); clearInterval(stepTimer); clearTimeout(safetyTimer);
   }
 
   /* ---------------- Hook into the scanner ----------------
@@ -157,8 +162,7 @@
   var obs = new MutationObserver(check);
   obs.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['disabled', 'class'] });
 
-  // Safety: never trap the user behind the veil.
-  setTimeout(hide, 90000);
+  // Clicking the backdrop dismisses the veil as a fallback.
   veil.addEventListener('click', function (e) {
     if (e.target === veil) hide();
   });
