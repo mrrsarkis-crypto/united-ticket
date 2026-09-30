@@ -1,0 +1,54 @@
+/* stone-theme.css — Rustic stone reskin for United Traffic Tickets
+ * Overrides the navy/amber palette with warm limestone, sandstone & bronze.
+ * Also declutters: hides topbar, AI strips, and hero badge clutter.
+ * Load AFTER style.css: <link rel="stylesheet" href="/stone-theme.css?v=1">
+ */
+:root{
+  --arm-red:#a03a2a; --arm-blue:#4a4238; --arm-blue-dark:#2e2a24; --arm-blue-mid:#5c5347;
+  --arm-orange:#8a5a2b; --arm-orange-dark:#6f4520;
+  --navy:#4a4238; --navy-dark:#2e2a24; --navy-mid:#5c5347;
+  --amber:#8a5a2b; --amber-dark:#6f4520; --amber-ink:#6f4520;
+  --ink:#2e2a24; --cloud:#f6f1e7; --line:#d9cdb4; --muted:#7a6e5c;
+}
+
+/* page base */
+body{background:#f6f1e7 !important;color:#2e2a24 !important;}
+
+/* ---------- declutter: hide noisy header/middle elements ---------- */
+.topbar{display:none !important;}
+.ai-strip-top{display:none !important;}
+.ai-strip{display:none !important;}
+section.ai-strip{display:none !important;}
+.hero-ai-chips{display:none !important;}
+.hero-badges{display:none !important;}
+#utt-contrast-fix{display:none !important;}
+
+/* ---------- header: light stone, not navy ---------- */
+.site-header, header.site-header{background:#fffdf8 !important;border-bottom:1px solid #d9cdb4 !important;}
+.nav a, .nav-links a{color:#2e2a24 !important;}
+.nav a:hover{color:#8a5a2b !important;}
+
+/* ---------- hero: warm stone gradient, calm type ---------- */
+.hero{background:linear-gradient(180deg,#f6f1e7,#ece3d0) !important;}
+.hero h1,.hero h2{color:#2e2a24 !important;}
+.hero p,.hero .muted{color:#7a6e5c !important;}
+
+/* ---------- buttons: bronze, not bright amber ---------- */
+.btn-amber,.btn-primary,.utt-scan-pay-btn,.btn[href*="assistant"]{
+  background:#8a5a2b !important;border-color:#8a5a2b !important;color:#fff !important;}
+.btn-amber:hover,.btn-primary:hover{filter:brightness(.92);}
+
+/* ---------- cards & sections: warm paper ---------- */
+.card,.doc-card,.ast-card,.step-card{background:#fffdf8 !important;border-color:#d9cdb4 !important;}
+.section-light{background:#f6f1e7 !important;}
+.section-dark{background:#2e2a24 !important;}
+.section-dark h2,.section-dark h3{color:#f6f1e7 !important;}
+.section-dark p{color:#c9bfae !important;}
+.strip-guarantee{background:#ece3d0 !important;}
+
+/* kill harsh navy panels still using raw hex */
+[style*="041C4D"],[style*="10233F"]{background-color:#2e2a24 !important;}
+
+/* footer calm */
+footer{background:#2e2a24 !important;color:#c9bfae !important;}
+footer a{color:#d9cdb4 !important;}
