@@ -191,6 +191,7 @@
   });
   window.gtag('js', new Date());
   window.gtag('config', ADS_ID);
+  window.gtag('config', 'AW-18486315755'); // new Ads account 891-901-0615 remarketing
   var s = document.createElement('script');
   s.async = true;
   s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
