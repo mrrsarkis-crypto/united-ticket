@@ -1070,3 +1070,6 @@ html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:aut
 /* PageSpeed contrast fix: ghost button needs dark text on light sections */
 .section-light .btn-ghost{color:#00266F;border-color:rgba(0,38,111,.5);background:rgba(0,38,111,.06);}
 .section-light .btn-ghost:hover{background:rgba(0,38,111,.12);}
+
+/* PageSpeed: promote animated elements to composite layers (fixes non-composited animations) */
+.platform-card,.card.svc,.step,.btn{transform:translateZ(0);}
