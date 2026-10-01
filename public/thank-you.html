@@ -110,13 +110,13 @@
    real payments — never for page refreshes or unpaid visits.
    Each tracking code fires at most once per browser.
    ============================================================ */
-var GOOGLE_ADS_CONVERSION_ID    = 'AW-18226751655';   // e.g. 'AW-123456789'
-var GOOGLE_ADS_CONVERSION_LABEL = 'EFFtCIG1w4wdEKfRmPND';      // e.g. 'AbC-D3f_Gh1JkLmN0pQ'
+var GOOGLE_ADS_CONVERSION_ID    = 'AW-18486315755';   // e.g. 'AW-123456789'
+var GOOGLE_ADS_CONVERSION_LABEL = 'Z7FBCImoxowdEOuV--5E';      // e.g. 'AbC-D3f_Gh1JkLmN0pQ'
 
 (function () {
   function idsConfigured() {
-    return GOOGLE_ADS_CONVERSION_ID.indexOf('EFFtCIG1w4wdEKfRmPND') === -1 &&
-           GOOGLE_ADS_CONVERSION_LABEL.indexOf('EFFtCIG1w4wdEKfRmPND') === -1;
+    return /^AW-\d+$/.test(GOOGLE_ADS_CONVERSION_ID) &&
+           GOOGLE_ADS_CONVERSION_LABEL.length >= 8;
   }
 
   function getCode() {
