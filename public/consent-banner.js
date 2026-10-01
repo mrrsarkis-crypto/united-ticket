@@ -1,21 +1,10 @@
 // Lightweight ad-consent banner (Google Consent Mode v2).
-//
-// Only loads on monetized pages, where AdSense runs (see isMonetizedPath in
-// functions/_middleware.js). The consent *default* is set by a small inline
-// script in the middleware, before the AdSense tag, so this file only has to:
-//
-//   1. show the banner when the visitor has not decided yet, and
-//   2. push gtag('consent','update') once they accept or decline.
-//
-// A returning visitor's stored choice is re-applied as the *default* on the
-// next page load, so they are never asked twice and never see a flash of
-// denied consent before the ad tag runs.
 (function () {
   'use strict';
   if (window.__uttConsentBannerBooted) return;
   window.__uttConsentBannerBooted = true;
 
-  var STORE_KEY = 'uttAdConsent'; // 'granted' | 'denied'
+  var STORE_KEY = 'uttAdConsent';
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
 
@@ -34,6 +23,7 @@
 
   function applyConsent(state) {
     gtag('consent', 'update', consentState(state));
+    try { window.dispatchEvent(new CustomEvent('utt:ad-consent', { detail: { state: state } })); } catch (e) {}
   }
 
   function readStored() {
@@ -41,7 +31,7 @@
   }
 
   function decide(state) {
-    try { window.localStorage.setItem(STORE_KEY, state); } catch (e) { /* ignore */ }
+    try { window.localStorage.setItem(STORE_KEY, state); } catch (e) {}
     applyConsent(state);
   }
 
@@ -70,7 +60,7 @@
     btn.style.cssText += 'position:fixed;left:12px;bottom:12px;z-index:2147482998;opacity:.75;';
     btn.setAttribute('aria-label', 'Change your advertising preferences');
     btn.addEventListener('click', function () {
-      try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+      try { window.localStorage.removeItem(STORE_KEY); } catch (e) {}
       btn.remove();
       renderBanner();
     });
@@ -120,11 +110,7 @@
   }
 })();
 
-/* ---- UTT manual AdSense units: every page except the homepage ----
- * Display unit (3445149853) goes below the hero/first section;
- * multiplex unit (5026833996) goes above the footer.
- * Homepage is skipped (it has hardcoded units); thank-you and admin
- * pages never get ads. */
+/* ---- UTT manual AdSense units: every page except the homepage ---- */
 (function () {
   var path = location.pathname.replace(/\/$/, '') || '/';
   if (path === '/' || path === '/index.html') return;
@@ -148,53 +134,47 @@
   }
   function run() {
     var hero = document.querySelector('main .hero, main .sub-hero, main section');
-    if (hero && hero.parentNode) {
-      hero.parentNode.insertBefore(wrap(makeIns('3445149853')), hero.nextSibling);
-      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-    }
+    if (hero && hero.parentNode) hero.parentNode.insertBefore(wrap(makeIns('3445149853')), hero.nextSibling);
     var footer = document.querySelector('footer.site-footer, footer');
-    if (footer && footer.parentNode) {
-      footer.parentNode.insertBefore(wrap(makeIns('5026833996', 'autorelaxed')), footer);
-      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-    }
+    if (footer && footer.parentNode) footer.parentNode.insertBefore(wrap(makeIns('5026833996', 'autorelaxed')), footer);
+    if (window.__uttLoadAdsense) window.__uttLoadAdsense();
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run);
-  } else {
-    run();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
 })();
 
-/* ============================================================
-   GOOGLE ADS TAGS — remarketing + conversions (all United accounts)
-   Loads once per page on every page that includes this file.
-   Honors the visitor's stored consent choice (uttAdConsent);
-   defaults to denied until they accept via the banner above,
-   whose decide() pushes a consent 'update' through dataLayer.
-   ============================================================ */
+/* Google tag: load only for visitors who granted advertising consent. */
 (function () {
-  if (window.__uttGoogleTagLoaded) return;
-  window.__uttGoogleTagLoaded = true;
+  if (window.__uttGoogleTagLoaderBooted) return;
+  window.__uttGoogleTagLoaderBooted = true;
   var ADS_ID = 'AW-18226751655';
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
-  var d = 'denied';
-  try { if (window.localStorage.getItem('uttAdConsent') === 'granted') d = 'granted'; } catch (e) {}
-  window.gtag('consent', 'default', {
-    ad_storage: d,
-    ad_user_data: d,
-    ad_personalization: d,
-    analytics_storage: d,
-    functionality_storage: d,
-    personalization_storage: d,
-    security_storage: 'granted'
-  });
-  window.gtag('js', new Date());
-  window.gtag('config', ADS_ID);
-  window.gtag('config', 'AW-18486315755'); // Ads account 891-901-0615 remarketing
-  window.gtag('config', 'AW-962316730');   // Ads account 876-364-1932 remarketing
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
-  document.head.appendChild(s);
+
+  function load() {
+    if (window.__uttGoogleTagLoaded) return;
+    var granted = false;
+    try { granted = window.localStorage.getItem('uttAdConsent') === 'granted'; } catch (e) {}
+    if (!granted) return;
+    window.__uttGoogleTagLoaded = true;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', ADS_ID);
+    window.gtag('config', 'AW-18486315755');
+    window.gtag('config', 'AW-962316730');
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
+    document.head.appendChild(s);
+  }
+
+  function schedule() {
+    if (window.requestIdleCallback) requestIdleCallback(load, { timeout: 3000 });
+    else setTimeout(load, 2500);
+  }
+
+  window.addEventListener('utt:ad-consent', schedule);
+  window.addEventListener('load', schedule, { once: true });
+  try {
+    if (window.localStorage.getItem('uttAdConsent') === 'granted') schedule();
+  } catch (e) {}
 })();
