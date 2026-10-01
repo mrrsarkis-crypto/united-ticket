@@ -820,19 +820,28 @@ export async function assistantExtract(env, { system, base64, mediaType, prompt 
 // Optional attachments: [{ filename, bytes, type }]
 export async function resendSend(env, { from, to, subject, text, html, attachments }) {
   if (!env.RESEND_API_KEY) return;
-  const form = new FormData();
-  form.append('from', from || env.RESEND_FROM || 'United Traffic Tickets Defense <onboarding@resend.dev>');
-  form.append('to', to);
-  form.append('subject', subject);
-  if (text) form.append('text', text);
-  if (html) form.append('html', html);
-  if (attachments) {
+  // Resend's /emails endpoint requires a JSON body (multipart FormData is rejected
+  // with 400 "Request body must be valid JSON"). Attachments go in as base64.
+  const payload = {
+    from: from || env.RESEND_FROM || 'United Traffic Tickets Defense <intake@unitedtraffictickets.com>',
+    to: Array.isArray(to) ? to : [to],
+    subject,
+  };
+  if (text) payload.text = text;
+  if (html) payload.html = html;
+  if (attachments && attachments.length) {
+    payload.attachments = [];
     for (const a of attachments) {
       if (a && a.bytes && a.filename) {
-        form.append('attachments', new File([a.bytes], a.filename, { type: a.type || 'application/octet-stream' }));
+        payload.attachments.push({
+          filename: a.filename,
+          content: bytesToB64(a.bytes),
+          contentType: a.type || 'application/pdf',
+        });
       }
     }
   }
+  const body = JSON.stringify(payload);
   const maxAttempts = 4;
   let attempt = 1;
   while (attempt <= maxAttempts) {
@@ -840,8 +849,11 @@ export async function resendSend(env, { from, to, subject, text, html, attachmen
     try {
       res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY },
-        body: form,
+        headers: {
+          'Authorization': 'Bearer ' + env.RESEND_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body,
       });
     } catch (e) {
       console.error('Resend request error (attempt ' + attempt + ')', e);
@@ -863,6 +875,16 @@ export async function resendSend(env, { from, to, subject, text, html, attachmen
     return false;
   }
   return false;
+}
+
+function bytesToB64(bytes) {
+  const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < u8.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
 
 // Send an email to the business owner (env.ADMIN_EMAIL) via Resend.
