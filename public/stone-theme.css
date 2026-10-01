@@ -79,3 +79,47 @@ footer a{color:#d9cdb4 !important;}
   .nav-links a:hover{background:#f6f1e7 !important;color:#6f4520 !important;}
   .nav-links li.drop > ul a{border-bottom-color:#ece3d0 !important;}
 }
+
+/* ---------- COLOR LOCKDOWN (2026-09-30): stone everywhere, blue never returns ----------
+   Page stylesheets (case.css, pages.css) load AFTER this file and reintroduce blue.
+   Everything below keeps the stone palette authoritative regardless of load order. */
+
+/* remap the case-center palette variables to stone */
+:root{
+  --case-blue:#8a5a2b !important;
+  --case-navy:#2e2a24 !important;
+  --case-orange:#8a5a2b !important;
+  --case-paper:#f6f1e7 !important;
+  --case-line:#d9cdb4 !important;
+  --case-ink:#2e2a24 !important;
+  --case-muted:#7a6e5c !important;
+}
+
+/* case hero: warm stone gradient with dark text (was blue gradient / white text) */
+.case-hero{background:linear-gradient(180deg,#f6f1e7,#ece3d0) !important;color:#2e2a24 !important;}
+.case-hero h1{color:#2e2a24 !important;}
+.case-lead{color:#7a6e5c !important;}
+.case-lookup{background:rgba(255,253,248,.72) !important;border-color:#d9cdb4 !important;box-shadow:0 24px 70px rgba(46,42,36,.12) !important;}
+.case-lookup label{color:#2e2a24 !important;}
+.case-status.error{color:#a03a2a !important;}
+.case-status.ok{color:#3f7a4e !important;}
+.case-status.loading{color:#8a5a2b !important;}
+
+/* case cards & accents: stone tints (were light blues) */
+.case-primary{background:linear-gradient(145deg,#fffdf8,#f6f1e7) !important;}
+.case-pill{background:#ece3d0 !important;}
+.case-progress{background:#ece3d0 !important;}
+.workflow-status.review{background:#ece3d0 !important;}
+.workflow-meta div{background:#fffdf8 !important;}
+.case-timeline-item:not(:last-child)::after{background:#d9cdb4 !important;}
+.document-vault{border-color:#d9cdb4 !important;background:#fffdf8 !important;}
+.vault-icon{background:#ece3d0 !important;}
+.case-remember{accent-color:#8a5a2b !important;color:#7a6e5c !important;}
+.case-privacy p{color:#7a6e5c !important;}
+
+/* case help band: dark stone gradient (was dark blue); white text stays readable */
+.case-help{background:linear-gradient(120deg,#2e2a24,#4a4238) !important;}
+
+/* blue links from pages.css -> bronze */
+.prose a,.ticket-card a,.ch-tile a,.tiny-legal a{color:#8a5a2b !important;}
+.article-card h2 a:hover{color:#6f4520 !important;}
