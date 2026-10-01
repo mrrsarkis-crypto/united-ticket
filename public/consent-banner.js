@@ -161,6 +161,7 @@
     window.gtag('config', ADS_ID);
     window.gtag('config', 'AW-18486315755');
     window.gtag('config', 'AW-962316730');
+    window.gtag('config', 'AW-18486707638');
     var s = document.createElement('script');
     s.async = true;
     s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
