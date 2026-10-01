@@ -143,39 +143,63 @@
   else run();
 })();
 
-/* Google tag: load only for visitors who granted advertising consent. */
+/* Google tag: Consent Mode v2 — always load, default denied until visitor consents.
+   Google's tag checker can now detect the tag; no ad cookies fire until 'granted'. */
 (function () {
   if (window.__uttGoogleTagLoaderBooted) return;
   window.__uttGoogleTagLoaderBooted = true;
   var ADS_ID = 'AW-18226751655';
 
-  function load() {
-    if (window.__uttGoogleTagLoaded) return;
-    var granted = false;
-    try { granted = window.localStorage.getItem('uttAdConsent') === 'granted'; } catch (e) {}
-    if (!granted) return;
-    window.__uttGoogleTagLoaded = true;
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
-    window.gtag('js', new Date());
-    window.gtag('config', ADS_ID);
-    window.gtag('config', 'AW-18486315755');
-    window.gtag('config', 'AW-962316730');
-    window.gtag('config', 'AW-18486707638');
-    var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
-    document.head.appendChild(s);
-  }
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  // Default everything to denied BEFORE the library loads (Consent Mode v2).
+  window.gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'denied',
+    personalization_storage: 'denied',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  window.gtag('js', new Date());
+  window.gtag('config', ADS_ID);
+  window.gtag('config', 'AW-18486315755');
+  window.gtag('config', 'AW-962316730');
+  window.gtag('config', 'AW-18486707638');
 
-  function schedule() {
-    if (window.requestIdleCallback) requestIdleCallback(load, { timeout: 3000 });
-    else setTimeout(load, 2500);
-  }
-
-  window.addEventListener('utt:ad-consent', schedule);
-  window.addEventListener('load', schedule, { once: true });
+  // If the visitor already granted, lift to granted immediately.
   try {
-    if (window.localStorage.getItem('uttAdConsent') === 'granted') schedule();
+    if (window.localStorage.getItem('uttAdConsent') === 'granted') {
+      window.gtag('consent', 'update', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted',
+        functionality_storage: 'granted',
+        personalization_storage: 'granted',
+        security_storage: 'granted'
+      });
+    }
   } catch (e) {}
+
+  // Listen for the banner's consent decision and update accordingly.
+  window.addEventListener('utt:ad-consent', function (ev) {
+    var st = (ev && ev.detail && ev.detail.state === 'granted') ? 'granted' : 'denied';
+    window.gtag('consent', 'update', {
+      ad_storage: st,
+      ad_user_data: st,
+      ad_personalization: st,
+      analytics_storage: st,
+      functionality_storage: st,
+      personalization_storage: st,
+      security_storage: 'granted'
+    });
+  });
+
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
+  document.head.appendChild(s);
 })();
