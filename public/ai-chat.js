@@ -19,7 +19,7 @@
     'background:linear-gradient(135deg,#F08C00 0%,#E8590C 60%,#C94A08 100%);border:none;cursor:pointer;',
     'box-shadow:0 8px 28px rgba(232,89,12,.45),0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;',
     'transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;}',
-    '#uttAIBubble:hover{transform:scale(1.08);box-shadow:0 12px 36px rgba(232,89,12,.55),0 2px 8px rgba(0,0,0,.3);}',
+    '#uttAIBubble.dragging{transition:none;cursor:grabbing;transform:scale(1.05);}#uttAIBubble{cursor:grab;touch-action:none;}#uttAIBubble:hover{transform:scale(1.08);box-shadow:0 12px 36px rgba(232,89,12,.55),0 2px 8px rgba(0,0,0,.3);}',
     '#uttAIBubble svg{width:30px;height:30px;fill:#fff;}',
     '#uttAIBubble .utt-ai-badge{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;border-radius:11px;background:#fff;',
     'color:#E8590C;font:700 12px/22px system-ui,sans-serif;text-align:center;padding:0 5px;box-shadow:0 2px 6px rgba(0,0,0,.3);}',
@@ -295,7 +295,57 @@
     }
     function close() { panel.classList.remove('open'); opened = false; }
 
-    bubble.addEventListener('click', function () { opened ? close() : open(); });
+    // Draggable bubble (like CJ's)
+    (function makeDraggable(elm) {
+      var pos = null;
+      try { pos = JSON.parse(localStorage.getItem('uttChatBubblePos') || 'null'); } catch (e) {}
+      if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+        elm.style.left = pos.x + 'px'; elm.style.top = pos.y + 'px';
+        elm.style.right = 'auto'; elm.style.bottom = 'auto';
+      }
+      var sx, sy, ox, oy, moved;
+      function onStart(e) {
+        var t = e.touches ? e.touches[0] : e;
+        sx = t.clientX; sy = t.clientY;
+        var r = elm.getBoundingClientRect();
+        ox = r.left; oy = r.top; moved = false;
+        elm.classList.add('dragging');
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (sx === undefined) return;
+        var t = e.touches ? e.touches[0] : e;
+        var dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+        if (!moved) return;
+        var nx = Math.max(8, Math.min(window.innerWidth - 72, ox + dx));
+        var ny = Math.max(8, Math.min(window.innerHeight - 72, oy + dy));
+        elm.style.left = nx + 'px'; elm.style.top = ny + 'px';
+        elm.style.right = 'auto'; elm.style.bottom = 'auto';
+      }
+      function onEnd() {
+        if (sx === undefined) return;
+        elm.classList.remove('dragging');
+        // Snap to nearest edge
+        var r = elm.getBoundingClientRect();
+        var cx = r.left + r.width / 2;
+        var nx = cx < window.innerWidth / 2 ? 16 : window.innerWidth - r.width - 16;
+        elm.style.left = nx + 'px';
+        try { localStorage.setItem('uttChatBubblePos', JSON.stringify({ x: nx, y: r.top })); } catch (e) {}
+        var wasMoved = moved;
+        sx = undefined;
+        // Suppress click if it was a drag
+        if (wasMoved) { elm.__uttDragged = true; setTimeout(function(){ elm.__uttDragged = false; }, 50); }
+      }
+      elm.addEventListener('mousedown', onStart);
+      elm.addEventListener('touchstart', onStart, { passive: false });
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchend', onEnd);
+    })(bubble);
+
+    bubble.addEventListener('click', function () { if (bubble.__uttDragged) return; opened ? close() : open(); });
     closeBtn.addEventListener('click', close);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && opened) close(); });
 
