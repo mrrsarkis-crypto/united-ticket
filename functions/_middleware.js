@@ -3,7 +3,6 @@
 const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
 const CONSENT_DEFAULT_SCRIPT = '<script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>';
 const CONSENT_BANNER_SCRIPT = '<script src="/consent-banner.js" defer></script>';
-const ADSENSE_MARKER = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
 const CONSENT_MARKER = 'uttAdConsent';
 const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
@@ -44,21 +43,13 @@ function insertBeforeHeadClose(html, fragment) {
   return html.replace(/<\/head\s*>/i, (m) => `${fragment}\n${m}`);
 }
 
-function scannerTags() {
-  return SCANNER_SCRIPTS.map((src) => `<script src="${src}" defer></script>`).join('');
-}
-
 // Homepage scanner code is not needed for first paint. It starts loading when
 // the scan section approaches the viewport or the visitor interacts with it.
-// This keeps the scanner intact while removing seven JavaScript fetches from
-// the initial mobile critical path.
-const HOMEPAGE_SCANNER_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;loaded=true;var s=${JSON.stringify(SCANNER_SCRIPTS)};s.forEach(function(src){var e=document.createElement('script');e.src=src;e.defer=true;document.head.appendChild(e)});var t=document.createElement('script');t.src='/trust-badge.js?v=20260917';t.defer=true;document.head.appendChild(t)}function boot(){var target=document.getElementById('scan');if(!target){return}if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){if(es.some(function(e){return e.isIntersecting})){o.disconnect();load()}} ,{rootMargin:'700px 0px'}).observe(target)}['pointerdown','touchstart','focusin','keydown'].forEach(function(ev){target.addEventListener(ev,load,{once:true,passive:true})})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot()})();</script>`;
+const HOMEPAGE_SCANNER_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;loaded=true;var s=${JSON.stringify(SCANNER_SCRIPTS)};s.forEach(function(src){var e=document.createElement('script');e.src=src;e.defer=true;document.head.appendChild(e)});var t=document.createElement('script');t.src='/trust-badge.js?v=20260917';t.defer=true;document.head.appendChild(t)}function boot(){var target=document.getElementById('scan');if(!target)return;if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){if(es.some(function(e){return e.isIntersecting})){o.disconnect();load()}} ,{rootMargin:'700px 0px'}).observe(target)}['pointerdown','touchstart','focusin','keydown'].forEach(function(ev){target.addEventListener(ev,load,{once:true,passive:ev!=='keydown'})})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot()})();</script>`;
 
-const ASSISTANT_SCANNER_TAGS = scannerTags() + TRUST_BADGE_SCRIPT;
-
-// Load AdSense only after the page is interactive and consent permits it. The
-// publisher meta tag remains in the HTML for AdSense ownership verification.
-const ADSENSE_LAZY_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;var state=null;try{state=localStorage.getItem('uttAdConsent')}catch(e){}if(state!=='granted')return;loaded=true;var s=document.createElement('script');s.async=true;s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}';s.crossOrigin='anonymous';document.head.appendChild(s)}function schedule(){if(window.requestIdleCallback)requestIdleCallback(load,{timeout:2500});else setTimeout(load,2000)}window.addEventListener('load',schedule,{once:true});window.addEventListener('utt:ad-consent',schedule);schedule()})();</script>`;
+// Load AdSense only after consent and idle time. The publisher meta tag stays
+// in the HTML for ownership verification without blocking first paint.
+const ADSENSE_LAZY_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;var state=null;try{state=localStorage.getItem('uttAdConsent')}catch(e){}if(state!=='granted')return;loaded=true;window.__uttLoadAdsense=function(){var units=document.querySelectorAll('.adsbygoogle');for(var i=0;i<units.length;i++){try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}}};var s=document.createElement('script');s.async=true;s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}';s.crossOrigin='anonymous';s.addEventListener('load',function(){window.__uttLoadAdsense()},{once:true});document.head.appendChild(s)}function schedule(){if(window.requestIdleCallback)requestIdleCallback(load,{timeout:2500});else setTimeout(load,2000)}window.addEventListener('load',schedule,{once:true});window.addEventListener('utt:ad-consent',schedule);schedule()})();</script>`;
 
 export async function onRequest(context) {
   const response = await context.next();
@@ -102,9 +93,7 @@ export async function onRequest(context) {
     newHeaders.delete('Access-Control-Allow-Headers');
   }
 
-  if (context.request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: newHeaders });
-  }
+  if (context.request.method === 'OPTIONS') return new Response(null, { status: 204, headers: newHeaders });
 
   let output = new Response(response.body, {
     status: response.status,
@@ -115,31 +104,19 @@ export async function onRequest(context) {
   if (isStandardHtml) {
     let html = await output.text();
 
-    // Keep the AdSense ownership meta tag, but remove any eager publisher
-    // script emitted by a static page build. The consent-aware lazy loader adds
-    // the network request only after the visitor has granted advertising
-    // consent and the page is idle.
+    // Static pages may contain an eager AdSense tag. Remove it at the edge and
+    // retain the publisher meta tag so the initial page stays lightweight.
     html = html.replace(/<script[^>]+pagead\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[^>]*><\/script>/gi, '');
-    if (monetized && !html.includes('google-adsense-account')) {
-      html = insertAfterHeadOpen(html, ADSENSE_META);
-    }
-    if (monetized && !html.includes(CONSENT_MARKER)) {
-      html = insertAfterHeadOpen(html, CONSENT_DEFAULT_SCRIPT);
-    }
-    if (monetized && !html.includes(CONSENT_BANNER_MARKER)) {
-      html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
-    }
-    if (monetized && !html.includes(SERVICE_VIEW_MARKER)) {
-      html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
-    }
+    if (monetized && !html.includes('google-adsense-account')) html = insertAfterHeadOpen(html, ADSENSE_META);
+    if (monetized && !html.includes(CONSENT_MARKER)) html = insertAfterHeadOpen(html, CONSENT_DEFAULT_SCRIPT);
+    if (monetized && !html.includes(CONSENT_BANNER_MARKER)) html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
+    if (monetized && !html.includes(SERVICE_VIEW_MARKER)) html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
     if (monetized && !html.includes('utt-adsense-lazy-loader')) {
       html = insertBeforeHeadClose(html, ADSENSE_LAZY_LOADER.replace('<script>', '<script id="utt-adsense-lazy-loader">'));
     }
 
     if (scannerPage) {
       if (url.pathname === '/' || url.pathname === '/index.html') {
-        // Do not inject the full scanner bundle into the homepage critical path.
-        // The existing #scan form remains exactly where it is.
         if (!html.includes('utt-homepage-scanner-loader')) {
           html = insertBeforeHeadClose(html, HOMEPAGE_SCANNER_LOADER.replace('<script>', '<script id="utt-homepage-scanner-loader">'));
         }
@@ -151,14 +128,7 @@ export async function onRequest(context) {
       }
     }
 
-    if (monetized && !html.includes(ADSENSE_MARKER)) {
-      // Verification remains possible through the publisher meta tag, while
-      // actual ad code is consent and idle gated.
-    }
-
-    if (!html.includes('utt-contrast-fix')) {
-      html = insertBeforeHeadClose(html, CONTRAST_STYLE);
-    }
+    if (!html.includes('utt-contrast-fix')) html = insertBeforeHeadClose(html, CONTRAST_STYLE);
 
     output = new Response(html, {
       status: output.status,
@@ -166,13 +136,9 @@ export async function onRequest(context) {
       headers: newHeaders
     });
   } else if (isAmp && monetized) {
-    output = new HTMLRewriter()
-      .on('head', {
-        element(element) {
-          element.append(ADSENSE_META, { html: true });
-        }
-      })
-      .transform(output);
+    output = new HTMLRewriter().on('head', {
+      element(element) { element.append(ADSENSE_META, { html: true }); }
+    }).transform(output);
   }
 
   return output;
