@@ -1,7 +1,7 @@
 :root{
   --navy:#0033A0; --navy-dark:#00266F; --navy-mid:#174CB8;
   --amber:#F2A800; --amber-dark:#D28F00; --amber-ink:#9A6900;
-  --white:#FFFFFF; --cloud:#F4F7FF; --line:#E1E7F4; --muted:#5C6B8F;
+  --white:#FFFFFF; --cloud:#F4F7FF; --line:#E1E7F4; --muted:#47536E;
   --ink:#0033A0; --ok:#2F6E4F; --warn:#B8860B;
 }
 *{box-sizing:border-box;}
@@ -85,7 +85,7 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .section-dark{background:var(--navy);color:#fff;}
 .section-title{font-size:32px;font-weight:800;margin:0 0 8px;text-align:center;letter-spacing:-.01em;}
 .section-sub{text-align:center;color:var(--muted);font-size:16px;margin:0 auto 34px;max-width:620px;}
-.section-dark .section-sub{color:rgba(255,255,255,.7);}
+.section-dark .section-sub{color:rgba(255,255,255,.9);}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
   .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
   .vs-card{border-top:4px solid var(--amber);}
@@ -106,9 +106,9 @@ button:disabled{background:#c9c2b6;cursor:not-allowed;border-color:#c9c2b6;}
 .price{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);text-align:center;}
 .price h3{color:#fff;margin:0 0 10px;font-size:17px;}
 .price .amount{font-size:42px;font-weight:800;color:var(--amber);margin:0 0 10px;}
-.price p{color:rgba(255,255,255,.72);font-size:14px;margin:0;line-height:1.55;}
+.price p{color:rgba(255,255,255,.9);font-size:14px;margin:0;line-height:1.55;}
 .price>a.btn{display:block;width:100%;margin-top:18px;box-sizing:border-box;text-align:center;}
-.price .price-note{display:block;color:rgba(255,255,255,.5);font-size:12px;margin-top:10px;}
+.price .price-note{display:block;color:rgba(255,255,255,.85);font-size:12px;margin-top:10px;}
 .price.hot{border-color:var(--amber);box-shadow:0 8px 30px rgba(0,0,0,.35);transform:scale(1.02);}
 
 /* ---- Steps ---- */
@@ -566,7 +566,7 @@ body{background:var(--cream);color:var(--ink);}
 .section-dark{background:#173b3a;}
 .section-title{color:#24312f;}
 .section-dark .section-title{color:#fffaf1;}
-.section-sub{color:#6b7471;}
+.section-sub{color:#525B58;}
 .section-dark .section-sub{color:rgba(255,250,241,.70);}
 
 /* Cards use cream/sage surfaces instead of identical white boxes */
@@ -817,7 +817,7 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 /* Editorial section rhythm */
 .section{padding:88px 0;}
 .section-title{font-size:clamp(30px,3.3vw,42px);letter-spacing:-.035em;color:#10233F;}
-.section-sub{font-size:16px;max-width:700px;line-height:1.75;color:#62718A;}
+.section-sub{font-size:16px;max-width:700px;line-height:1.75;color:#4A5A76;}
 .section-light{background:linear-gradient(180deg,#F4F7FB 0%,#EEF3F9 100%);}
 .section-dark{background:linear-gradient(135deg,#062B72 0%,#041F54 100%);}
 .card{border:1px solid #DCE5F0;border-radius:20px;box-shadow:var(--shadow-card);}
@@ -1066,3 +1066,7 @@ html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:aut
 @media(max-width:760px){.wrap{width:min(100% - 28px,680px)}.nav-links{max-height:calc(100dvh - 80px);overflow:auto}.ai-tiles{grid-template-columns:1fr 1fr}.ai-strip-top{gap:8px;align-items:flex-start}.hero{padding-block:42px}.hero-copy h1{font-size:clamp(34px,10vw,52px)}.hero-actions{display:grid;grid-template-columns:1fr}.hero-actions .btn{width:100%;justify-content:center}.hero-badges{display:grid;grid-template-columns:1fr 1fr}.platform-grid,.grid-3,.grid-2{grid-template-columns:1fr}.pricing{grid-template-columns:1fr!important}.hero-product{width:100%}}
 @media(max-width:480px){.wrap{width:calc(100% - 22px)}.ai-tiles{grid-template-columns:1fr}.ai-tile{padding:12px}.ai-compliance{font-size:11px;line-height:1.5}.hero{padding-block:32px}.hero-badges{grid-template-columns:1fr}.section{padding-block:42px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.hero-product,.card,.btn{transition:none!important}}
+
+/* PageSpeed contrast fix: ghost button needs dark text on light sections */
+.section-light .btn-ghost{color:#00266F;border-color:rgba(0,38,111,.5);background:rgba(0,38,111,.06);}
+.section-light .btn-ghost:hover{background:rgba(0,38,111,.12);}
