@@ -166,7 +166,7 @@
 })();
 
 /* ============================================================
-   GOOGLE ADS TAG (AW-18226751655) — remarketing + conversions
+   GOOGLE ADS TAGS — remarketing + conversions (all United accounts)
    Loads once per page on every page that includes this file.
    Honors the visitor's stored consent choice (uttAdConsent);
    defaults to denied until they accept via the banner above,
@@ -191,7 +191,8 @@
   });
   window.gtag('js', new Date());
   window.gtag('config', ADS_ID);
-  window.gtag('config', 'AW-18486315755'); // new Ads account 891-901-0615 remarketing
+  window.gtag('config', 'AW-18486315755'); // Ads account 891-901-0615 remarketing
+  window.gtag('config', 'AW-962316730');   // Ads account 876-364-1932 remarketing
   var s = document.createElement('script');
   s.async = true;
   s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
