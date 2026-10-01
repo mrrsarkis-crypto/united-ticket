@@ -103,7 +103,7 @@
     { k: ['insurance', 'point', 'dmv'], r: 'A conviction puts a point on your DMV record and can raise insurance 20-40% for 3 years. Fighting for $199 is often cheaper than paying the ticket.' },
     { k: ['traffic school'], r: 'Traffic school masks one point but you can only use it once every 18 months, and you still pay the full fine. Fighting the ticket can get it <b>dismissed entirely</b> — no fine, no point, no school.' },
     { k: ['refund', 'guarantee', 'win'], r: 'We can\'t guarantee outcomes — no honest service can. What we guarantee: a licensed attorney reviews every defense, we file everything correctly and on time, and we fight hard. See our <a href="/refund-policy">refund policy</a>.' },
-    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+18182058271">(818) 205-8271</a>, Mon–Fri 8:30 AM–6:30 PM. Or leave your info here and we\'ll call you back.' },
+    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+18182058271">(818) 205-8271</a>, Mon–Fri 8:30 AM–6:30 PM. Tap Live chat below or leave your info here and we\'ll call you back.' },
     { k: ['hello', 'hi', 'hey', 'good morning', 'good afternoon'], r: 'Hi! I\'m the United AI assistant. I can answer questions about fighting traffic tickets, pricing, and how it works — or start your free ticket scan. What\'s on your mind?' },
     { k: ['thank', 'thanks'], r: 'You\'re welcome! If you\'re ready, start your <a href="/assistant">free ticket scan</a> — it takes 60 seconds.' },
     { k: ['bye', 'goodbye'], r: 'Good luck with your ticket! Remember — you have a deadline to act, so don\'t wait too long. We\'re here when you\'re ready.' }
@@ -123,7 +123,7 @@
     return 'Good question. I can help with pricing, how ticket defense works, courts we serve, and specific violation types. You can also <a href="/assistant">scan your ticket free</a> for a personalized review — or call <a href="tel:+18182058271">(818) 205-8271</a>. What would you like to know?';
   }
 
-  var QUICK = ['Scan my ticket 🎫', 'Pricing 💰', 'How it works ⚙️', 'Call us 📞'];
+  var QUICK = ['Scan my ticket 🎫', 'Pricing 💰', 'Live chat 💬', 'Email us ✉️'];
 
   /* ---------- Build UI ---------- */
   function init() {
@@ -257,6 +257,19 @@
       setTimeout(function () { nameI.focus(); }, 400);
     }
 
+    function requestLiveChat() {
+      var t = showTyping();
+      setTimeout(function () {
+        t.remove();
+        addMsg('Connecting you with our team now… please hold on.', 'bot');
+        var payload = { name: (lead&&lead.name)||"", phone: (lead&&lead.phone)||"", page: location.href, ts: new Date().toISOString(), type: "live_chat_request" };
+        try { fetch("/api/live-chat-request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function(){}); } catch(e) {}
+        try { if (window.gtag) window.gtag("event", "live_chat_request", { event_category: "AI Chat" }); } catch(e2) {}
+        var t2 = showTyping();
+        setTimeout(function(){ t2.remove(); addMsg('You are in the queue! Our team has been notified. Meanwhile, <a href="/assistant">scan your ticket free</a> to help us help you faster.', 'bot'); }, 2500);
+      }, 800);
+    }
+
     function handleUser(text) {
       if (!text.trim()) return;
       addMsg(text.replace(/</g, '&lt;'), 'user');
@@ -265,10 +278,12 @@
       setTimeout(function () {
         t.remove();
         var low = text.toLowerCase();
-        if (/scan/.test(low)) {
+        if (/live chat/.test(low)) {
+          requestLiveChat();
+        } else if (/email/.test(low)) {
+          addMsg('Email us at <a href="mailto:help@unitedtraffictickets.com"><b>help@unitedtraffictickets.com</b></a> — we reply within one business day.', 'bot');
+        } else if (/scan/.test(low)) {
           addMsg('Opening the free ticket scanner for you… <a href="/assistant"><b>Tap here to scan →</b></a>', 'bot');
-        } else if (/call|phone|human|person/.test(low) && /call/.test(low)) {
-          addMsg('You can reach us now at <a href="tel:+18182058271"><b>(818) 205-8271</b></a> — Mon–Fri 8:30 AM–6:30 PM.', 'bot');
         } else {
           addMsg(answer(text), 'bot');
         }
