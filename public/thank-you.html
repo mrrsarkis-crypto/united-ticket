@@ -94,30 +94,34 @@
 
 <script>
 /* ============================================================
-   GOOGLE ADS PURCHASE CONVERSION TRACKING
+   GOOGLE ADS PURCHASE CONVERSION TRACKING — all United accounts
    ------------------------------------------------------------
-   SETUP (one time, ~2 minutes):
-   1. In Google Ads: Tools (wrench) > Conversions > + New
-      conversion action > Website > "Purchase" > value $199.
-   2. Google gives you a Conversion ID like  AW-123456789
-      and a Conversion label like  AbC-D3f_Gh1JkLmN0pQ
-   3. Paste them below where it says PASTE_HERE.
-   4. Nothing fires until both values are filled in.
+   Fires the $199 Website Purchase conversion to every usable
+   United Traffic Tickets Google Ads account:
+
+     891-901-0615   AW-18486315755 / Z7FBCImoxowdEOuV--5E
+     586-971-9521   AW-18226751655 / EFFtCIG1w4wdEKfRmPND
+     876-364-1932   AW-962316730   / ReTdCJez1owdELqT78oD
    ------------------------------------------------------------
    HOW IT WORKS: after Stripe redirects here, this script asks
    our own API whether this tracking code is actually paid
    (status = payment_complete). The conversion fires ONLY for
    real payments — never for page refreshes or unpaid visits.
-   Each tracking code fires at most once per browser.
+   Each tracking code fires at most once per browser (to all
+   accounts in one go).
    ============================================================ */
-var GOOGLE_ADS_CONVERSION_ID    = 'AW-18486315755';   // e.g. 'AW-123456789'
-var GOOGLE_ADS_CONVERSION_LABEL = 'Z7FBCImoxowdEOuV--5E';      // e.g. 'AbC-D3f_Gh1JkLmN0pQ'
+var PURCHASE_DESTINATIONS = [
+  { id: 'AW-18486315755', label: 'Z7FBCImoxowdEOuV--5E' },  // 891-901-0615 (new)
+  { id: 'AW-18226751655', label: 'EFFtCIG1w4wdEKfRmPND' },  // 586-971-9521
+  { id: 'AW-962316730',   label: 'ReTdCJez1owdELqT78oD' }   // 876-364-1932
+];
 
 (function () {
-  function idsConfigured() {
-    return /^AW-\d+$/.test(GOOGLE_ADS_CONVERSION_ID) &&
-           GOOGLE_ADS_CONVERSION_LABEL.length >= 8;
+  function validDestination(d) {
+    return d && /^AW-\d+$/.test(d.id) &&
+           typeof d.label === 'string' && d.label.length >= 8;
   }
+  var destinations = PURCHASE_DESTINATIONS.filter(validDestination);
 
   function getCode() {
     try {
@@ -134,8 +138,8 @@ var GOOGLE_ADS_CONVERSION_LABEL = 'Z7FBCImoxowdEOuV--5E';      // e.g. 'AbC-D3f_
     } catch (e) {}
   }
 
-  // No code, or IDs not configured yet -> page works, no tracking.
-  if (!code || !idsConfigured()) return;
+  // No code, or no valid destinations -> page works, no tracking.
+  if (!code || destinations.length === 0) return;
   // Already fired for this code in this browser -> don't double count.
   try {
     if (sessionStorage.getItem('utt_conv_' + code)) return;
@@ -145,10 +149,10 @@ var GOOGLE_ADS_CONVERSION_LABEL = 'Z7FBCImoxowdEOuV--5E';      // e.g. 'AbC-D3f_
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
-  window.gtag('config', GOOGLE_ADS_CONVERSION_ID);
+  destinations.forEach(function (d) { window.gtag('config', d.id); });
   var s = document.createElement('script');
   s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GOOGLE_ADS_CONVERSION_ID);
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(destinations[0].id);
   document.head.appendChild(s);
 
   fetch('/api/cases/' + encodeURIComponent(code), { credentials: 'same-origin' })
@@ -156,11 +160,13 @@ var GOOGLE_ADS_CONVERSION_LABEL = 'Z7FBCImoxowdEOuV--5E';      // e.g. 'AbC-D3f_
     .then(function (data) {
       if (!data || data.status !== 'payment_complete') return; // not paid -> no conversion
       try { sessionStorage.setItem('utt_conv_' + code, '1'); } catch (e) {}
-      window.gtag('event', 'conversion', {
-        'send_to': GOOGLE_ADS_CONVERSION_ID + '/' + GOOGLE_ADS_CONVERSION_LABEL,
-        'value': 199.00,
-        'currency': 'USD',
-        'transaction_id': code
+      destinations.forEach(function (d) {
+        window.gtag('event', 'conversion', {
+          'send_to': d.id + '/' + d.label,
+          'value': 199.00,
+          'currency': 'USD',
+          'transaction_id': code
+        });
       });
     })
     .catch(function () { /* API unreachable -> page still works, no conversion */ });
