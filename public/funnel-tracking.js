@@ -1,19 +1,27 @@
 /* ============================================================
-   FUNNEL CONVERSION TRACKING — Google Ads account 891-901-0615
-   ("United Traffic Tickets")
+   FUNNEL CONVERSION TRACKING — United Traffic Tickets
+   (all usable Google Ads accounts)
 
    Fires observation-only Website conversion events at each step
-   of the ticket flow so Google Ads can measure the full funnel:
+   of the ticket flow so every United account measures the funnel:
 
-     Scan Started   -> AW-18486315755/2iVtCI3Q0YwdEOuV--5E
-                       fired when the browser POSTs to
-                       /api/assistant/extract (the scan request)
-     Scan Completed -> AW-18486315755/AaEECKng0YwdEOuV--5E
-                       fired when the extract call succeeds
-     Case Created   -> AW-18486315755/ZNKvCKPryIwdEOuV--5E
-                       fired when POST /api/cases succeeds;
-                       the case tracking code is sent as
-                       transaction_id so Google dedupes
+     891-901-0615  AW-18486315755  (new "United Traffic Tickets")
+       Scan Started    2iVtCI3Q0YwdEOuV--5E
+       Scan Completed  AaEECKng0YwdEOuV--5E
+       Case Created    ZNKvCKPryIwdEOuV--5E
+     586-971-9521  AW-18226751655  ("Google Ads account")
+       Scan Started    caneCNbNzowdEKfRmPND
+       Scan Completed  7_ImCNnNzowdEKfRmPND
+       Case Created    shixCKPzowdEKfRmPND
+     876-364-1932  AW-962316730    ("unitedtraffictickets.com")
+       Scan Started    rx8ECJqz1owdELqT78oD
+       Scan Completed  j-7bCJ2z1owdELqT78oD
+       Case Created    Rz3PCKCz1owdELqT78oD
+
+   Each event fires once per account (its own label).
+   Scan Started/Completed trigger on POST /api/assistant/extract
+   (request / success); Case Created on POST /api/cases success,
+   with the tracking code as transaction_id for deduping.
 
    The purchase conversion itself lives on /thank-you.html and is
    intentionally NOT duplicated here.
@@ -34,12 +42,22 @@
   if (window.__uttFunnelTracked) return;
   window.__uttFunnelTracked = true;
 
-  var ADS_ID = 'AW-18486315755';
-  var SEND_TO = {
-    scanStarted:   ADS_ID + '/2iVtCI3Q0YwdEOuV--5E',
-    scanCompleted: ADS_ID + '/AaEECKng0YwdEOuV--5E',
-    caseCreated:   ADS_ID + '/ZNKvCKPryIwdEOuV--5E'
-  };
+  // Every usable United Google Ads account gets its own labeled
+  // conversion for each funnel step.
+  var DESTINATIONS = [
+    { id: 'AW-18486315755', // 891-901-0615 (new)
+      scanStarted: '2iVtCI3Q0YwdEOuV--5E',
+      scanCompleted: 'AaEECKng0YwdEOuV--5E',
+      caseCreated: 'ZNKvCKPryIwdEOuV--5E' },
+    { id: 'AW-18226751655', // 586-971-9521
+      scanStarted: 'caneCNbNzowdEKfRmPND',
+      scanCompleted: '7_ImCNnNzowdEKfRmPND',
+      caseCreated: 'shixCKPzowdEKfRmPND' },
+    { id: 'AW-962316730', // 876-364-1932
+      scanStarted: 'rx8ECJqz1owdELqT78oD',
+      scanCompleted: 'j-7bCJ2z1owdELqT78oD',
+      caseCreated: 'Rz3PCKCz1owdELqT78oD' }
+  ];
 
   function gtagFn() {
     if (typeof window.gtag === 'function') return window.gtag;
@@ -49,13 +67,19 @@
 
   function fireConversion(which, extra) {
     try {
-      var params = { send_to: SEND_TO[which], transport_type: 'beacon' };
-      if (extra) {
-        for (var k in extra) {
-          if (Object.prototype.hasOwnProperty.call(extra, k)) params[k] = extra[k];
+      var g = gtagFn();
+      for (var i = 0; i < DESTINATIONS.length; i++) {
+        var d = DESTINATIONS[i];
+        var label = d[which];
+        if (!label) continue;
+        var params = { send_to: d.id + '/' + label, transport_type: 'beacon' };
+        if (extra) {
+          for (var k in extra) {
+            if (Object.prototype.hasOwnProperty.call(extra, k)) params[k] = extra[k];
+          }
         }
+        g('event', 'conversion', params);
       }
-      gtagFn()('event', 'conversion', params);
     } catch (e) { /* tracking must never break the flow */ }
   }
 
