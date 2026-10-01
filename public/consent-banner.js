@@ -44,7 +44,7 @@
     var b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
-    b.style.cssText = 'flex:1 1 0;min-width:120px;cursor:pointer;border-radius:8px;padding:10px 14px;' +
+    b.style.cssText = 'flex:1 1 0;min-width:120px;min-height:48px;cursor:pointer;border-radius:8px;padding:10px 14px;' +
       'font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;' +
       (primary
         ? 'background:#1B6EF3;color:#fff;border:1px solid #1B6EF3;'
