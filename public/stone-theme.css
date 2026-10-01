@@ -8,7 +8,7 @@
   --arm-orange:#8a5a2b; --arm-orange-dark:#6f4520;
   --navy:#4a4238; --navy-dark:#2e2a24; --navy-mid:#5c5347;
   --amber:#8a5a2b; --amber-dark:#6f4520; --amber-ink:#6f4520;
-  --ink:#2e2a24; --cloud:#f6f1e7; --line:#d9cdb4; --muted:#7a6e5c;
+  --ink:#2e2a24; --cloud:#f6f1e7; --line:#d9cdb4; --muted:#5f5545;
 }
 
 /* page base */
@@ -33,7 +33,7 @@ section.ai-strip{display:none !important;}
 /* ---------- hero: warm stone gradient, calm type ---------- */
 .hero,.sub-hero{background:linear-gradient(180deg,#f6f1e7,#ece3d0) !important;}
 .hero h1,.hero h2,.sub-hero h1{color:#2e2a24 !important;}
-.hero p,.hero .muted,.sub-hero p.sub,.sub-hero .breadcrumb,.sub-hero .breadcrumb a{color:#7a6e5c !important;}
+.hero p,.hero .muted,.sub-hero p.sub,.sub-hero .breadcrumb,.sub-hero .breadcrumb a{color:#5f5545 !important;}
 .sub-hero .eyebrow{color:#8a5a2b !important;}
 
 /* ---------- buttons: bronze, not bright amber ---------- */
