@@ -87,8 +87,8 @@
     answer(parseInt(t.getAttribute('data-step'), 10), t.getAttribute('data-val'));
   });
 
-  var rb = document.getElementById('quizRestart');
-  if (rb) rb.addEventListener('click', restart);
+  var rbs = document.querySelectorAll('.quiz-restart');
+  for (var i = 0; i < rbs.length; i++) rbs[i].addEventListener('click', restart);
 
   show('q1');
 })();
