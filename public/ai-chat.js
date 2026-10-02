@@ -71,7 +71,8 @@
     '.utt-chat-foot button svg{width:22px;height:22px;fill:#fff;}',
     '.utt-chat-foot button:disabled{opacity:.45;}',
     '@media(max-width:480px){#uttAIPanel{width:100vw;max-width:100vw;}#uttAIBubble{right:16px;bottom:16px;width:58px;height:58px;}}'
-  ].join('\n');
+  ].join('
+');
 
   var CHAT_SVG = '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-9 9H7V9h4v2zm6 0h-4V9h4v2z"/></svg>';
   var SEND_SVG = '<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
@@ -266,7 +267,7 @@
         try { fetch("/api/live-chat-request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function(){}); } catch(e) {}
         try { if (window.gtag) window.gtag("event", "live_chat_request", { event_category: "AI Chat" }); } catch(e2) {}
         var t2 = showTyping();
-        setTimeout(function(){ t2.remove(); addMsg('You are in the queue! Our team has been notified. Meanwhile, <a href="/assistant">scan your ticket free</a> to help us help you faster.', 'bot'); }, 2500);
+        setTimeout(function(){ t2.remove(); addMsg('Your request has been sent. Meanwhile, <a href="/assistant">scan your ticket free</a> to help us help you faster.', 'bot'); }, 2500);
       }, 800);
     }
 
@@ -375,6 +376,10 @@
     }, 25000);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  function boot() {
+    if ('requestIdleCallback' in window) requestIdleCallback(init, { timeout: 3000 });
+    else setTimeout(init, 1);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
