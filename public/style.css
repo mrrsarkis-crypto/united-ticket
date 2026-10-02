@@ -1080,3 +1080,12 @@ html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:aut
 .hero-ai-chips a.chip-red{background:#B02A2A;border-color:#B02A2A;color:#fff}
 .hero-ai-chips a.chip-amber{background:transparent;border-color:#F2A800;color:#F2A800}
 .hero-ai-chips a.chip-outline{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
+
+/* PageSpeed round 3: pricing card contrast (a11y) — cards have light backgrounds
+   but inherit white text from .section-dark; explicit dark text fixes 12 failures */
+.pricing .card{color:#1a2b4a;}
+.pricing .card h3{color:#0b1930;}
+.pricing .card p{color:#47536E;}
+.pricing .card .amount{color:#B26A00;}
+/* PageSpeed round 3: prevent scan-float / consent-banner touch-target overlap */
+body:has(#uttAdConsentBanner) #uttScanFloat{bottom:150px !important;}
