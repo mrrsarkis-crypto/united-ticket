@@ -18,7 +18,7 @@ const SCANNER_SCRIPTS = [
   '/scanner-upload.js'
 ];
 const TRUST_BADGE_SCRIPT = '<script src="/trust-badge.js?v=20260917" defer></script>';
-const CONTRAST_STYLE = '<style id="utt-contrast-fix">.price .amount{color:#9A6900}.vs-card{color:#21304A}.vs-note{color:#3D4A61}.footer-legal{color:#C7CED8}.footer-legal a{color:#E4E9F1;font-weight:600;text-decoration:underline}</style>';
+const CONTRAST_STYLE = '<style id="utt-contrast-fix">.vs-card{color:#21304A}.vs-note{color:#3D4A61}.footer-legal{color:#C7CED8}.footer-legal a{color:#E4E9F1;font-weight:600;text-decoration:underline}</style>';
 
 function isMonetizedPath(pathname) {
   let path = (pathname || '/').replace(/\/+$/, '') || '/';
