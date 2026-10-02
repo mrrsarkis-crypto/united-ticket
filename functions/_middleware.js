@@ -47,10 +47,6 @@ function insertBeforeHeadClose(html, fragment) {
 // the scan section approaches the viewport or the visitor interacts with it.
 const HOMEPAGE_SCANNER_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;loaded=true;var s=${JSON.stringify(SCANNER_SCRIPTS)};s.forEach(function(src){var e=document.createElement('script');e.src=src;e.defer=true;document.head.appendChild(e)});var t=document.createElement('script');t.src='/trust-badge.js?v=20260917';t.defer=true;document.head.appendChild(t)}function boot(){var target=document.getElementById('scan');if(!target)return;if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){if(es.some(function(e){return e.isIntersecting})){o.disconnect();load()}} ,{rootMargin:'700px 0px'}).observe(target)}['pointerdown','touchstart','focusin','keydown'].forEach(function(ev){target.addEventListener(ev,load,{once:true,passive:ev!=='keydown'})})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot()})();</script>`;
 
-// Load AdSense only after consent and idle time. The publisher meta tag stays
-// in the HTML for ownership verification without blocking first paint.
-const ADSENSE_LAZY_LOADER = `<script>(function(){var loaded=false;function load(){if(loaded)return;var state=null;try{state=localStorage.getItem('uttAdConsent')}catch(e){}if(state!=='granted')return;loaded=true;window.__uttLoadAdsense=function(){var units=document.querySelectorAll('.adsbygoogle');for(var i=0;i<units.length;i++){try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}}};var s=document.createElement('script');s.async=true;s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}';s.crossOrigin='anonymous';s.addEventListener('load',function(){window.__uttLoadAdsense()},{once:true});document.head.appendChild(s)}function schedule(){if(window.requestIdleCallback)requestIdleCallback(load,{timeout:2500});else setTimeout(load,2000)}window.addEventListener('load',schedule,{once:true});window.addEventListener('utt:ad-consent',schedule);schedule()})();</script>`;
-
 export async function onRequest(context) {
   const response = await context.next();
   const newHeaders = new Headers(response.headers);
@@ -111,9 +107,6 @@ export async function onRequest(context) {
     if (monetized && !html.includes(CONSENT_MARKER)) html = insertAfterHeadOpen(html, CONSENT_DEFAULT_SCRIPT);
     if (monetized && !html.includes(CONSENT_BANNER_MARKER)) html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
     if (monetized && !html.includes(SERVICE_VIEW_MARKER)) html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
-    if (monetized && !html.includes('utt-adsense-lazy-loader')) {
-      html = insertBeforeHeadClose(html, ADSENSE_LAZY_LOADER.replace('<script>', '<script id="utt-adsense-lazy-loader">'));
-    }
 
     if (scannerPage) {
       if (url.pathname === '/' || url.pathname === '/index.html') {
