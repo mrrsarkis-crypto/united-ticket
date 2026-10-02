@@ -146,9 +146,19 @@
     var hasUnits = document.querySelectorAll('.adsbygoogle').length > 0;
     var hasAutoAds = !!document.querySelector('meta[name="google-adsense-account"]');
     if (!hasUnits && !hasAutoAds) return;
+    // Consent-gate: never auto-fetch the ~200 KiB AdSense payload until the
+    // visitor has granted ad_storage. Lab runs (no stored consent) skip it
+    // entirely; granters get it via the grant listener below.
+    try {
+      if (window.localStorage.getItem('uttAdConsent') !== 'granted') return;
+    } catch (e) { return; }
     if ('requestIdleCallback' in window) window.requestIdleCallback(loadLibrary, { timeout: 3000 });
     else setTimeout(loadLibrary, 2000);
   }
+  // If the visitor grants via the banner after load, fetch AdSense then.
+  window.addEventListener('utt:ad-consent', function (ev) {
+    if (ev && ev.detail && ev.detail.state === 'granted') loadLibrary();
+  });
   if (document.readyState === 'complete') scheduleLibrary();
   else window.addEventListener('load', scheduleLibrary, { once: true });
 })();
@@ -232,6 +242,7 @@
   // Listen for the banner's consent decision and update accordingly.
   window.addEventListener('utt:ad-consent', function (ev) {
     var st = (ev && ev.detail && ev.detail.state === 'granted') ? 'granted' : 'denied';
+    if (st === 'granted') loadGoogleTagLibrary();
     window.gtag('consent', 'update', {
       ad_storage: st,
       ad_user_data: st,
@@ -255,6 +266,12 @@
     document.head.appendChild(s);
   }
   function scheduleGoogleTagLibrary() {
+    // Consent-gate: skip the ~100 KiB gtag payload for visitors who have not
+    // granted. Consent Mode v2 defaults already queue events in dataLayer;
+    // the thank-you page loads the library itself for the purchase conversion.
+    try {
+      if (window.localStorage.getItem('uttAdConsent') !== 'granted') return;
+    } catch (e) { return; }
     if ('requestIdleCallback' in window) window.requestIdleCallback(loadGoogleTagLibrary, { timeout: 3000 });
     else setTimeout(loadGoogleTagLibrary, 1500);
   }
