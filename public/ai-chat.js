@@ -71,8 +71,7 @@
     '.utt-chat-foot button svg{width:22px;height:22px;fill:#fff;}',
     '.utt-chat-foot button:disabled{opacity:.45;}',
     '@media(max-width:480px){#uttAIPanel{width:100vw;max-width:100vw;}#uttAIBubble{right:16px;bottom:16px;width:58px;height:58px;}}'
-  ].join('
-');
+  ].join('\n');
 
   var CHAT_SVG = '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-9 9H7V9h4v2zm6 0h-4V9h4v2z"/></svg>';
   var SEND_SVG = '<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
