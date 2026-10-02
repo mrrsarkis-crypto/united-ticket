@@ -110,6 +110,49 @@
   }
 })();
 
+/* ---- UTT deferred AdSense library (all pages) ----
+   adsbygoogle.js (~220KB) loads only after the page is interactive
+   (window load + idle). Ad units reserve space via min-height, so deferred
+   fill causes zero layout shift. push() calls queue in window.adsbygoogle
+   and are processed when the library arrives. */
+(function () {
+  if (window.__uttAdsenseLoaderBooted) return;
+  window.__uttAdsenseLoaderBooted = true;
+  var CLIENT = 'ca-pub-9943048295609395';
+
+  function pushUnits() {
+    var units = document.querySelectorAll('.adsbygoogle');
+    for (var i = 0; i < units.length; i++) {
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+    }
+  }
+  // Defined at eval time (this is a deferred script, so before
+  // DOMContentLoaded) so the manual-units block below can push immediately;
+  // calls queue safely until the library loads.
+  window.__uttLoadAdsense = pushUnits;
+
+  function loadLibrary() {
+    if (window.__uttAdsenseLoaded) return;
+    window.__uttAdsenseLoaded = true;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + CLIENT;
+    s.crossOrigin = 'anonymous';
+    s.addEventListener('load', pushUnits, { once: true });
+    document.head.appendChild(s);
+  }
+  function scheduleLibrary() {
+    // Only fetch the library on pages that actually show ads.
+    var hasUnits = document.querySelectorAll('.adsbygoogle').length > 0;
+    var hasAutoAds = !!document.querySelector('meta[name="google-adsense-account"]');
+    if (!hasUnits && !hasAutoAds) return;
+    if ('requestIdleCallback' in window) window.requestIdleCallback(loadLibrary, { timeout: 3000 });
+    else setTimeout(loadLibrary, 2000);
+  }
+  if (document.readyState === 'complete') scheduleLibrary();
+  else window.addEventListener('load', scheduleLibrary, { once: true });
+})();
+
 /* ---- UTT manual AdSense units: every page except the homepage ---- */
 (function () {
   var path = location.pathname.replace(/\/$/, '') || '/';
@@ -143,8 +186,10 @@
   else run();
 })();
 
-/* Google tag: Consent Mode v2 — always load, default denied until visitor consents.
-   Google's tag checker can now detect the tag; no ad cookies fire until 'granted'. */
+/* Google tag: Consent Mode v2 — config queues in dataLayer immediately
+   (default denied until visitor consents); the gtag.js LIBRARY loads only
+   after the page is interactive, so it never competes with first paint.
+   No ad cookies fire until 'granted'. */
 (function () {
   if (window.__uttGoogleTagLoaderBooted) return;
   window.__uttGoogleTagLoaderBooted = true;
@@ -198,8 +243,21 @@
     });
   });
 
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
-  document.head.appendChild(s);
+  // Deferred library load: only after the page is interactive (window load +
+  // idle). Every gtag() call above and below queues in dataLayer and replays
+  // in order when the library arrives, so Consent Mode semantics are unchanged.
+  function loadGoogleTagLibrary() {
+    if (window.__uttGoogleTagLoaded) return;
+    window.__uttGoogleTagLoaded = true;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ADS_ID);
+    document.head.appendChild(s);
+  }
+  function scheduleGoogleTagLibrary() {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(loadGoogleTagLibrary, { timeout: 3000 });
+    else setTimeout(loadGoogleTagLibrary, 1500);
+  }
+  if (document.readyState === 'complete') scheduleGoogleTagLibrary();
+  else window.addEventListener('load', scheduleGoogleTagLibrary, { once: true });
 })();
