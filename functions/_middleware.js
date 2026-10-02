@@ -2,7 +2,7 @@
 
 const ADSENSE_ACCOUNT = 'ca-pub-9943048295609395';
 const CONSENT_DEFAULT_SCRIPT = '<script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>';
-const CONSENT_BANNER_SCRIPT = '<script src="/consent-banner.js" defer></script>';
+const CONSENT_BANNER_SCRIPT = '<script src="/consent-banner.js?v=20261004" defer></script>';
 const CONSENT_MARKER = 'uttAdConsent';
 const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
