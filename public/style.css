@@ -1030,8 +1030,8 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .ai-strip .wrap{position:relative;z-index:1;}
 .ai-strip-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;justify-content:space-between;margin-bottom:12px;}
 .ai-live{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:11px;font-weight:800;letter-spacing:.14em;}
-.ai-live i{width:9px;height:9px;border-radius:50%;background:#3DF08A;box-shadow:0 0 0 0 rgba(61,240,138,.7);animation:aiPulse 1.8s infinite;}
-@keyframes aiPulse{0%{box-shadow:0 0 0 0 rgba(61,240,138,.7)}70%{box-shadow:0 0 0 11px rgba(61,240,138,0)}100%{box-shadow:0 0 0 0 rgba(61,240,138,0)}}
+.ai-live i{width:9px;height:9px;border-radius:50%;background:#3DF08A;animation:aiPulse 1.8s ease-in-out infinite;}
+@keyframes aiPulse{0%,100%{opacity:1}50%{opacity:.35}}
 .ai-note{color:#B8C7E0;font-size:11px;font-weight:700;letter-spacing:.05em;}
 .ai-tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
 .ai-tile{display:flex;align-items:center;gap:11px;padding:12px 16px;border-radius:14px;text-decoration:none;
@@ -1073,3 +1073,10 @@ html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:aut
 
 /* PageSpeed: promote animated elements to composite layers (fixes non-composited animations) */
 .platform-card,.card.svc,.step,.btn{transform:translateZ(0);}
+
+/* hero AI quick chips: variant colors (all >=4.5:1 on navy) */
+.hero-ai-chips a.chip-gold{background:#F2A800;border-color:#F2A800;color:#00266F}
+.hero-ai-chips a.chip-blue{background:#174CB8;border-color:#174CB8;color:#fff}
+.hero-ai-chips a.chip-red{background:#B02A2A;border-color:#B02A2A;color:#fff}
+.hero-ai-chips a.chip-amber{background:transparent;border-color:#F2A800;color:#F2A800}
+.hero-ai-chips a.chip-outline{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
