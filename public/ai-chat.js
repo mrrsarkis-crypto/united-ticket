@@ -103,7 +103,7 @@
     { k: ['insurance', 'point', 'dmv'], r: 'A conviction puts a point on your DMV record and can raise insurance 20-40% for 3 years. Fighting for $199 is often cheaper than paying the ticket.' },
     { k: ['traffic school'], r: 'Traffic school masks one point but you can only use it once every 18 months, and you still pay the full fine. Fighting the ticket can get it <b>dismissed entirely</b> — no fine, no point, no school.' },
     { k: ['refund', 'guarantee', 'win'], r: 'We can\'t guarantee outcomes — no honest service can. What we guarantee: a licensed attorney reviews every defense, we file everything correctly and on time, and we fight hard. See our <a href="/refund-policy">refund policy</a>.' },
-    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+18182058271">(818) 205-8271</a>, Mon–Fri 8:30 AM–6:30 PM. Tap Live chat below or leave your info here and we\'ll call you back.' },
+    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+18182058271">(818) 205-8271</a>, Mon–Fri 7:30 AM–7:30 PM, Sat 9:30 AM–2:30 PM. Tap Live chat below or leave your info here and we\'ll call you back.' },
     { k: ['hello', 'hi', 'hey', 'good morning', 'good afternoon'], r: 'Hi! I\'m the United AI assistant. I can answer questions about fighting traffic tickets, pricing, and how it works — or start your free ticket scan. What\'s on your mind?' },
     { k: ['thank', 'thanks'], r: 'You\'re welcome! If you\'re ready, start your <a href="/assistant">free ticket scan</a> — it takes 60 seconds.' },
     { k: ['bye', 'goodbye'], r: 'Good luck with your ticket! Remember — you have a deadline to act, so don\'t wait too long. We\'re here when you\'re ready.' }
