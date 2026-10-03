@@ -1,0 +1,11 @@
+# Redirects for legacy ad/SEO URLs (many were 404ing, causing "Destination not working" ad disapprovals)
+# Added 2026-10-02 — maps old Google Ads landing pages to live equivalents
+
+/contact-us.html /contact 301
+/warrants/* /failure-to-appear 301
+/suspended/* /suspended-license 301
+/license/* /suspended-license 301
+/dismissed/* /services 301
+/trafficticket/* /services 301
+/dispute/* /services 301
+/fixed/* /services 301
