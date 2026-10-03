@@ -1,7 +1,7 @@
 # Automated Agent Authentication (OAuth 2.1 client credentials)
 
 This document describes how automated agents and developer tooling authenticate
-against the United Traffic Tickets Defense platform so they can call protected
+against the United Traffic Tickets - Defense platform so they can call protected
 endpoints (`/agent/*` and, in the future, other protected APIs) on your behalf.
 
 ## Quick summary
