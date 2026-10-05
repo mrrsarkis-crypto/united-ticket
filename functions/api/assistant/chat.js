@@ -4,34 +4,43 @@
 // model so the conversation is continuous.
 //
 // Safety model:
-//  - The assistant may ONLY explain options and draft/preview documents.
+//  - The assistant may explain options, draft/preview documents, qualify leads,
+//    and initiate checkout via the start_checkout tool.
 //  - The `propose_document` tool returns a draft field-map and summary — it
 //    does NOT create, send, file, or contact anything, and it is clearly
 //    labeled UNREVIEWED.
-//  - Only the site's existing paid workflow ( /api/cases -> Stripe checkout )
-//    can actually start document preparation, and only after an explicit
-//    human approval on the client.
-import { json, assistantChat, rand } from '../_shared.js';
+//  - Compliance guardrails (not a law firm, no legal advice, no guaranteed
+//    outcomes) always apply.
+import { json, assistantChat, rand, normalizeStripeSecret } from '../_shared.js';
 
 const CHAT_SYSTEM =
-  'You are the ticket-document assistant for "United Traffic Tickets Defense", a California ' +
+  'You are the assistant for "United Traffic Tickets Defense", a California ' +
   'document-preparation and case-tracking service. You are not a law firm and do not provide ' +
   'legal advice.\n' +
   '\n' +
-  'HARD RULES:\n' +
+  'HARD RULES (never break these):\n' +
   '- Never promise dismissal, a win, or a guaranteed outcome. Never assert an unchecked legal ' +
   '  conclusion. If you do not know, say so and suggest the user consult a licensed attorney ' +
   '  or the court.\n' +
   '- Always frame guidance as options and general information, and remind users that results ' +
   '  vary by court and case.\n' +
-  '- You may only *explain* and *draft/preview*. You never create, send, file, submit, email, ' +
-  '  or otherwise contact anyone or anything on the user\'s behalf. That is always done later by ' +
-  '  the site only after the user explicitly approves and completes checkout.\n' +
   '- Any DRAFT you produce must be clearly labeled UNREVIEWED and unverified.\n' +
   '- If the user asks about urgent issues (active warrant, DUI or serious charge, missed ' +
   '  deadline, commercial license at stake), tell them to contact a licensed attorney or the ' +
   '  relevant court promptly.\n' +
-  '- Be concise, plain, and kind. Use the conversation history to stay consistent.\n' +
+  '\n' +
+  'YOUR JOB — you are a closer, not just an info desk:\n' +
+  '- Qualify every lead: ask what the ticket is for, when the court date or deadline is, ' +
+  '  and whether they want to contest it. Urgency matters — a deadline next week is hotter ' +
+  '  than one next month.\n' +
+  '- When someone is ready (they want help with their ticket), use the start_checkout tool ' +
+  '  to generate their payment link. Ask for their email first if you do not have it. ' +
+  '  Service types: "199" = standard ticket defense ($199), "149" = trial by written ' +
+  '  declaration ($149), "99" = additional citation ($99).\n' +
+  '- Be warm, direct, and confident. Short replies. No fluff. Move the conversation toward ' +
+  '  a decision — help them understand their options, then ask if they want to get started.\n' +
+  '- If they hesitate, address it directly: cost concern, timeline, trust. Do not pressure, ' +
+  '  but do not let the conversation drift.\n' +
   '\n' +
   'When the user asks what to do next or how to address their ticket, use the check_next_steps ' +
   'tool to give neutral, factual options. When the user asks to prepare documents or paperwork, ' +
@@ -46,6 +55,13 @@ const NEXT_STEPS = [
   { title: 'Contesting', body: 'If you believe the citation is incorrect, you may be able to contest it, in person or sometimes by written declaration. This often involves appearing before the court or submitting paperwork by a deadline. It is not legal advice, and outcomes depend on the court and the facts.' },
   { title: 'Speaking with help', body: 'Because traffic citations can affect your license, insurance, or ability to drive commercially, consider consulting a licensed California attorney or the court clerk about your specific situation — especially for serious or commercial concerns.' },
 ];
+
+// Default production price IDs (overridden by STRIPE_PRICE_<SERVICE> env vars).
+const DEFAULT_PRICE_IDS = {
+  '199': 'price_1UHw68LMSqKARRUqlhvD82xl',
+  '149': 'price_1UHw6DLMSqKARRUqDTK6w7LB',
+  '99': 'price_1UHw6FLMSqKARRUqJ8vVNoCr',
+};
 
 const TOOLS = [
   {
@@ -75,9 +91,65 @@ const TOOLS = [
       required: ['documentTitle', 'fields', 'summary'],
     },
   },
+  {
+    name: 'start_checkout',
+    description: 'Generate a Stripe checkout payment link for the user. Use when they are ready to get started. You need their email address and the service type.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'The customer email address for the checkout session.' },
+        service: { type: 'string', description: 'Service type: "199" for standard ticket defense ($199), "149" for trial by written declaration ($149), "99" for additional citation ($99). Default "199".' },
+        name: { type: 'string', description: 'Customer full name, if known.' },
+      },
+      required: ['email'],
+    },
+  },
 ];
 
-function toolResult(name, input) {
+async function createCheckoutSession(env, origin, { email, service, name }) {
+  const svc = ['199', '149', '99'].includes(String(service)) ? String(service) : '199';
+  const stripeSecret = normalizeStripeSecret(env.STRIPE_SECRET_KEY);
+  if (!stripeSecret || !/^sk_(live|test)_/.test(stripeSecret)) {
+    return { ok: false, error: 'Payments are temporarily unavailable. Please call (833) 293-1095 to complete your order.' };
+  }
+  const priceId = String(env['STRIPE_PRICE_' + svc] || '').trim() || DEFAULT_PRICE_IDS[svc];
+  const successUrl = origin + '/thank-you?session_id={CHECKOUT_SESSION_ID}';
+  const cancelUrl = origin + '/#/cancel';
+  try {
+    const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + stripeSecret,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: email,
+        customer_creation: 'always',
+        billing_address_collection: 'auto',
+        'metadata[service]': svc,
+        'metadata[source]': 'chatbox',
+        ...(name ? { 'metadata[client_name]': name } : {}),
+        'line_items[0][price]': priceId,
+        'line_items[0][quantity]': '1',
+        allow_promotion_codes: 'true',
+      }),
+    });
+    const session = await stripeRes.json();
+    if (!stripeRes.ok || !session.url) {
+      console.error('Chatbox Stripe checkout failed', stripeRes.status, session && session.error);
+      return { ok: false, error: 'Could not start checkout right now. Please call (833) 293-1095 and we will get you set up.' };
+    }
+    return { ok: true, url: session.url };
+  } catch (e) {
+    console.error('Chatbox Stripe error', e);
+    return { ok: false, error: 'Could not start checkout right now. Please call (833) 293-1095 and we will get you set up.' };
+  }
+}
+
+async function toolResult(env, origin, name, input) {
   if (name === 'check_next_steps') {
     const topic = (input && input.topic) || '';
     const relevant = NEXT_STEPS.filter((s) => !topic || s.title.toLowerCase().includes(topic.toLowerCase()) || topic.includes(s.title.toLowerCase()));
@@ -95,6 +167,18 @@ function toolResult(name, input) {
       note: 'This is an UNREVIEWED draft preview only. Nothing has been created, filed, sent, or submitted. Submitting this document requires your explicit approval and checkout; a licensed professional reviews documents before filing.',
     };
     return { content: [{ type: 'text', text: JSON.stringify(draft) }] };
+  }
+  if (name === 'start_checkout') {
+    const email = String((input && input.email) || '').trim();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return { content: [{ type: 'text', text: JSON.stringify({ ok: false, error: 'A valid email address is needed to start checkout.' }) }] };
+    }
+    const result = await createCheckoutSession(env, origin, {
+      email,
+      service: (input && input.service) || '199',
+      name: (input && input.name) || '',
+    });
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] };
   }
   return { content: [{ type: 'text', text: 'Unknown tool.' }] };
 }
@@ -114,6 +198,8 @@ export async function onRequestPost(context) {
   const sessionId = /^[A-Za-z0-9_-]{1,128}$/.test(String(body.sessionId || ''))
     ? String(body.sessionId)
     : 's-' + Date.now().toString(36) + '-' + rand(6);
+
+  const origin = new URL(request.url).origin;
 
   // Load prior history from KV (if the binding exists). Non-fatal on failure.
   let history = [];
@@ -152,7 +238,7 @@ export async function onRequestPost(context) {
       system: CHAT_SYSTEM,
       messages: history,
       tools: TOOLS,
-      resolveTool: (name, input) => toolResult(name, input).content,
+      resolveTool: async (toolName, input) => (await toolResult(env, origin, toolName, input)).content,
     });
     finalText = result.text;
     history = result.history;
