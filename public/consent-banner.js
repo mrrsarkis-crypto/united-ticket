@@ -7,6 +7,9 @@
   var STORE_KEY = 'uttAdConsent';
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
+  function onWindow(type, handler, options) {
+    if (typeof window.addEventListener === 'function') window.addEventListener(type, handler, options);
+  }
 
   function consentState(state) {
     var v = state === 'granted' ? 'granted' : 'denied';
@@ -156,11 +159,11 @@
     else setTimeout(loadLibrary, 2000);
   }
   // If the visitor grants via the banner after load, fetch AdSense then.
-  window.addEventListener('utt:ad-consent', function (ev) {
+  onWindow('utt:ad-consent', function (ev) {
     if (ev && ev.detail && ev.detail.state === 'granted') loadLibrary();
   });
   if (document.readyState === 'complete') scheduleLibrary();
-  else window.addEventListener('load', scheduleLibrary, { once: true });
+  else onWindow('load', scheduleLibrary, { once: true });
 })();
 
 /* ---- UTT manual AdSense units: every page except the homepage ---- */
@@ -240,7 +243,7 @@
   } catch (e) {}
 
   // Listen for the banner's consent decision and update accordingly.
-  window.addEventListener('utt:ad-consent', function (ev) {
+  onWindow('utt:ad-consent', function (ev) {
     var st = (ev && ev.detail && ev.detail.state === 'granted') ? 'granted' : 'denied';
     if (st === 'granted') loadGoogleTagLibrary();
     window.gtag('consent', 'update', {
@@ -276,5 +279,5 @@
     else setTimeout(loadGoogleTagLibrary, 1500);
   }
   if (document.readyState === 'complete') scheduleGoogleTagLibrary();
-  else window.addEventListener('load', scheduleGoogleTagLibrary, { once: true });
+  else onWindow('load', scheduleGoogleTagLibrary, { once: true });
 })();
