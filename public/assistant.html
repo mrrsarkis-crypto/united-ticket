@@ -181,28 +181,32 @@
 
       <!-- STAGE 4: ASK QUESTIONS + APPROVE -->
       <div class="ast-card" id="stage4" style="display:none"><span id="assistant-form" class="anchor-target"></span>
-        <h2>Step 4 — Provide your details and approve</h2>
-        <p class="muted">Your verified citation details stay in the workflow. Enter your contact information, confirm the authorization, and continue to secure checkout. The TR-205 information must be reviewed first. Nothing is filed with a court until you complete the required steps.</p>
-
+        <h2>Step 4 — Confirm and check out</h2>
+        <p class="muted">We pulled your details from the ticket — just confirm they're right, add your email, and you're done.</p>
 
         <div class="ast-contact">
-          <h3>Your contact and identification</h3>
-          <p class="muted">We need this to prepare your documents and track your case. Nothing is submitted until you approve and complete checkout.</p>
+          <h3>From your ticket <span class="tiny" style="font-weight:normal">— correct anything that's wrong</span></h3>
           <div class="ast-fields">
             <div class="ast-fieldrow"><label for="c_first">First name *</label><input type="text" id="c_first" autocomplete="given-name"></div>
             <div class="ast-fieldrow"><label for="c_last">Last name *</label><input type="text" id="c_last" autocomplete="family-name"></div>
-            <div class="ast-fieldrow"><label for="c_email">Email *</label><input type="email" id="c_email" autocomplete="email"></div>
-            <div class="ast-fieldrow"><label for="c_phone">Phone</label><input type="tel" id="c_phone" autocomplete="tel"></div>
-            <div class="ast-fieldrow span2"><label for="c_address">Mailing address</label><input type="text" id="c_address" autocomplete="street-address"></div>
-            <div class="ast-fieldrow"><label for="c_dob">Date of birth * (MM/DD/YYYY)</label><input type="text" id="c_dob" autocomplete="bday" placeholder="MM/DD/YYYY"></div>
+            <div class="ast-fieldrow"><label for="c_dob">Date of birth *</label><input type="text" id="c_dob" autocomplete="bday" placeholder="MM/DD/YYYY"></div>
             <div class="ast-fieldrow"><label for="c_dl">Driver's license # *</label><input type="text" id="c_dl" autocomplete="off"></div>
+          </div>
+        </div>
+
+        <div class="ast-contact">
+          <h3>Where do we send your documents?</h3>
+          <div class="ast-fields">
+            <div class="ast-fieldrow"><label for="c_email">Email *</label><input type="email" id="c_email" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="ast-fieldrow"><label for="c_phone">Phone <span class="tiny" style="font-weight:normal">(for text updates)</span></label><input type="tel" id="c_phone" autocomplete="tel" placeholder="(555) 123-4567"></div>
+            <div class="ast-fieldrow span2"><label for="c_address">Mailing address</label><input type="text" id="c_address" autocomplete="street-address" placeholder="Auto-filled from ticket — edit if needed"></div>
           </div>
         </div>
 
         <div class="ast-approve">
           <label class="ast-check">
             <input type="checkbox" id="astApprove">
-            <span><strong>I approve</strong> — I have reviewed and verified the citation details above, and I authorize United Traffic Tickets - Defense to start document preparation using those details. I understand this is a paid service (document preparation, attorney review before filing) and that no outcome is guaranteed. I understand nothing is filed with any court or sent to anyone until I complete checkout.</span>
+            <span><strong>I approve</strong> — I've reviewed the details above and authorize United Traffic Tickets - Defense to prepare my documents. I understand this is a paid service with no guaranteed outcome, and nothing is filed until I complete checkout.</span>
           </label>
           <p class="tiny">Service: <strong>Trial by Written Declaration document preparation, $199</strong>. Payment comes after you review the extracted citation and TR-205 information.</p>
           <button type="button" class="btn btn-amber ast-btn" id="astCheckout">Approve &amp; continue to secure checkout <span class="ast-arrow">&rarr;</span></button>
@@ -213,6 +217,39 @@
     </div>
   </section>
 </main>
+
+<script>
+// Auto-fill Stage 4 from scanned ticket data — don't ask twice.
+(function(){
+  function val(k){
+    var el = document.querySelector('#astFields input[data-k="'+k+'"]');
+    return el ? el.value.trim() : '';
+  }
+  function splitName(full){
+    var parts = full.trim().split(/\s+/);
+    if(parts.length <= 1) return [full.trim(), ''];
+    return [parts[0], parts.slice(1).join(' ')];
+  }
+  document.getElementById('astTbdContinue').addEventListener('click', function(){
+    setTimeout(function(){
+      // Name
+      var name = val('defendantName');
+      if(name){
+        var p = splitName(name);
+        var f = document.getElementById('c_first'), l = document.getElementById('c_last');
+        if(f && !f.value) f.value = p[0];
+        if(l && !l.value) l.value = p[1];
+      }
+      // DOB, DL#, address — straight copy
+      var map = {dateOfBirth:'c_dob', drivingLicenseNumber:'c_dl', mailingAddress:'c_address'};
+      for(var k in map){
+        var v = val(k), el = document.getElementById(map[k]);
+        if(v && el && !el.value) el.value = v;
+      }
+    }, 50);
+  });
+})();
+</script>
 
 <footer class="site-footer">
   <div class="wrap footer-inner">
