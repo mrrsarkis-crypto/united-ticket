@@ -30,13 +30,16 @@ export function checkoutAmountMatches(expectedDollars, amountTotal) {
   return chargedCents === expectedCents;
 }
 
-export function liveFallbackAllowed(env, service, stripeSecret) {  if (!FALLBACK_PAYMENT_LINKS[service]) return false;
+export function liveFallbackAllowed(env, service, stripeSecret) {
+  if (!FALLBACK_PAYMENT_LINKS[service]) return false;
+
+  const enabled = String(env?.STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK || '')
+    .trim()
+    .toLowerCase() === 'true';
+  if (!enabled) return false;
+
   const key = String(stripeSecret || '').trim();
-  // A test key must never route to a live payment link. In all other cases
-  // (missing key, live key, or Stripe API error) the pre-configured live
-  // Payment Link keeps checkout working instead of failing every payment.
-  if (key.startsWith('sk_test_')) return false;
-  return true;
+  return key.startsWith('sk_live_');
 }
 
 // GET /api/cases?code=ADMIN_CODE — lightweight admin count compatibility route.
