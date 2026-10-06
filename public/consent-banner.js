@@ -225,7 +225,6 @@
   window.gtag('config', ADS_ID);
   window.gtag('config', 'AW-18486315755');
   window.gtag('config', 'AW-962316730');
-  window.gtag('config', 'AW-18486707638');
 
   // If the visitor already granted, lift to granted immediately.
   try {

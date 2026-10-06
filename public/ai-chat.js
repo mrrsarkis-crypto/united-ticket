@@ -244,7 +244,7 @@
         try {
           if (window.gtag) {
             window.gtag('event', 'generate_lead', { event_category: 'AI Chat', value: 1 });
-            ['AW-18226751655', 'AW-18486315755', 'AW-962316730', 'AW-18486707638'].forEach(function (id) {
+            ['AW-18226751655', 'AW-18486315755', 'AW-962316730'].forEach(function (id) {
               try { window.gtag('event', 'conversion', { send_to: id + '/chat_lead' }); } catch (e2) {}
             });
           }

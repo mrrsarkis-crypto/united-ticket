@@ -18,7 +18,7 @@ export async function onRequestGet(context) {
   // the checkout path and did not match the real service keys (199/149/99).
   const priceOverrides = {};
   const badPriceOverrides = [];
-  for (const service of ['199', '149', '99']) {
+  for (const service of ['999', '199']) {
     const key = 'STRIPE_PRICE_' + service;
     const value = String(env[key] || '').trim();
     if (!value) continue;

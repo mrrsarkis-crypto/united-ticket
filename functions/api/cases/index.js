@@ -81,7 +81,7 @@ export async function onRequestPost(context) {
   const service = String(body.service || '199');
   const tbdReviewed = body.tbdReviewed === true;
   const tbdReview = body.tbdReview && typeof body.tbdReview === 'object' && !Array.isArray(body.tbdReview) ? body.tbdReview : {};
-  if (['149', '199'].includes(service) && !tbdReviewed) return json({ error: 'TR-205 information must be reviewed before payment checkout.' }, 400);
+  if (['199', '999'].includes(service) && !tbdReviewed) return json({ error: 'TR-205 information must be reviewed before payment checkout.' }, 400);
   const dob = (body.dob || '').trim();
   const dl = (body.dl || '').trim();
   const fullName = name || (firstName + ' ' + lastName).trim();
@@ -172,7 +172,7 @@ export async function onRequestPost(context) {
         'Extras/notes: ' + (n.notes || 'N/A') + '\n' +
         'DL photo uploaded: ' + (n.dlPhoto ? 'yes' : 'no') + '\n' +
         'Assist. session: ' + (record.session_id || 'N/A') + '\n' +
-        'Service: $' + ({ '199': '199.00', '149': '149.00', '99': '99.00' }[service] || '199.00');
+        'Service: $' + ({ '999': '999.00', '199': '199.00' }[service] || '199.00');
       const header = isClaimed
         ? 'Existing quick-scan claim completed with full details (awaiting payment).\n\nCLAIM\nTracking code: ' + trackingCode + '\nClaimed at: ' + record.created_at + '\n\n'
         : 'New "Fight My Ticket" submission received (awaiting payment - Checkout URL sent to customer).\n\nCASE\nTracking code: ' + trackingCode + '\nStatus: payment_pending\nTime: ' + record.created_at + '\n\n';
@@ -225,7 +225,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const dollars = { '199': '199.00', '149': '149.00', '99': '99.00' }[service] || '199.00';
+  const dollars = { '999': '999.00', '199': '199.00' }[service] || '199.00';
   const accessToken = await caseAccessToken(env, trackingCode);
   let sessionUrl;
   try {

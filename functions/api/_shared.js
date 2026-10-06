@@ -71,9 +71,8 @@ export function normalizeStripeSecret(value) {
 // account cannot use live price IDs, and passing a live price to a sk_test_
 // secret fails with resource_missing.
 const DEFAULT_PRICE_IDS = {
-  '199': 'price_1UHw68LMSqKARRUqlhvD82xl',
-  '149': 'price_1UHw6DLMSqKARRUqDTK6w7LB',
-  '99': 'price_1UHw6FLMSqKARRUqJ8vVNoCr',
+  '999': 'price_1U9tcuKjhWqVWzfLFHVN0IQC',
+  '199': 'price_1U9tbmKjhWqVWzfLQQbTtSvD',
 };
 
 export function priceFor(service, env) {
