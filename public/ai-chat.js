@@ -92,18 +92,18 @@
     { k: ['speeding'], r: 'We fight speeding tickets across LA County. Common defenses include radar/lidar calibration issues, pacing errors, and procedural defects on the citation itself. Scan your ticket free and we\'ll flag what we find.' },
     { k: ['red light', 'red-light', 'camera'], r: 'Red light tickets — including camera tickets — are very beatable. Camera evidence has strict authentication requirements in California. Let us review yours free.' },
     { k: ['cell phone', 'cellphone', 'texting', 'distracted'], r: 'Cell phone tickets (VC 23123/23123.5) carry a point on your record. Strong defenses exist — mounted phone use, emergency calls, GPS. Worth fighting.' },
-    { k: ['dui'], r: 'We handle DUI-related traffic matters, but DUI is criminal — you need a criminal defense attorney for the criminal side. We can help with the DMV/traffic components. Call us at <a href="tel:+18332931095">(833) 293-1095</a> to discuss.' },
+    { k: ['dui'], r: 'We handle DUI-related traffic matters, but DUI is criminal — you need a criminal defense attorney for the criminal side. We can help with the DMV/traffic components. Call us at <a href="tel:+14244506387">(424) 450-6387</a> to discuss.' },
     { k: ['court', 'appear', 'go to court'], r: 'Most of our clients <b>never go to court</b>. We fight by Trial by Written Declaration (TR-205) — everything is done in writing. If you lose the written trial, you can still request a new in-person trial (trial de novo).' },
     { k: ['trial by written', 'tr-205', 'written declaration', 'tbd'], r: 'Trial by Written Declaration (form TR-205) lets you fight your ticket entirely by mail — no courtroom. We prepare the full declaration, a licensed attorney reviews it, and we file it for you. $149 for TBD prep, $199 for full defense.' },
     { k: ['law firm', 'lawyer', 'attorney'], r: 'We\'re a document preparation service — <b>not a law firm</b> — but every defense is reviewed by a licensed California attorney before filing. You get attorney-level review at a flat $199.' },
     { k: ['van nuys', 'burbank', 'glendale', 'pasadena', 'long beach', 'court location', 'courthouse'], r: 'We serve all LA County courts including Van Nuys, Burbank, Glendale, Pasadena, and Long Beach. Our office is at 7120 Hayvenhurst Ave Ste 320, Van Nuys.' },
-    { k: ['failure to appear', 'fta', 'missed court', 'warrant', 'bench warrant'], r: 'A failure to appear (VC 40508) can put a hold on your license. Don\'t panic — this is fixable. Call us now at <a href="tel:+18332931095">(833) 293-1095</a> and we\'ll map out your options today.' },
-    { k: ['suspended', 'license'], r: 'We help with suspended-license issues tied to traffic tickets. The fix depends on why it was suspended — call <a href="tel:+18332931095">(833) 293-1095</a> for a free assessment.' },
+    { k: ['failure to appear', 'fta', 'missed court', 'warrant', 'bench warrant'], r: 'A failure to appear (VC 40508) can put a hold on your license. Don\'t panic — this is fixable. Call us now at <a href="tel:+14244506387">(424) 450-6387</a> and we\'ll map out your options today.' },
+    { k: ['suspended', 'license'], r: 'We help with suspended-license issues tied to traffic tickets. The fix depends on why it was suspended — call <a href="tel:+14244506387">(424) 450-6387</a> for a free assessment.' },
     { k: ['cdl', 'commercial', 'truck'], r: 'CDL holders can\'t afford points — your livelihood depends on a clean record. We prioritize CDL defenses. Start with a free scan.' },
     { k: ['insurance', 'point', 'dmv'], r: 'A conviction puts a point on your DMV record and can raise insurance 20-40% for 3 years. Fighting for $199 is often cheaper than paying the ticket.' },
     { k: ['traffic school'], r: 'Traffic school masks one point but you can only use it once every 18 months, and you still pay the full fine. Fighting the ticket can get it <b>dismissed entirely</b> — no fine, no point, no school.' },
     { k: ['refund', 'guarantee', 'win'], r: 'We can\'t guarantee outcomes — no honest service can. What we guarantee: a licensed attorney reviews every defense, we file everything correctly and on time, and we fight hard. See our <a href="/refund-policy">refund policy</a>.' },
-    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+18332931095">(833) 293-1095</a>, Mon–Fri 7:30 AM–7:30 PM, Sat 9:30 AM–2:30 PM. Tap Live chat below or leave your info here and we\'ll call you back.' },
+    { k: ['human', 'person', 'someone', 'agent', 'real'], r: 'You can reach our team at <a href="tel:+14244506387">(424) 450-6387</a>, Mon–Fri 7:30 AM–7:30 PM, Sat 9:30 AM–2:30 PM. Tap Live chat below or leave your info here and we\'ll call you back.' },
     { k: ['hello', 'hi', 'hey', 'good morning', 'good afternoon'], r: 'Hi! I\'m the United AI assistant. I can answer questions about fighting traffic tickets, pricing, and how it works — or start your free ticket scan. What\'s on your mind?' },
     { k: ['thank', 'thanks'], r: 'You\'re welcome! If you\'re ready, start your <a href="/assistant">free ticket scan</a> — it takes 60 seconds.' },
     { k: ['bye', 'goodbye'], r: 'Good luck with your ticket! Remember — you have a deadline to act, so don\'t wait too long. We\'re here when you\'re ready.' }
@@ -120,7 +120,7 @@
       if (score > bestScore) { bestScore = score; best = KB[i]; }
     }
     if (best) return best.r;
-    return 'Good question. I can help with pricing, how ticket defense works, courts we serve, and specific violation types. You can also <a href="/assistant">scan your ticket free</a> for a personalized review — or call <a href="tel:+18332931095">(833) 293-1095</a>. What would you like to know?';
+    return 'Good question. I can help with pricing, how ticket defense works, courts we serve, and specific violation types. You can also <a href="/assistant">scan your ticket free</a> for a personalized review — or call <a href="tel:+14244506387">(424) 450-6387</a>. What would you like to know?';
   }
 
   var QUICK = ['Scan my ticket 🎫', 'Pricing 💰', 'Live chat 💬', 'Email us ✉️'];

@@ -110,7 +110,7 @@ async function createCheckoutSession(env, origin, { email, service, name }) {
   const svc = ['199', '149', '99'].includes(String(service)) ? String(service) : '199';
   const stripeSecret = normalizeStripeSecret(env.STRIPE_SECRET_KEY);
   if (!stripeSecret || !/^sk_(live|test)_/.test(stripeSecret)) {
-    return { ok: false, error: 'Payments are temporarily unavailable. Please call (833) 293-1095 to complete your order.' };
+    return { ok: false, error: 'Payments are temporarily unavailable. Please call (424) 450-6387 to complete your order.' };
   }
   const priceId = String(env['STRIPE_PRICE_' + svc] || '').trim() || DEFAULT_PRICE_IDS[svc];
   const successUrl = origin + '/thank-you?session_id={CHECKOUT_SESSION_ID}';
@@ -140,12 +140,12 @@ async function createCheckoutSession(env, origin, { email, service, name }) {
     const session = await stripeRes.json();
     if (!stripeRes.ok || !session.url) {
       console.error('Chatbox Stripe checkout failed', stripeRes.status, session && session.error);
-      return { ok: false, error: 'Could not start checkout right now. Please call (833) 293-1095 and we will get you set up.' };
+      return { ok: false, error: 'Could not start checkout right now. Please call (424) 450-6387 and we will get you set up.' };
     }
     return { ok: true, url: session.url };
   } catch (e) {
     console.error('Chatbox Stripe error', e);
-    return { ok: false, error: 'Could not start checkout right now. Please call (833) 293-1095 and we will get you set up.' };
+    return { ok: false, error: 'Could not start checkout right now. Please call (424) 450-6387 and we will get you set up.' };
   }
 }
 
