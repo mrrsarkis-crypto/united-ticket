@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.10.15-34';
+export const SCANNER_ENGINE_VERSION = '2026.10.15-35';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -708,10 +708,10 @@ export async function extractVisionDocument(env, input) {
   }
 
   const providerOrder = preferred === 'openai'
-    ? ['openai', 'groq', 'gemini', 'workersai', 'dashscope', 'anthropic', 'gateway']
+    ? ['openai', 'groq', 'workersai', 'dashscope', 'gemini', 'anthropic', 'gateway']
     : preferred === 'groq'
-      ? ['groq', 'openai', 'gemini', 'workersai', 'dashscope', 'anthropic', 'gateway']
-      : [preferred, 'groq', 'gemini', 'workersai', 'openai', 'dashscope', 'anthropic', 'gateway'];
+      ? ['groq', 'openai', 'workersai', 'dashscope', 'gemini', 'anthropic', 'gateway']
+      : [preferred, 'groq', 'workersai', 'dashscope', 'gemini', 'openai', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const fallbackDiagnostics = [];
