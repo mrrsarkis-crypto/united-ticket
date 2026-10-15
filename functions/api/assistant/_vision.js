@@ -2,12 +2,13 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.09.23-33';
+export const SCANNER_ENGINE_VERSION = '2026.10.15-34';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
 const MIN_PROVIDER_TIMEOUT_MS = 2000;
 const MAX_TOTAL_VISION_MS = 24000;
+const FALLBACK_PROVIDER_TIMEOUT_MS = 9000;
 const MAX_ATTEMPTS = 2;
 const AI_GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 const PROVIDER_COOLDOWN_MS = {
@@ -709,7 +710,7 @@ export async function extractVisionDocument(env, input) {
   const providerOrder = preferred === 'openai'
     ? ['openai', 'groq', 'gemini', 'workersai', 'dashscope', 'anthropic', 'gateway']
     : preferred === 'groq'
-      ? ['groq', 'gemini', 'workersai', 'openai', 'dashscope', 'anthropic', 'gateway']
+      ? ['groq', 'openai', 'gemini', 'workersai', 'dashscope', 'anthropic', 'gateway']
       : [preferred, 'groq', 'gemini', 'workersai', 'openai', 'dashscope', 'anthropic', 'gateway'];
   available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
@@ -738,9 +739,10 @@ export async function extractVisionDocument(env, input) {
     try {
       // Keep slow native Workers AI from consuming the entire scanner budget.
       // A fast fail here leaves enough time for external OCR fallbacks.
+      const isPrimaryAttempt = provider === available[0];
       const providerBudget = provider === 'workersai'
-        ? Math.min(10000, timeoutMs, remainingTotal)
-        : Math.min(timeoutMs, remainingTotal);
+        ? Math.min(8000, timeoutMs, remainingTotal)
+        : Math.min(isPrimaryAttempt ? timeoutMs : FALLBACK_PROVIDER_TIMEOUT_MS, remainingTotal);
       let result;
       if (provider === 'openai') result = await callOpenAi(env, { ...input, timeoutMs: providerBudget });
       else if (provider === 'workersai') result = await callWorkersAi(env, { ...input, timeoutMs: providerBudget });
