@@ -79,7 +79,18 @@ async function handleOrphanPayment(env, session) {
     const name = cust.name || '';
     const email = session.customer_email || cust.email || '';
     const amount = session.amount_total ? '$' + (session.amount_total / 100).toFixed(2) : '?';
-    const code = 'TF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
+    // Prefer the tracking code the checkout carried in client_reference_id
+    // (the assistant flow mints one, mirroring the intake flow) so the
+    // customer's /thank-you page can find this record and fire its purchase
+    // conversion. Fall back to a fresh code when none was carried, or when a
+    // case already exists under the carried code.
+    let code = '';
+    const carried = String(session.client_reference_id || '').trim();
+    if (/^TF-[A-Z0-9]{6,}$/i.test(carried)) {
+      const existing = await loadCase(env, carried);
+      if (!existing) code = carried.toUpperCase();
+    }
+    if (!code) code = 'TF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
 
     const record = {
       tracking_code: code,
