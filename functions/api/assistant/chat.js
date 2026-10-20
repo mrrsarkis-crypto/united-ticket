@@ -113,7 +113,14 @@ async function createCheckoutSession(env, origin, { email, service, name }) {
     return { ok: false, error: 'Payments are temporarily unavailable. Please call (424) 450-6387 to complete your order.' };
   }
   const priceId = String(env['STRIPE_PRICE_' + svc] || '').trim() || DEFAULT_PRICE_IDS[svc];
-  const successUrl = origin + '/thank-you?session_id={CHECKOUT_SESSION_ID}';
+  // Mint a tracking code and carry it through checkout exactly like the
+  // intake flow (cases/index.js) does. The /thank-you page fires the Google
+  // Ads purchase conversion only when this code is in the return URL and the
+  // webhook has marked the matching case payment_complete. Without it,
+  // assistant purchases were invisible to conversion tracking (the webhook
+  // filed them as orphans under a different code).
+  const trackingCode = 'TF-' + Date.now().toString(36).toUpperCase() + rand(3);
+  const successUrl = origin + '/thank-you?tracking=' + encodeURIComponent(trackingCode) + '&session_id={CHECKOUT_SESSION_ID}';
   const cancelUrl = origin + '/#/cancel';
   try {
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -129,6 +136,8 @@ async function createCheckoutSession(env, origin, { email, service, name }) {
         customer_email: email,
         customer_creation: 'always',
         billing_address_collection: 'auto',
+        client_reference_id: trackingCode,
+        'metadata[tracking_code]': trackingCode,
         'metadata[service]': svc,
         'metadata[source]': 'chatbox',
         ...(name ? { 'metadata[client_name]': name } : {}),
