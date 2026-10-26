@@ -209,6 +209,12 @@
             <span><strong>I approve</strong> — I've reviewed the details above and authorize United Traffic Tickets - Defense to prepare my documents. I understand this is a paid service with no guaranteed outcome, and nothing is filed until I complete checkout.</span>
           </label>
           <p class="tiny">Service: <strong>Trial by Written Declaration document preparation, $199</strong>. Payment comes after you review the extracted citation and TR-205 information.</p>
+          <label class="ast-check" style="margin-top:14px;">
+            <input type="checkbox" id="attorneyConsent">
+            <span><strong>Optional — hear from an attorney.</strong> Some cases need a licensed attorney, which United Traffic Tickets Defense does not provide (we are a document-preparation service, not a law firm). If you check this box, you agree that United may share your name, phone, email, and case details with independent attorneys, and that United and those attorneys may call or text you about your case — including with automated technology — at the number you gave us. Message and data rates may apply. Reply STOP to end texts. Checking this box is not required to use our service, and United does not recommend or endorse any attorney.</span>
+          </label>
+          <p class="tiny"><strong>California privacy notice:</strong> We may share or sell the personal information described above to independent attorneys for the purposes described. You can opt out at any time — email unitedtraffictickets@gmail.com with "Do Not Sell or Share" or use the "Do Not Sell or Share My Personal Information" link in our website footer. Full details are in our <a href="/privacy">Privacy Policy</a>.</p>
+          <input type="hidden" id="attorneyConsentAt" value="">
           <button type="button" class="btn btn-amber ast-btn" id="astCheckout">Approve &amp; continue to secure checkout <span class="ast-arrow">&rarr;</span></button>
           <div class="ast-status" id="astCheckoutStatus" role="status"></div>
           <p class="tiny ast-caveat">Not a law firm. Document preparation and case-tracking service. Outcomes not guaranteed. See <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.</p>
@@ -293,7 +299,7 @@
   <div class="footer-legal">
     <div class="wrap">
       <p>&copy; <span id="year"></span> United Traffic Tickets - Defense. All rights reserved.</p>
-      <p class="tiny">United Traffic Tickets - Defense provides document preparation and case-tracking services with attorney review before filing. It does not provide legal advice, is not a law firm, and does not guarantee results. Outcomes vary by court and case.</p>
+      <p class="tiny">United Traffic Tickets - Defense provides document preparation and case-tracking services with attorney review before filing. It does not provide legal advice, is not a law firm, and does not guarantee results. Outcomes vary by court and case. <a href="mailto:unitedtraffictickets@gmail.com?subject=Do%20Not%20Sell%20or%20Share">Do Not Sell or Share My Personal Information</a></p>
     </div>
   </div>
 </footer>
@@ -332,6 +338,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var v = document.getElementById('navToggle'), l = document.getElementById('navLinks');
   if (v && l) v.addEventListener('click', function(){ var o=l.classList.toggle('open'); v.classList.toggle('open',o); v.setAttribute('aria-expanded',o?'true':'false'); });
 })();
+</script>
+<script>
+// Attorney-share consent timestamp (recorded with the case when the box is checked)
+(function(){ var cb=document.getElementById('attorneyConsent'), h=document.getElementById('attorneyConsentAt'); if(cb&&h){ cb.addEventListener('change', function(){ h.value = cb.checked ? new Date().toISOString() : ''; }); } })();
 </script>
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
