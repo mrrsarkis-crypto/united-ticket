@@ -6,15 +6,17 @@
 <script>(function(){var k="uttAdConsent",s=null;try{s=localStorage.getItem(k)}catch(e){}var v=(s==="granted")?"granted":"denied";window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;var c={ad_storage:v,ad_user_data:v,ad_personalization:v,analytics_storage:v,functionality_storage:v,personalization_storage:v,security_storage:v};if(s===null)c.wait_for_update=500;gtag("consent","default",c)})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0033A0">
-<title>California Traffic Ticket Defense Services — United Traffic Tickets Defense</title>
+<title>License Reinstatement & Traffic Ticket Services — United Traffic Tickets Defense</title>
 <link rel="amphtml" href="/amp/services">
-<meta name="description" content="See every type of ticket we help drivers fight in California: speeding, red light, failure to appear, suspended license, fix-it, cell phone, stop sign, CDL and more.">
-<link rel="stylesheet" href="/style.css">
+<meta name="description" content="Suspended license in California? License reinstatement is our flagship service — we map your DMV and court holds and prepare the paperwork to get you back on the road. We also fight speeding, red-light, failure-to-appear, fix-it, cell phone, stop sign, and CDL tickets.">
+<link rel="stylesheet" href="/style.css?v=20261027b">
 <link rel="stylesheet" href="/stone-theme.css?v=6">
 <link rel="stylesheet" href="/pages.css">
-  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon-rock.svg">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">  <link rel="canonical" href="https://unitedtraffictickets.com/services">
 <script src="/consent-banner.js" defer></script>
+  
 </head>
 <body>
 <header class="site-header">
@@ -27,7 +29,7 @@
   <nav class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="/assistant">
-        <img src="/assets/logo-defense-160.webp" alt="United Traffic Tickets Defense" class="brand-logo" width="160" height="160" decoding="async">
+        <img src="/assets/logo-defense-160.webp" alt="United Traffic Tickets Defense" class="brand-logo logo-spin" width="160" height="160" decoding="async">
       </a>
       <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
         <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
@@ -77,16 +79,16 @@
   <section class="sub-hero">
     <div class="wrap">
       <div class="breadcrumb"><a href="/">Home</a> &rsaquo; Services</div>
-      <p class="eyebrow">We Fight</p>
-      <h1>Every Ticket Type We Help Drivers Fight</h1>
-      <p class="sub">From speeding citations to failure-to-appear warrants, our AI-powered system scans your citation, flags potential issues for professional review, and helps prepare the documents you need.</p>
+      <p class="eyebrow">License Reinstatement First</p>
+      <h1>Suspended License? We Get You Back on the Road.</h1>
+      <p class="sub">License reinstatement is our flagship service: we find every hold on your license — DMV, court, and failure-to-appear — and prepare the paperwork to clear it. We also fight traffic tickets of every type, with document preparation and professional review of every case.</p>
     </div>
   </section>
 
   <section class="pg-section alt">
     <div class="wrap">
-      <h2>Select Your Ticket Type</h2>
-      <p class="sub">Pick the violation on your citation. Each page explains the law, the common defects, and how to get started.</p>
+      <h2>Start With Reinstatement — Or Pick Your Ticket Type</h2>
+      <p class="sub">Reinstatement is listed first, because getting you legal to drive again comes before everything else. For tickets, pick the violation on your citation — each page explains the law, the common defects, and how to get started.</p>
       <div class="ticket-grid" id="ticketGrid"></div>
       <p class="sub" style="margin-top:26px;">Don't see yours? <a href="/#scan" style="color:#0033A0;font-weight:700;">Upload your ticket</a> — our scan checks common procedural issues across many code sections.</p>
     </div>
@@ -104,7 +106,7 @@
 <footer class="site-footer">
   <div class="wrap footer-inner">
     <div>
-      <img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo" width="640" height="640" loading="lazy" decoding="async">
+      <img src="/assets/logo-light.webp" alt="United Traffic Tickets Defense" class="footer-logo logo-spin" width="640" height="640" loading="lazy" decoding="async">
       <p>Document preparation and case tracking, with attorney review before filing. Not a law firm. Outcomes not guaranteed.</p>
     </div>
     <div class="footer-links">
@@ -153,10 +155,11 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var v = document.getElementById('navToggle'), l = document.getElementById('navLinks');
   v.addEventListener('click', function(){ var o=l.classList.toggle('open'); v.classList.toggle('open',o); v.setAttribute('aria-expanded',o?'true':'false'); });
   var tickets = [
+    {t:'License Reinstatement', d:'Our flagship service: we map every DMV and court hold on your license and prepare the reinstatement paperwork to get you back on the road.', u:'/suspended-license'},
     {t:'Speeding Tickets', d:'Challenging radar/laser calibration, officer documentation, and procedural errors on speed citations.', u:'/speeding-ticket'},
     {t:'Red Light Tickets', d:'Contesting camera/video evidence, signal timing, and officer observations.', u:'/red-light-ticket'},
     {t:'Failure to Appear', d:'Addressing bench warrants and FTA charges before they escalate or suspend your license.', u:'/failure-to-appear'},
-    {t:'Suspended License', d:'Reinstatement paperwork and handling driving-while-suspended citations.', u:'/suspended-license'},
+    {t:'Driving While Suspended', d:'Cited for driving on a suspended license (VC 14601)? We prepare the case and the reinstatement path together.', u:'/suspended-license'},
     {t:'Fix-It Tickets', d:'Clearing correctable violations (equipment, registration, insurance proof) efficiently.', u:'/fix-it-ticket'},
     {t:'Reckless / Careless Driving', d:'Reviewing VC 23103/23103.5 allegations for evidentiary or procedural defects.', u:'/reckless-driving'},
     {t:'Cell Phone / Distracted', d:'Contesting hand-held device citations (VC 23123 and similar) on evidentiary and procedural grounds.', u:'/cell-phone-ticket'},
