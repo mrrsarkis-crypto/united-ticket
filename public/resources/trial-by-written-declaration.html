@@ -277,5 +277,23 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ 
 <script>
   window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
 </script>
+<style id="callfirst-css">
+.callfirst-bar{display:none}
+@media (max-width:820px){
+.callfirst-bar{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9997;background:rgba(0,32,80,.97);border:1px solid rgba(255,255,255,.14);padding:8px;border-radius:17px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.callfirst-bar a{flex:1;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:11px;background:linear-gradient(135deg,#F2A800,#FF8A00);color:#10233F;font-weight:900;font-size:16.5px;text-decoration:none;font-family:inherit;letter-spacing:.01em}
+body{padding-bottom:92px}
+}
+@media (min-width:821px){
+.topbar-phone{background:#F2A800;color:#00266F!important;padding:7px 14px;border-radius:8px;font-weight:800}
+}
+.callfirst-banner{background:linear-gradient(135deg,#00266F,#0033A0);color:#fff;border-radius:14px;padding:20px;margin:24px 0 8px;text-align:center;box-shadow:0 10px 30px rgba(0,38,111,.25)}
+.callfirst-banner p{margin:0}
+.callfirst-banner .cf-t{font-size:17px}
+.callfirst-banner .cf-t a{color:#FFC247;font-weight:800}
+.callfirst-banner .cf-btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:12px 28px;margin-top:12px;border-radius:10px;background:linear-gradient(135deg,#F2A800,#FF8A00);color:#10233F;font-weight:900;font-size:16px;text-decoration:none}
+.callfirst-banner .cf-s{font-size:13.5px;color:rgba(255,255,255,.78);margin-top:12px}
+</style>
+<div class="callfirst-bar" role="navigation" aria-label="Call us"><a href="tel:+17024191477">📞 Call (702) 419-1477</a></div>
 </body>
 </html>
