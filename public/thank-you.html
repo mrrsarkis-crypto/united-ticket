@@ -178,6 +178,22 @@ var PURCHASE_DESTINATIONS = [
           'transaction_id': code
         });
       });
+      // Microsoft UET purchase event (tag 187285081) — same verified-payment
+      // gate and same $199 value as the Google conversion above. Polls until
+      // bat.js (injected by the Pages middleware) has taken over window.uetq.
+      (function () {
+        var tries = 0;
+        (function attempt() {
+          try {
+            var q = window.uetq;
+            if (q && Object.prototype.toString.call(q) !== '[object Array]' && typeof q.push === 'function') {
+              q.push('event', 'purchase', { revenue_value: 199.00, currency: 'USD' });
+              return;
+            }
+          } catch (e) { return; }
+          if (++tries <= 40) setTimeout(attempt, 250);
+        })();
+      })();
     })
     .catch(function () { /* API unreachable -> page still works, no conversion */ });
 })();
