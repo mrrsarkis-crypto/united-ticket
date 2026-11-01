@@ -6,6 +6,8 @@ const CONSENT_BANNER_SCRIPT = '<script src="/consent-banner.js?v=20261004" defer
 const CONSENT_MARKER = 'uttAdConsent';
 const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
+const UET_SCRIPT = '<script>(function(w,d,t,r,u){var f,n,i;w[u]=w[u]||[];f=function(){var o={ti:"187285081",enableAutoSpaTracking:true};o.q=w[u];w[u]=new UET(o);w[u].push("pageLoad")};n=d.createElement(t);n.src=r;n.async=1;n.onload=n.onreadystatechange=function(){var s=this.readyState;if(s&&s!=="loaded"&&s!=="complete")return;f();n.onload=n.onreadystatechange=null};i=d.getElementsByTagName(t)[0];i.parentNode.insertBefore(n,i)})(window,document,"script","//bat.bing.com/bat.js","uetq");</script>';
+const UET_MARKER = '187285081';
 const SERVICE_VIEW_TRACKING_SCRIPT = '<script src="/service-view-tracking.js" defer></script>';
 const SERVICE_VIEW_MARKER = '/service-view-tracking.js';
 const SCANNER_SCRIPTS = [
@@ -105,6 +107,8 @@ export async function onRequest(context) {
     html = html.replace(/<script[^>]+pagead\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[^>]*><\/script>/gi, '');
     if (monetized && !html.includes('google-adsense-account')) html = insertAfterHeadOpen(html, ADSENSE_META);
     if (monetized && !html.includes(CONSENT_MARKER)) html = insertAfterHeadOpen(html, CONSENT_DEFAULT_SCRIPT);
+    if (monetized && !html.includes(UET_MARKER)) html = insertAfterHeadOpen(html, UET_SCRIPT);
+
     if (monetized && !html.includes(CONSENT_BANNER_MARKER)) html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
     if (monetized && !html.includes(SERVICE_VIEW_MARKER)) html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
 
