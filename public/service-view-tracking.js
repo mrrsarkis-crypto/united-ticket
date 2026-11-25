@@ -13,25 +13,24 @@
 // once the visitor grants consent. Nothing here writes or reads a new storage
 // key, so it cannot disagree with the banner's stored choice.
 //
-// Pricing is keyed to the tiers the UI quotes ($199 standard ticket, $149
-// suspended licence, $99 fix-it) and mirrors DEFAULT_PRICE_IDS in
-// functions/api/_shared.js. Keep the two in step.
+// Include prices only for views tied to a supported online checkout tier.
+// An informational service view can still be tracked without a price.
 (function () {
   'use strict';
   if (window.__uttServiceViewTracked) return;
   window.__uttServiceViewTracked = true;
 
-  // slug -> [item id, item name, price, price cents]
+  // slug -> [item id, item name, optional price in USD]
   var SERVICES = {
-    'speeding-ticket': ['utt_svc_speeding', 'Speeding Ticket Defense', 199, 19900],
-    'cdl-ticket': ['utt_svc_cdl', 'CDL Ticket Defense', 199, 19900],
-    'suspended-license': ['utt_svc_suspended', 'Suspended License Defense', 149, 14900],
-    'stop-sign-ticket': ['utt_svc_stop_sign', 'Stop Sign Ticket Defense', 199, 19900],
-    'red-light-ticket': ['utt_svc_red_light', 'Red Light Ticket Defense', 199, 19900],
-    'reckless-driving': ['utt_svc_reckless', 'Reckless Driving Defense', 199, 19900],
-    'failure-to-appear': ['utt_svc_fta', 'Failure to Appear Help', 199, 19900],
-    'fix-it-ticket': ['utt_svc_fix_it', 'Fix-It Ticket Help', 99, 9900],
-    'cell-phone-ticket': ['utt_svc_cell_phone', 'Cell Phone Ticket Defense', 199, 19900]
+    'speeding-ticket': ['utt_svc_speeding', 'Speeding Ticket Defense', 199],
+    'cdl-ticket': ['utt_svc_cdl', 'CDL Ticket Defense', 199],
+    'suspended-license': ['utt_svc_suspended', 'Suspended License Defense'],
+    'stop-sign-ticket': ['utt_svc_stop_sign', 'Stop Sign Ticket Defense', 199],
+    'red-light-ticket': ['utt_svc_red_light', 'Red Light Ticket Defense', 199],
+    'reckless-driving': ['utt_svc_reckless', 'Reckless Driving Defense', 199],
+    'failure-to-appear': ['utt_svc_fta', 'Failure to Appear Help', 199],
+    'fix-it-ticket': ['utt_svc_fix_it', 'Fix-It Ticket Help'],
+    'cell-phone-ticket': ['utt_svc_cell_phone', 'Cell Phone Ticket Defense', 199]
   };
 
   var LIST_PAGE = 'services';
@@ -59,31 +58,31 @@
     return parts[parts.length - 1].toLowerCase() === LIST_PAGE;
   }
 
+  function serviceItem(service) {
+    var item = {
+      item_id: service[0],
+      item_name: service[1],
+      quantity: 1,
+      item_category: 'Legal Services'
+    };
+    if (typeof service[2] === 'number') item.price = service[2];
+    return item;
+  }
+
   var slug = currentSlug();
   var service = SERVICES[slug];
 
   if (service) {
-    gtag('event', 'view_item', {
-      currency: 'USD',
-      value: service[3],
-      items: [{
-        item_id: service[0],
-        item_name: service[1],
-        price: service[2],
-        quantity: 1,
-        item_category: 'Legal Services'
-      }]
-    });
+    var item = serviceItem(service);
+    var event = { items: [item] };
+    if (typeof item.price === 'number') {
+      event.currency = 'USD';
+      event.value = item.price * item.quantity;
+    }
+    gtag('event', 'view_item', event);
   } else if (inList()) {
     var items = Object.keys(SERVICES).map(function (key) {
-      var s = SERVICES[key];
-      return {
-        item_id: s[0],
-        item_name: s[1],
-        price: s[2],
-        quantity: 1,
-        item_category: 'Legal Services'
-      };
+      return serviceItem(SERVICES[key]);
     });
     gtag('event', 'view_item_list', {
       item_list_name: ITEM_LIST_NAME,

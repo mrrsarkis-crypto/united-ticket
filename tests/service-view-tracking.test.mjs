@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { priceFor } from '../functions/api/_shared.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tracking = fs.readFileSync(path.join(root, 'public', 'service-view-tracking.js'), 'utf8');
 const middleware = fs.readFileSync(path.join(root, 'functions', '_middleware.js'), 'utf8');
 const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-vercel.js'), 'utf8');
-const shared = fs.readFileSync(path.join(root, 'functions', 'api', '_shared.js'), 'utf8');
 
 // Executable lines only: comments legitimately name things while explaining why
 // they are avoided (e.g. "does NOT emit purchase").
@@ -50,21 +51,41 @@ test('tracking does not send per-user or PII fields', () => {
   }
 });
 
-test('every price used is a real Stripe tier from _shared.js', () => {
-  const tiers = [...shared.matchAll(/'(199|149|99)':\s*'price_/g)].map((m) => m[1]);
-  assert.ok(tiers.length >= 3, 'expected to find the price tiers in _shared.js');
-
-  const used = [
-    ...trackingCode.matchAll(/\[\s*'utt_svc_[^']*'\s*,\s*'[^']*'\s*,\s*(\d+)\s*,/g)
-  ].map((m) => m[1]);
-
-  assert.ok(used.length >= 9, `expected at least 9 priced services, found ${used.length}`);
-  for (const price of used) {
-    assert.ok(
-      tiers.includes(price),
-      `service-view-tracking.js quotes $${price}, which is not a tier in _shared.js (${tiers.join('/')})`
-    );
+test('service views attach prices only for supported checkout tiers', () => {
+  function eventFor(pathname) {
+    const window = { location: { pathname }, dataLayer: [] };
+    runInNewContext(tracking, { window });
+    assert.equal(window.dataLayer.length, 1);
+    return window.dataLayer[0];
   }
+
+  const list = eventFor('/services');
+  assert.equal(list[1], 'view_item_list');
+  assert.equal(list[2].items.length, 9);
+  const priced = list[2].items.filter(item => Object.hasOwn(item, 'price'));
+  assert.equal(priced.length, 7);
+  for (const item of priced) {
+    assert.ok(priceFor(String(item.price), {}), `$${item.price} is not a supported checkout tier`);
+  }
+
+  for (const [pathname, id] of [
+    ['/suspended-license', 'utt_svc_suspended'],
+    ['/fix-it-ticket', 'utt_svc_fix_it'],
+  ]) {
+    const listItem = list[2].items.find(item => item.item_id === id);
+    assert.ok(listItem, `${id} must stay in the service list`);
+    assert.equal(Object.hasOwn(listItem, 'price'), false);
+    const view = eventFor(pathname);
+    assert.equal(view[1], 'view_item');
+    assert.equal(view[2].items[0].item_id, id);
+    assert.equal(Object.hasOwn(view[2].items[0], 'price'), false);
+    assert.equal(Object.hasOwn(view[2], 'value'), false);
+  }
+
+  const pricedView = eventFor('/speeding-ticket');
+  assert.equal(pricedView[2].items[0].price, 199);
+  assert.equal(pricedView[2].currency, 'USD');
+  assert.equal(pricedView[2].value, 199);
 });
 
 test('tracking is idempotent so a double include cannot double-count', () => {

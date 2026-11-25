@@ -5,12 +5,11 @@ import path from 'node:path';
 import { priceFor } from '../functions/api/_shared.js';
 import { onRequestGet as health } from '../functions/api/health.js';
 
-import { checkoutAmountMatches } from '../functions/api/cases/index.js';
+import { checkoutAmountMatches, onRequestPost } from '../functions/api/cases/index.js';
 
 const LIVE_PRICE_IDS = {
-  '199': 'price_1UHw68LMSqKARRUqlhvD82xl',
-  '149': 'price_1UHw6DLMSqKARRUqDTK6w7LB',
-  '99': 'price_1UHw6FLMSqKARRUqJ8vVNoCr',
+  '199': 'price_1U9tbmKjhWqVWzfLQQbTtSvD',
+  '999': 'price_1U9tcuKjhWqVWzfLFHVN0IQC',
 };
 
 function healthEnv(extra = {}) {
@@ -27,6 +26,21 @@ async function healthBody(env) {
   return res.json();
 }
 
+function checkoutRequest(service) {
+  return new Request('https://example.test/api/cases', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service,
+      name: 'Fixture Customer',
+      email: 'customer@example.test',
+      dob: '2000-01-01',
+      dl: 'FIXTURE',
+      tbdReviewed: true,
+    }),
+  });
+}
+
 test('checkout falls back to the known production price IDs when no override is set', () => {
   for (const [service, expected] of Object.entries(LIVE_PRICE_IDS)) {
     assert.equal(priceFor(service, {}), expected, service);
@@ -37,20 +51,18 @@ test('checkout falls back to the known production price IDs when no override is 
 
 test('an env override replaces the production price ID, which is what enables test mode', () => {
   assert.equal(priceFor('199', { STRIPE_PRICE_199: 'price_TESTMODE1' }), 'price_TESTMODE1');
-  assert.equal(priceFor('149', { STRIPE_PRICE_149: 'price_TESTMODE2' }), 'price_TESTMODE2');
-  assert.equal(priceFor('99', { STRIPE_PRICE_99: 'price_TESTMODE3' }), 'price_TESTMODE3');
+  assert.equal(priceFor('999', { STRIPE_PRICE_999: 'price_TESTMODE2' }), 'price_TESTMODE2');
 });
 
 test('an override for one service does not leak into another', () => {
   const env = { STRIPE_PRICE_199: 'price_TESTMODE1' };
   assert.equal(priceFor('199', env), 'price_TESTMODE1');
-  assert.equal(priceFor('149', env), LIVE_PRICE_IDS['149']);
-  assert.equal(priceFor('99', env), LIVE_PRICE_IDS['99']);
+  assert.equal(priceFor('999', env), LIVE_PRICE_IDS['999']);
 });
 
 test('blank or whitespace overrides are ignored in favour of the production default', () => {
   assert.equal(priceFor('199', { STRIPE_PRICE_199: '' }), LIVE_PRICE_IDS['199']);
-  assert.equal(priceFor('199', { STRIPE_PRICE_199: '   ' }), LIVE_PRICE_IDS['199']);
+  assert.equal(priceFor('999', { STRIPE_PRICE_999: '   ' }), LIVE_PRICE_IDS['999']);
 });
 
 test('unknown services are rejected rather than falling back to a price', () => {
@@ -63,7 +75,21 @@ test('unknown services are rejected rather than falling back to a price', () => 
   assert.equal(priceFor('constructor', {}), null);
 });
 
-test('health does not require price bindings that checkout never reads', async () => {
+test('retired tiers never create a checkout even with a legacy override', async t => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => {
+    assert.fail('an unsupported tier must not call Stripe');
+  });
+  for (const service of ['99', '149']) {
+    const env = { STRIPE_SECRET_KEY: 'sk_test_fixture', [`STRIPE_PRICE_${service}`]: 'price_RETIRED' };
+    assert.equal(priceFor(service, env), null);
+    const response = await onRequestPost({ env, request: checkoutRequest(service) });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'Unknown service type' });
+  }
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('health accepts default prices without override bindings', async () => {
   const body = await healthBody(healthEnv());
   assert.equal(body.ok, true, 'a missing STRIPE_PRICE_* binding must not make health fail');
   assert.deepEqual(body.missing, []);
@@ -75,24 +101,58 @@ test('health surfaces valid price overrides so test mode is verifiable', async (
   const body = await healthBody(healthEnv({
     STRIPE_SECRET_KEY: 'sk_test_abc123',
     STRIPE_PRICE_199: 'price_TESTMODE1',
+    STRIPE_PRICE_999: 'price_TESTMODE2',
   }));
   assert.equal(body.stripe.keyMode, 'test');
-  assert.deepEqual(body.stripe.checkout.priceOverrides, { STRIPE_PRICE_199: 'price_TESTMODE1' });
+  assert.deepEqual(body.stripe.checkout.priceOverrides, {
+    STRIPE_PRICE_199: 'price_TESTMODE1',
+    STRIPE_PRICE_999: 'price_TESTMODE2',
+  });
   assert.equal(body.ok, true);
 });
 
-test('health flags a malformed price override instead of silently ignoring it', async () => {
-  const body = await healthBody(healthEnv({ STRIPE_PRICE_149: 'not-a-price' }));
-  assert.deepEqual(body.stripe.checkout.badPriceOverrides, ['STRIPE_PRICE_149']);
+test('health flags malformed overrides for supported tiers', async () => {
+  const body = await healthBody(healthEnv({ STRIPE_PRICE_199: 'not-a-price', STRIPE_PRICE_999: 'not-a-price' }));
+  assert.deepEqual([...body.stripe.checkout.badPriceOverrides].sort(), ['STRIPE_PRICE_199', 'STRIPE_PRICE_999']);
   assert.ok(body.missing.includes('invalid_stripe_price_override'));
   assert.equal(body.ok, false);
 });
 
-test('health no longer references the price binding names that never existed', async () => {
-  const body = await healthBody(healthEnv());
-  const serialized = JSON.stringify(body);
-  assert.equal(serialized.includes('STRIPE_PRICE_299'), false);
-  assert.equal(serialized.includes('STRIPE_PRICE_999'), false);
+test('health ignores price overrides for retired and unsupported tiers', async () => {
+  const body = await healthBody(healthEnv({
+    STRIPE_PRICE_99: 'price_RETIRED',
+    STRIPE_PRICE_149: 'not-a-price',
+    STRIPE_PRICE_299: 'price_UNSUPPORTED',
+  }));
+  assert.deepEqual(body.stripe.checkout.priceOverrides, {});
+  assert.deepEqual(body.stripe.checkout.badPriceOverrides, []);
+  assert.equal(body.ok, true);
+});
+
+test('missing Stripe configuration makes health and checkout unavailable', async t => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => {
+    assert.fail('missing Stripe credentials must not call Stripe');
+  });
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(console, 'error', () => {});
+
+  const response = await health({
+    env: healthEnv({ STRIPE_SECRET_KEY: undefined, STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK: 'true' }),
+    request: new Request('https://example.test/api/health'),
+  });
+  const body = await response.json();
+  assert.equal(response.status, 503);
+  assert.equal(body.ok, false);
+  assert.ok(body.missing.includes('required_runtime_configuration'));
+  assert.equal(body.stripe.checkout.apiConfigured, false);
+  assert.equal(body.stripe.checkout.paymentLinkFallbackEnabled, false);
+
+  const checkout = await onRequestPost({
+    env: { STRIPE_ALLOW_LIVE_PAYMENT_LINK_FALLBACK: 'true' }, request: checkoutRequest('199'),
+  });
+  assert.equal(checkout.status, 503);
+  assert.deepEqual(await checkout.json(), { error: 'Payments are temporarily unavailable. Please contact us to complete your order.' });
+  assert.equal(fetch.mock.callCount(), 0);
 });
 
 test('checkout refuses to return a URL when Stripe resolves a different amount', () => {
@@ -120,8 +180,7 @@ test('checkout refuses to return a URL when Stripe resolves a different amount',
 
 test('checkoutAmountMatches accepts only the exact quoted amount', () => {
   assert.equal(checkoutAmountMatches('199.00', 19900), true);
-  assert.equal(checkoutAmountMatches('149.00', 14900), true);
-  assert.equal(checkoutAmountMatches('99.00', 9900), true);
+  assert.equal(checkoutAmountMatches('999.00', 99900), true);
 });
 
 test('checkoutAmountMatches rejects a price that resolves to a different amount', () => {
@@ -130,9 +189,11 @@ test('checkoutAmountMatches rejects a price that resolves to a different amount'
     false,
     'a $199 service resolving to $99 must be refused'
   );
+  assert.equal(checkoutAmountMatches('199.00', 14900), false);
   assert.equal(checkoutAmountMatches('199.00', 29900), false);
   assert.equal(checkoutAmountMatches('199.00', 19901), false, 'a one-cent drift must be refused');
   assert.equal(checkoutAmountMatches('199.00', 0), false, 'a zero total must be refused');
+  assert.equal(checkoutAmountMatches('999.00', 19900), false);
 });
 
 test('checkoutAmountMatches treats an unusable Stripe amount as a mismatch', () => {
@@ -141,4 +202,34 @@ test('checkoutAmountMatches treats an unusable Stripe amount as a mismatch', () 
   assert.equal(checkoutAmountMatches('199.00', 'not-a-number'), false);
   assert.equal(checkoutAmountMatches('199.00', NaN), false);
   assert.equal(checkoutAmountMatches('not-a-price', 19900), false);
+});
+
+test('checkout returns a URL only for the exact supported service total', async t => {
+  const checkoutUrl = 'https://example.test/payment';
+  let total;
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ amount_total: total, url: checkoutUrl }));
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(console, 'error', () => {});
+  const env = {
+    STRIPE_SECRET_KEY: 'sk_test_fixture',
+    STRIPE_PRICE_199: 'price_TESTMODE1',
+    STRIPE_PRICE_999: 'price_TESTMODE2',
+  };
+
+  for (const [service, returnedTotal, expectedStatus] of [
+    ['199', 14900, 503],
+    ['999', 9900, 503],
+    ['199', 19900, 200],
+    ['999', 99900, 200],
+  ]) {
+    total = returnedTotal;
+    const response = await onRequestPost({ env, request: checkoutRequest(service) });
+    const body = await response.json();
+    const [url, request] = fetch.mock.calls.at(-1).arguments;
+    assert.equal(url, 'https://api.stripe.com/v1/checkout/sessions');
+    assert.equal(request.body.get('line_items[0][price]'), env[`STRIPE_PRICE_${service}`]);
+    assert.equal(response.status, expectedStatus);
+    assert.equal(body.url, expectedStatus === 200 ? checkoutUrl : undefined);
+  }
+  assert.equal(fetch.mock.callCount(), 4);
 });
