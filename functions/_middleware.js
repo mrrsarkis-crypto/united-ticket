@@ -8,6 +8,8 @@ const CONSENT_BANNER_MARKER = '/consent-banner.js';
 const ADSENSE_META = '<meta name="google-adsense-account" content="' + ADSENSE_ACCOUNT + '">';
 const UET_SCRIPT = '<script>(function(w,d,t,r,u){var f,n,i;w[u]=w[u]||[];f=function(){var o={ti:"187285081",enableAutoSpaTracking:true};o.q=w[u];w[u]=new UET(o);w[u].push("pageLoad")};n=d.createElement(t);n.src=r;n.async=1;n.onload=n.onreadystatechange=function(){var s=this.readyState;if(s&&s!=="loaded"&&s!=="complete")return;f();n.onload=n.onreadystatechange=null};i=d.getElementsByTagName(t)[0];i.parentNode.insertBefore(n,i)})(window,document,"script","//bat.bing.com/bat.js","uetq");</script>';
 const UET_MARKER = 'bat.bing.com/bat.js';
+const POSTHOG_SCRIPT = '<script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);(function(){function mode(s){return s==="granted"?"localStorage+cookie":"memory"}var s=null;try{s=localStorage.getItem("uttAdConsent")}catch(e){}posthog.init("phc_rCdq4tSfQCTJCqHoxTkpApvZVKRBVSN6PtjZMDxCNqua",{api_host:"https://us.i.posthog.com",defaults:"2025-05-24",person_profiles:"identified_only",persistence:mode(s),session_recording:{maskAllInputs:true}});window.addEventListener("utt:ad-consent",function(e){posthog.set_config({persistence:mode(e&&e.detail&&e.detail.state)})})})();</script>';
+const POSTHOG_MARKER = 'posthog.init(';
 const SERVICE_VIEW_TRACKING_SCRIPT = '<script src="/service-view-tracking.js" defer></script>';
 const SERVICE_VIEW_MARKER = '/service-view-tracking.js';
 const SCANNER_SCRIPTS = [
@@ -30,6 +32,12 @@ function isMonetizedPath(pathname) {
     path === '/admin' || path === '/admin.html' || /^\/admin[\/-]/.test(path) ||
     path === '/bot-courthouse' || path === '/bot-courthouse.html';
   return !adFree;
+}
+
+// Admin pages render customer case data, so they stay out of analytics and replay.
+function isAnalyticsPath(pathname) {
+  const path = (pathname || '/').replace(/\/+$/, '') || '/';
+  return !(path === '/admin' || path === '/admin.html' || /^\/admin[\/-]/.test(path));
 }
 
 function isScannerPage(pathname) {
@@ -60,6 +68,7 @@ export async function onRequest(context) {
   const isScannerApi = url.pathname === '/api/assistant/extract';
   const monetized = isMonetizedPath(url.pathname);
   const scannerPage = isScannerPage(url.pathname);
+  const analytics = isAnalyticsPath(url.pathname);
 
   newHeaders.set('X-Content-Type-Options', 'nosniff');
   newHeaders.set('X-Frame-Options', 'DENY');
@@ -108,6 +117,7 @@ export async function onRequest(context) {
     if (monetized && !html.includes('google-adsense-account')) html = insertAfterHeadOpen(html, ADSENSE_META);
     if (monetized && !html.includes(CONSENT_MARKER)) html = insertAfterHeadOpen(html, CONSENT_DEFAULT_SCRIPT);
     if (monetized && !html.includes(UET_MARKER)) html = insertAfterHeadOpen(html, UET_SCRIPT);
+    if (analytics && !html.includes(POSTHOG_MARKER)) html = insertAfterHeadOpen(html, POSTHOG_SCRIPT);
 
     if (monetized && !html.includes(CONSENT_BANNER_MARKER)) html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
     if (monetized && !html.includes(SERVICE_VIEW_MARKER)) html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
