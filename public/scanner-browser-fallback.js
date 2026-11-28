@@ -43,11 +43,12 @@
     return /\d/.test(value) ? value : '';
   }
 
-  function likelyViolationCode(text) {
+  function likelyViolationCode(text, fromViolationCrop = false) {
     const source = String(text || '');
     const anchor = /(?:code\s*\/\s*section|citation\s+details)/i.exec(source);
     if (!anchor) {
-      const labeled = /\b(?:CVC|VC|vehicle\s+code|violation\s+code)\s*[:#-]?\s*(\d{4,6}(?:\([a-z0-9]+\))?)/i.exec(source);
+      if (!fromViolationCrop) return '';
+      const labeled = /^\s*(?:CVC|VC|violation\s+code)\s*[:#-]?\s*(\d{4,6}(?:\([a-z0-9]+\))?)\b/im.exec(source);
       return labeled ? labeled[1] : '';
     }
     const segment = source.slice(anchor.index + anchor[0].length, anchor.index + 300);
@@ -90,17 +91,14 @@
     const courtLine = findLine('superior court') || findLine('police department') ||
       findLine('municipal court') || findLine('court of') || findLine('county of');
     const citation = likelyCitation(top + '\n' + raw);
-    const violationCode = likelyViolationCode(violations);
+    const violationCode = likelyViolationCode(violations, true) || likelyViolationCode(raw);
     const dueDate = dateNear(top, /respond\s+to\s+citation\s+before/i) ||
-      dateNear(top, /respond[\s\S]{0,40}before/i);
-    const violationDate = dateNear(top, /date\s+of\s+violation/i);
-    const violationDescription = descriptionForCode(violations, violationCode);
+      dateNear(top, /respond[\s\S]{0,40}before/i) || dateNear(raw, /respond\s+to\s+citation\s+before/i);
+    const violationDate = dateNear(top, /date\s+of\s+violation/i) || dateNear(raw, /date\s+of\s+violation/i);
+    const violationDescription = descriptionForCode(violations, violationCode) || descriptionForCode(raw, violationCode);
     const defendantName = lineAfter(lines, /^(?:defendant\s+)?name\s*(?:\(first[^)]*\))?\s*:/i);
     const caseLine = findLine('case no') || findLine('case number');
     const caseNumber = (caseLine.match(/[A-Z0-9-]{4,}$/i) || [])[0] || '';
-    const zipLine = lines.find((x) => /\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/i.test(x)) || '';
-    const address = lines.find((x) => /^\d+\s+/.test(x) &&
-      /(street|st\.?|avenue|ave\.?|road|rd\.?|boulevard|blvd\.?|drive|dr\.?|way|court|ct\.?|highway|hwy\.?)/i.test(x)) || '';
 
     const keys = [
       'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
@@ -157,10 +155,14 @@
     if (window.Tesseract) return window.Tesseract;
     await new Promise((resolve, reject) => {
       const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        script.remove();
+        reject(new Error('Browser OCR could not load in time.'));
+      }, 8000);
       script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
       script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Browser OCR could not load.'));
+      script.onload = () => { clearTimeout(timer); resolve(); };
+      script.onerror = () => { clearTimeout(timer); reject(new Error('Browser OCR could not load.')); };
       document.head.appendChild(script);
     });
     if (!window.Tesseract) throw new Error('Browser OCR is unavailable.');
@@ -181,7 +183,7 @@
     const sy = Math.max(0, Math.round(image.naturalHeight * y0));
     const sw = Math.max(2, Math.round(image.naturalWidth * (x1 - x0)));
     const sh = Math.max(2, Math.round(image.naturalHeight * (y1 - y0)));
-    const scale = Math.min(1.8, Math.max(1.15, 2400 / Math.max(sw, sh)));
+    const scale = Math.min(1.8, 2400 / Math.max(sw, sh));
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(sw * scale);
     canvas.height = Math.round(sh * scale);
@@ -196,6 +198,38 @@
     ctx.filter = 'none';
     return canvas.toDataURL('image/jpeg', 0.94);
   }
+
+  function rotateImage(image, degrees) {
+    const scale = Math.min(1, 2200 / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const quarterTurn = Math.abs(degrees) === 90;
+    const canvas = document.createElement('canvas');
+    canvas.width = quarterTurn ? height : width;
+    canvas.height = quarterTurn ? width : height;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return '';
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(degrees * Math.PI / 180);
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
+  function orientationScore(text) {
+    const cues = [
+      /\b(?:notice to appear|traffic citation|traffic ticket)\b/i,
+      /\b(?:superior|municipal|district) court\b/i,
+      /\bcitation\s*(?:number|no\.?|#)/i,
+      /\brespond\s+to\s+citation\s+before\b/i,
+      /\b(?:violation|vehicle)\s+code\b/i
+    ];
+    const matches = cues.filter((cue) => cue.test(text)).length;
+    const words = (String(text).match(/\b[a-z]{4,}\b/gi) || []).length;
+    return { matches, score: matches * 35 + Math.min(words, 30) };
+  }
   async function recognize(worker, source, status, label) {
     if (!source) return '';
     if (status) status.textContent = label;
@@ -204,6 +238,10 @@
   }
 
   async function browserOcr(image) {
+    if (typeof window.UTTDPreprocessImage === 'function') {
+      const prepared = await window.UTTDPreprocessImage(image);
+      image = prepared.image;
+    }
     const Tesseract = await loadTesseract();
     const status = document.getElementById('astStatus');
     if (status) {
@@ -224,13 +262,31 @@
 
     try {
       await worker.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
-      const full = await recognize(worker, image, status, 'Reading the full ticket locally...');
+      let full = await recognize(worker, image, status, 'Reading the full ticket locally...');
       let top = '';
       let violations = '';
       try {
-        const sourceImage = await loadImage(image);
-        const topCrop = cropImage(sourceImage, 0.00, 0.04, 1.00, 0.34);
-        const violationCrop = cropImage(sourceImage, 0.00, 0.43, 1.00, 0.69);
+        let sourceImage = await loadImage(image);
+        let bestSource = image;
+        let best = orientationScore(full);
+        if (best.matches < 2) {
+          const landscape = sourceImage.naturalWidth > sourceImage.naturalHeight;
+          const rotations = landscape ? [90, -90, 180] : [180, 90, -90];
+          for (const rotation of rotations) {
+            const rotated = rotateImage(sourceImage, rotation);
+            const candidate = await recognize(worker, rotated, status, 'Checking the document orientation locally...');
+            const reading = orientationScore(candidate);
+            if (reading.matches && reading.score > best.score) {
+              bestSource = rotated;
+              best = reading;
+              full = candidate;
+            }
+            if (best.matches >= 2) break;
+          }
+        }
+        if (bestSource !== image) sourceImage = await loadImage(bestSource);
+        const topCrop = cropImage(sourceImage, 0.00, 0.00, 1.00, 0.38);
+        const violationCrop = cropImage(sourceImage, 0.00, 0.34, 1.00, 0.76);
         await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
         top = await recognize(worker, topCrop, status, 'Reading dates and citation number locally...');
         violations = await recognize(worker, violationCrop, status, 'Reading the first violation row locally...');
@@ -245,7 +301,7 @@
 
   window.UTTBrowserOCRFallback = async function(image) {
     const bundle = await browserOcr(image);
-    if (!String(bundle.text || '').trim() && !String(bundle.top || '').trim()) {
+    if (![bundle.text, bundle.top, bundle.violations].some((part) => String(part || '').trim())) {
       throw new Error('Browser OCR could not read enough text from this image.');
     }
     return buildExtraction(bundle);
@@ -258,20 +314,32 @@
     return warnings.some((item) => item && item.field === key);
   }
 
-  async function fallbackContext(response) {
-    if (response.status >= 500 && response.status <= 599) return { needed: true, cloud: null };
+  const comparisonFields = ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate'];
+
+  async function fallbackContext(response, requestedType) {
+    const explicitTicket = requestedType === 'ticket';
+    if (response.status >= 500 && response.status <= 599) return { needed: explicitTicket, cloud: null };
     if (!response.ok) return { needed: false, cloud: null };
     const contentType = String(response.headers.get('content-type') || '').toLowerCase();
     if (!contentType.includes('application/json')) return { needed: false, cloud: null };
     try {
       const data = await response.clone().json();
-      if (data && data.clientOcrFallback === true) return { needed: true, cloud: null };
+      if (data && data.clientOcrFallback === true) return { needed: explicitTicket, cloud: null };
       const cloud = data && data.extracted;
       if (!cloud) return { needed: false, cloud: null };
-      const provider = String(cloud.scanMeta && cloud.scanMeta.provider || '').toLowerCase();
+      const meta = cloud.scanMeta || {};
+      if (meta.documentType !== 'ticket' || meta.browserOcrSupplemented || meta.provisionalBrowserOcr) {
+        return { needed: false, cloud: null };
+      }
+      const provider = String(meta.provider || '').toLowerCase();
       const degradedProvider = /^(groq|gemini|dashscope)$/.test(provider);
       const weakDates = fieldNeedsHelp(cloud, 'dueDate') || fieldNeedsHelp(cloud, 'violationDate');
-      return { needed: degradedProvider && weakDates, cloud };
+      const weakFields = comparisonFields.filter((key) => fieldNeedsHelp(cloud, key)).length;
+      const comparable = comparisonFields.some((key) => cloud[key] && cloud[key].value);
+      return {
+        needed: comparable && (weakFields >= 3 || (weakFields >= 2 && (cloud.legibility === 'poor' || (degradedProvider && weakDates)))),
+        cloud
+      };
     } catch (_) {
       return { needed: false, cloud: null };
     }
@@ -285,7 +353,7 @@
     const out = JSON.parse(JSON.stringify(cloud));
     const warnings = Array.isArray(out.validationWarnings) ? out.validationWarnings : [];
     const conflicts = [];
-    for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
+    for (const key of comparisonFields) {
       const current = out[key];
       const candidate = local && local[key];
       if (!candidate || !candidate.value) continue;
@@ -295,6 +363,7 @@
       }
       // Browser OCR is never authoritative enough to fill a missing cloud field.
     }
+    if (!conflicts.length) return null;
     out.validationWarnings = [...warnings, ...conflicts].slice(0, 15);
     if (out.scanAssessment && conflicts.length) {
       out.scanAssessment.label = 'Needs review';
@@ -315,9 +384,6 @@
       const url = typeof input === 'string' ? input : input && input.url;
       const path = url ? new URL(url, window.location.href).pathname : '';
       if (path !== '/api/assistant/extract') return response;
-      const context = await fallbackContext(response);
-      if (!context.needed) return response;
-
       let bodyText = '';
       if (init && typeof init.body === 'string') {
         bodyText = init.body;
@@ -325,12 +391,17 @@
         bodyText = await input.clone().text();
       }
       const payload = bodyText ? JSON.parse(bodyText) : null;
+      const requestedType = String(payload && payload.docType || 'auto').toLowerCase();
+      if (requestedType !== 'ticket' && requestedType !== 'auto') return response;
       const image = payload && typeof payload.image === 'string' ? payload.image : '';
       if (!image.startsWith('data:image/')) return response;
+      const context = await fallbackContext(response, requestedType);
+      if (!context.needed) return response;
 
       try {
         const local = await window.UTTBrowserOCRFallback(image);
         const extracted = mergeCloudAndLocal(context.cloud, local);
+        if (!extracted) return response;
         return new Response(JSON.stringify({ ok: true, extracted }), {
           status: 200,
           headers: {

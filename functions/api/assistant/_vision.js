@@ -2,7 +2,7 @@
 // Keeps scanner traffic isolated from the conversational assistant provider logic.
 import { GEMINI_EXTRACTION_SCHEMA, EXTRACTION_FIELD_NAMES } from './_schema.js';
 
-export const SCANNER_ENGINE_VERSION = '2026.10.15-35';
+export const SCANNER_ENGINE_VERSION = '2026.11.25-36';
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 16000;
 const MAX_PROVIDER_TIMEOUT_MS = 20000;
@@ -250,7 +250,7 @@ async function callOpenAi(env, { system, base64, mediaType, prompt, timeoutMs })
   return { text, attempts: 1 };
 }
 
-async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs }) {
+async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs, precision }) {
   if (!env.GEMINI_API_KEY) throw new Error('Gemini is not configured');
   const model = env.SCANNER_GEMINI_MODEL || env.GEMINI_MODEL || 'gemini-3.8-flash';
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
@@ -275,8 +275,9 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
   };
 
   const deadline = Date.now() + timeoutMs;
+  const maxAttempts = precision ? 1 : MAX_ATTEMPTS;
   let lastError;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const remaining = deadline - Date.now();
     if (remaining < 1000) break;
     try {
@@ -292,7 +293,7 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
         const detail = await res.text().catch(() => '');
         const error = new Error('Gemini HTTP ' + res.status + ': ' + detail.slice(0, 180));
         error.retryable = retryable(res.status);
-        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
+        if (!error.retryable || attempt === maxAttempts) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -303,14 +304,14 @@ async function callGemini(env, { system, base64, mediaType, prompt, timeoutMs })
       }
     } catch (error) {
       lastError = error;
-      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === maxAttempts || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
   throw lastError || new Error('Gemini extraction failed');
 }
 
-async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs }) {
+async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs, precision }) {
   if (!env.ANTHROPIC_API_KEY) throw new Error('Anthropic is not configured');
   if (mediaType === 'application/pdf') throw new Error('Anthropic image input does not accept PDF in this scanner path');
   const model = env.SCANNER_ANTHROPIC_MODEL || env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
@@ -329,8 +330,9 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
   };
 
   const deadline = Date.now() + timeoutMs;
+  const maxAttempts = precision ? 1 : MAX_ATTEMPTS;
   let lastError;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const remaining = deadline - Date.now();
     if (remaining < 1000) break;
     try {
@@ -349,7 +351,7 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
         const detail = await res.text().catch(() => '');
         const error = new Error('Anthropic HTTP ' + res.status + ': ' + detail.slice(0, 180));
         error.retryable = retryable(res.status);
-        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
+        if (!error.retryable || attempt === maxAttempts) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -361,7 +363,7 @@ async function callAnthropic(env, { system, base64, mediaType, prompt, timeoutMs
       }
     } catch (error) {
       lastError = error;
-      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === maxAttempts || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
@@ -448,7 +450,7 @@ function dashScopeEndpoints(env) {
   ];
 }
 
-async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs }) {
+async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs, precision }) {
   if (!env.DASHSCOPE_API_KEY) throw new Error('DashScope is not configured');
   if (mediaType === 'application/pdf') throw new Error('DashScope OCR image path does not accept PDF');
   const configuredModel = String(env.SCANNER_DASHSCOPE_MODEL || '').trim();
@@ -496,6 +498,7 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
             error.nonRetryable = true;
             throw error;
           }
+          if (precision) throw error;
           continue;
         }
         const data = await res.json();
@@ -504,7 +507,7 @@ async function callDashScope(env, { system, base64, mediaType, prompt, timeoutMs
         return { text: text.trim(), attempts };
       } catch (error) {
         lastError = error;
-        if (error && error.nonRetryable) throw error;
+        if (precision || (error && error.nonRetryable)) throw error;
         if (/timed out/i.test(String(error && error.message))) break;
       }
     }
@@ -526,53 +529,73 @@ function workersAiCompactSchema(fields = EXTRACTION_FIELD_NAMES) {
   };
 }
 
-function expandWorkersAiCompact(text) {
+function expandWorkersAiCompact(text, fields) {
   const candidate = firstJsonObject(text);
   if (!candidate) throw new Error('Cloudflare Workers AI returned invalid JSON');
   const parsed = JSON.parse(candidate);
   if (validExtractionObject(parsed)) return JSON.stringify(parsed);
-  const confident = new Set(Array.isArray(parsed.confidentFields) ? parsed.confidentFields : []);
-  const unknown = new Set(Array.isArray(parsed.unknownFields) ? parsed.unknownFields : []);
+  if (!['good', 'fair', 'poor'].includes(parsed.legibility) ||
+      !Array.isArray(parsed.confidentFields) || !Array.isArray(parsed.unknownFields) ||
+      !fields.some((name) => parsed[name] === null || typeof parsed[name] === 'string')) {
+    throw new Error('Cloudflare Workers AI returned an invalid extraction');
+  }
+  const confident = new Set(parsed.confidentFields);
+  const unknown = new Set(parsed.unknownFields);
   const expanded = {};
   for (const name of EXTRACTION_FIELD_NAMES) {
-    const raw = typeof parsed[name] === 'string' ? parsed[name].trim() : '';
+    const raw = fields.includes(name) && typeof parsed[name] === 'string' ? parsed[name].trim() : '';
     const value = raw || null;
     expanded[name] = { value, found: value !== null, confident: value !== null && confident.has(name) && !unknown.has(name) };
   }
   expanded.unknownFields = EXTRACTION_FIELD_NAMES.filter((name) => unknown.has(name) || expanded[name].value === null);
-  expanded.legibility = ['good', 'fair', 'poor'].includes(parsed.legibility) ? parsed.legibility : 'fair';
+  expanded.legibility = parsed.legibility;
   return JSON.stringify(expanded);
 }
 
-async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
+const WORKERS_AI_DOCUMENTS = {
+  ticket: {
+    fields: ['defendantName','drivingLicenseNumber','drivingLicenseState','citationNumber','caseNumber',
+      'violationDate','courtDate','violationCode','violationDescription','courtOrAgency','courtBranchName',
+      'officerId','location','vehicleMake','vehicleModel','vehiclePlate','bailAmount','dueDate'],
+    instructions: 'For traffic citations, read the labeled citation ID, never a case number, plate, officer ID, or law section. Keep violationCode and violationDescription from the topmost non-empty violation row. Read the violation, court, and response dates from their own labeled boxes. Copy make, model, and plate from their own boxes. Read bail only beside an explicit bail or fine label.',
+  },
+  license: {
+    fields: ['defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress'],
+    instructions: 'For a driver license or permit, read the printed full name, labeled license number, issuing state, date of birth, and printed address. Do not use the document discriminator, issue date, expiration date, or the address state as a substitute.',
+  },
+  notice: {
+    fields: ['defendantName','mailingAddress','citationNumber','caseNumber','violationDate','courtDate',
+      'violationCode','violationDescription','courtOrAgency','courtStreetAddress','courtMailingAddress',
+      'courtCityStateZip','courtBranchName','bailAmount','bailDepositedAmount','dueDate',
+      'clerkMailedOrDeliveredDate'],
+    instructions: 'For a court or DMV notice, distinguish the case and citation numbers, response deadline, court date, and date sent. Keep the court name, branch and addresses separate from the recipient address. Read bail or a deposit only beside its own explicit label.',
+  },
+};
+
+async function callWorkersAi(env, { base64, mediaType, timeoutMs, documentType, precision }) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Cloudflare Workers AI is not configured');
   if (mediaType === 'application/pdf') throw new Error('Cloudflare Workers AI vision path does not accept PDF');
 
-  const fields = [
-    'defendantName','drivingLicenseNumber','drivingLicenseState','citationNumber',
-    'violationDate','courtDate','violationCode','violationDescription',
-    'courtOrAgency','location','vehiclePlate','dueDate',
-  ];
+  const layouts = Object.hasOwn(WORKERS_AI_DOCUMENTS, documentType)
+    ? [WORKERS_AI_DOCUMENTS[documentType]]
+    : Object.values(WORKERS_AI_DOCUMENTS);
+  const fields = [...new Set(layouts.flatMap((layout) => layout.fields))];
   const imageUrl = 'data:' + mediaType + ';base64,' + base64;
   const prompt = [
-    'Extract only the requested labeled traffic-citation fields literally.',
-    'defendantName: labeled Name line. drivingLicenseNumber/state: only their labeled boxes.',
-    'citationNumber: top-right citation identifier or matching barcode identifier; never case number, officer ID, plate, radar number, law section, or form code.',
-    'violationCode and violationDescription: TOPMOST handwritten non-empty row inside CITATION DETAILS; keep code and description from the SAME row and ignore lower rows and footer law references.',
-    'violationDate: only Date of Violation. courtDate: only a separately labeled court appearance date if present.',
-    'dueDate: only RESPOND TO CITATION BEFORE: DATE. Never substitute another date.',
-    'courtOrAgency: printed issuing/court agency. location: labeled Location of Violation. vehiclePlate: labeled vehicle plate/VIN box.',
-    'Never guess, repair, autocomplete, or move text between boxes. Use null when unclear.',
+    'Extract only the requested fields literally from the labeled document. Return null for unrelated images.',
+    ...layouts.map((layout) => layout.instructions),
+    precision ? 'Re-read from the original image. Inspect one small labeled area at a time, including sideways, faint, shadowed, or handwritten text. Check easily confused characters against the image and leave unclear characters unverified.' : '',
+    'Never guess, repair, autocomplete, or move text between boxes. Use null if no characters are legible.',
     'Put only clearly readable fields in confidentFields and unclear/missing fields in unknownFields.'
-  ].join(' ');
+  ].filter(Boolean).join(' ');
 
   let timer;
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error('vision provider timed out')), Math.max(2500, timeoutMs - 500));
+    timer = setTimeout(() => reject(new Error('vision provider timed out')), timeoutMs);
   });
-  const run = env.AI.run('@cf/google/gemma-4-26b-a4b-it', {
+  const run = Promise.resolve().then(() => env.AI.run('@cf/google/gemma-4-26b-a4b-it', {
     messages: [
-      { role: 'system', content: 'You are a literal OCR engine for traffic citations. Never guess unclear handwriting or borrow text from another box or row.' },
+      { role: 'system', content: 'You are a literal OCR engine for traffic documents. Never guess unclear handwriting or borrow text from another box or row.' },
       { role: 'user', content: [
         { type: 'text', text: prompt },
         { type: 'image_url', image_url: { url: imageUrl } },
@@ -580,10 +603,10 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
     ],
     guided_json: workersAiCompactSchema(fields),
     temperature: 0,
-    max_tokens: 700,
+    max_tokens: 400 + fields.length * 30,
     stream: false,
     chat_template_kwargs: { enable_thinking: false },
-  }, { rejectIfBusy: true });
+  }, { rejectIfBusy: true }));
 
   let result;
   try {
@@ -600,7 +623,7 @@ async function callWorkersAi(env, { base64, mediaType, timeoutMs }) {
         ? result.response.trim()
         : (typeof result?.answer === 'string' ? result.answer.trim() : '')));
   if (!text) throw new Error('Cloudflare Workers AI returned an empty extraction');
-  return { text: expandWorkersAiCompact(text), attempts: 1 };
+  return { text: expandWorkersAiCompact(text, fields), attempts: 1 };
 }
 
 function gatewayContentText(content) {
@@ -612,7 +635,7 @@ function gatewayContentText(content) {
     .trim();
 }
 
-async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }) {
+async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs, precision }) {
   const token = gatewayToken(env);
   if (!token) throw new Error('Vercel AI Gateway is not configured');
   const model = env.SCANNER_GATEWAY_MODEL || 'google/gemini-2.5-flash';
@@ -649,8 +672,9 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
   };
 
   const deadline = Date.now() + timeoutMs;
+  const maxAttempts = precision ? 1 : MAX_ATTEMPTS;
   let lastError;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const remaining = deadline - Date.now();
     if (remaining < 1000) break;
     try {
@@ -666,7 +690,7 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
         const detail = await res.text().catch(() => '');
         const error = new Error('Vercel AI Gateway HTTP ' + res.status + ': ' + detail.slice(0, 180));
         error.retryable = retryable(res.status);
-        if (!error.retryable || attempt === MAX_ATTEMPTS) throw error;
+        if (!error.retryable || attempt === maxAttempts) throw error;
         lastError = error;
       } else {
         const data = await res.json();
@@ -676,7 +700,7 @@ async function callGateway(env, { system, base64, mediaType, prompt, timeoutMs }
       }
     } catch (error) {
       lastError = error;
-      if (error.retryable === false || attempt === MAX_ATTEMPTS || /timed out/i.test(String(error && error.message))) break;
+      if (error.retryable === false || attempt === maxAttempts || /timed out/i.test(String(error && error.message))) break;
     }
     await sleep(Math.min(500 * attempt + Math.floor(Math.random() * 250), Math.max(0, deadline - Date.now())));
   }
@@ -699,8 +723,9 @@ export async function extractVisionDocument(env, input) {
   if (env.ANTHROPIC_API_KEY && input.mediaType !== 'application/pdf') available.push('anthropic');
   if (env.GROQ_API_KEY && input.mediaType !== 'application/pdf') available.push('groq');
   if (gatewayToken(env)) available.push('gateway');
+  const providers = input.precision ? available.filter((provider) => provider === explicitPreferred) : available;
 
-  if (!available.length) {
+  if (!providers.length) {
     if (input.mediaType === 'application/pdf' && env.ANTHROPIC_API_KEY && !env.GEMINI_API_KEY) {
       throw new Error('PDF scanning requires a configured OpenAI, Gemini, or AI Gateway provider');
     }
@@ -712,13 +737,16 @@ export async function extractVisionDocument(env, input) {
     : preferred === 'groq'
       ? ['groq', 'openai', 'workersai', 'dashscope', 'gemini', 'anthropic', 'gateway']
       : [preferred, 'groq', 'workersai', 'dashscope', 'gemini', 'openai', 'anthropic', 'gateway'];
-  available.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
+  providers.sort((a, b) => providerOrder.indexOf(a) - providerOrder.indexOf(b));
   const failures = [];
   const fallbackDiagnostics = [];
-  const totalDeadline = Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * Math.max(1, available.length));
+  const totalDeadline = Math.min(
+    Number.isFinite(input.deadlineMs) ? input.deadlineMs : Infinity,
+    Date.now() + Math.min(MAX_TOTAL_VISION_MS, timeoutMs * providers.length),
+  );
   let totalAttempts = 0;
 
-  for (const provider of available) {
+  for (const provider of providers) {
     const cooldown = activeProviderCooldown(provider);
     if (cooldown) {
       fallbackDiagnostics.push({
@@ -739,7 +767,7 @@ export async function extractVisionDocument(env, input) {
     try {
       // Keep slow native Workers AI from consuming the entire scanner budget.
       // A fast fail here leaves enough time for external OCR fallbacks.
-      const isPrimaryAttempt = provider === available[0];
+      const isPrimaryAttempt = provider === providers[0];
       const providerBudget = provider === 'workersai'
         ? Math.min(8000, timeoutMs, remainingTotal)
         : Math.min(isPrimaryAttempt ? timeoutMs : FALLBACK_PROVIDER_TIMEOUT_MS, remainingTotal);
@@ -766,7 +794,9 @@ export async function extractVisionDocument(env, input) {
       const diagnostic = classifyProviderFailure(provider, error);
       failures.push(provider + ': ' + safe);
       fallbackDiagnostics.push(diagnostic);
-      setProviderCooldown(provider, diagnostic);
+      if (!input.precision || ['billing', 'auth', 'rate_limit'].includes(diagnostic.category)) {
+        setProviderCooldown(provider, diagnostic);
+      }
       console.warn('scanner vision provider failed', { provider, error: safe });
     }
   }

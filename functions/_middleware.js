@@ -112,7 +112,7 @@ export async function onRequest(context) {
     if (monetized && !html.includes(CONSENT_BANNER_MARKER)) html = insertBeforeHeadClose(html, CONSENT_BANNER_SCRIPT);
     if (monetized && !html.includes(SERVICE_VIEW_MARKER)) html = insertBeforeHeadClose(html, SERVICE_VIEW_TRACKING_SCRIPT);
 
-    if (scannerPage) {
+    if (scannerPage && /\bid=["']fileInput["']/.test(html)) {
       if (url.pathname === '/' || url.pathname === '/index.html') {
         if (!html.includes('utt-homepage-scanner-loader')) {
           html = insertBeforeHeadClose(html, HOMEPAGE_SCANNER_LOADER.replace('<script>', '<script id="utt-homepage-scanner-loader">'));

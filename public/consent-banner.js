@@ -1,15 +1,17 @@
 // Lightweight ad-consent banner (Google Consent Mode v2).
 (function () {
   'use strict';
+
+  function onWindow(type, handler, options) {
+    if (typeof window.addEventListener === 'function') window.addEventListener(type, handler, options);
+  }
+
   if (window.__uttConsentBannerBooted) return;
   window.__uttConsentBannerBooted = true;
 
   var STORE_KEY = 'uttAdConsent';
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
-  function onWindow(type, handler, options) {
-    if (typeof window.addEventListener === 'function') window.addEventListener(type, handler, options);
-  }
 
   function consentState(state) {
     var v = state === 'granted' ? 'granted' : 'denied';
@@ -111,7 +113,6 @@
     applyConsent('denied');
     renderBanner();
   }
-})();
 
 /* ---- UTT deferred AdSense library (all pages) ----
    adsbygoogle.js (~220KB) loads only after the page is interactive
@@ -136,6 +137,10 @@
 
   function loadLibrary() {
     if (window.__uttAdsenseLoaded) return;
+    if (!document.querySelector('meta[name="google-adsense-account"], .adsbygoogle')) return;
+    try {
+      if (window.localStorage.getItem('uttAdConsent') !== 'granted') return;
+    } catch (_) { return; }
     window.__uttAdsenseLoaded = true;
     var s = document.createElement('script');
     s.async = true;
@@ -166,11 +171,12 @@
   else onWindow('load', scheduleLibrary, { once: true });
 })();
 
-/* ---- UTT manual AdSense units: every page except the homepage ---- */
+/* ---- UTT manual AdSense units on designated informational pages ---- */
 (function () {
   var path = location.pathname.replace(/\/$/, '') || '/';
   if (path === '/' || path === '/index.html') return;
   if (/^\/thank-you/.test(path) || /^\/admin-/.test(path)) return;
+  if (!document.querySelector('meta[name="google-adsense-account"]')) return;
 
   function makeIns(slot, format) {
     var ins = document.createElement('ins');
@@ -279,4 +285,5 @@
   }
   if (document.readyState === 'complete') scheduleGoogleTagLibrary();
   else onWindow('load', scheduleGoogleTagLibrary, { once: true });
+})();
 })();
