@@ -11,6 +11,8 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 30;
 const ALLOWED_MEDIA = new Set(['image/jpeg', 'image/png', 'application/pdf']);
+const SCAN_BUDGET_MS = 24000;
+const PRECISION_BUDGET_MS = 8000;
 const FIELD_KEYS = [
   'defendantName','drivingLicenseNumber','drivingLicenseState','dateOfBirth','mailingAddress',
   'citationNumber','caseNumber','violationDate','courtDate','violationCode','violationDescription',
@@ -21,6 +23,12 @@ const FIELD_KEYS = [
 ];
 const BLOCKED_TEXT = /aliexpress|dsers|dropshipping|shopify product|shopping catalog/i;
 const QUALITY_WARNING_KEYS = new Set(['low_resolution','too_dark','too_bright','low_contrast','possible_blur']);
+const PRECISION_KEY_GROUPS = {
+  ticket: [['citationNumber'], ['violationCode'], ['courtOrAgency'], ['dueDate', 'courtDate'], ['violationDate']],
+  license: [['drivingLicenseNumber'], ['defendantName'], ['dateOfBirth'], ['drivingLicenseState']],
+  notice: [['courtOrAgency'], ['dueDate', 'courtDate'], ['citationNumber', 'caseNumber'], ['defendantName', 'mailingAddress']],
+};
+const VIOLATION_ROW = ['violationCode', 'violationDescription'];
 
 const EXTRACT_SYSTEM = [
   'You are the document-reading engine for United Traffic Tickets Defense.',
@@ -80,6 +88,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   const scanId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'scan-' + Date.now();
   const startedAt = Date.now();
+  const deadlineMs = startedAt + SCAN_BUDGET_MS;
   const headers = { 'X-Scanner-Version': SCANNER_ENGINE_VERSION, 'X-Scan-Id': scanId };
 
   if (!isAllowedScannerRequest(request, env)) {
@@ -159,7 +168,7 @@ export async function onRequestPost(context) {
     'Use null/found=false when a value is missing. Use confident=false whenever a human should verify the reading.';
 
   try {
-    const visionBudget = Math.min(20000, 24000 - (Date.now() - startedAt));
+    const visionBudget = Math.min(20000, deadlineMs - Date.now());
     if (visionBudget < 10000) {
       return json({ error: 'The scan took too long to start. Please try again with the document ready to upload.' }, 504, headers);
     }
@@ -168,7 +177,9 @@ export async function onRequestPost(context) {
       base64,
       mediaType,
       prompt,
+      documentType: requestedDocType,
       timeoutMs: visionBudget,
+      deadlineMs,
     });
 
     let modelJson;
@@ -185,41 +196,37 @@ export async function onRequestPost(context) {
     let extracted = normalizeExtraction(modelJson);
     let plausibilityWarnings = applyFieldPlausibility(extracted);
 
-    // Precision pass: when a usable ticket image still leaves several core
-    // fields uncertain, make one short targeted re-read before returning.
-    // This is deliberately limited to avoid turning every scan into a double
-    // model call, while giving small-print ticket fields a second look.
-    // Keep the public scanner responsive and rate-limit friendly: only run a second pass when the first read was fast.
+    // A fast first read can leave time for one independent inspection of the same image.
     const firstPassElapsedMs = Date.now() - startedAt;
     if (shouldAttemptPrecisionPass(vision.provider, firstPassElapsedMs, requestedDocType, extracted)) {
       try {
+        const precisionType = resolveDocumentType(requestedDocType, extracted) || requestedDocType;
+        const groups = PRECISION_KEY_GROUPS[precisionType] || PRECISION_KEY_GROUPS.ticket;
+        const focus = groups.filter((group) => !group.some((key) => confidentField(extracted[key]))).flat();
         const precisionPrompt = prompt +
-          ' PRECISION PASS: re-inspect the same document at maximum available visual detail. For a citation with multiple violation rows, use ONLY the TOPMOST non-empty violation row for violationCode and violationDescription and never substitute a lower row. Focus especially on citation number, violation code/section, court or agency name, violation date, and court/response date. For bail or deposit, return a value only when an explicit bail/fine/deposit label is visible beside it; otherwise keep it null. Re-read tiny or faint characters instead of guessing; preserve null/confident=false when still unclear.';
-        const remainingHandlerMs = 24000 - (Date.now() - startedAt);
-        if (remainingHandlerMs >= 9000) {
-          const precisionVision = await extractVisionDocument(env, {
-            system: EXTRACT_SYSTEM,
-            base64,
-            mediaType,
-            prompt: precisionPrompt,
-            preferredProvider: vision.provider,
-            timeoutMs: Math.min(8000, Number(env.SCANNER_PRECISION_TIMEOUT_MS || 8000), remainingHandlerMs - 1000),
-          });
-        let precisionJson;
-        try { precisionJson = JSON.parse(extractJson(precisionVision.text)); } catch { precisionJson = null; }
-          if (precisionJson) {
-            const precisionExtracted = normalizeExtraction(precisionJson);
-            const precisionWarnings = applyFieldPlausibility(precisionExtracted);
-            const firstRead = extracted;
-            if (preferExtraction(precisionExtracted, precisionWarnings, extracted, plausibilityWarnings, requestedDocType)) {
-              extracted = precisionExtracted;
-              plausibilityWarnings = precisionWarnings;
-            }
-            reconcilePrecisionConflicts(firstRead, precisionExtracted, extracted, plausibilityWarnings);
-          }
-        }
-      } catch (precisionError) {
-        console.warn('scanner precision pass skipped', { scanId, error: String(precisionError && precisionError.message || precisionError).slice(0, 180) });
+          ' Independently re-read this image one labeled area at a time, including rotated, faint, shadowed, or handwritten text. Compare easily confused characters against the image. Give extra attention to: ' + focus.join(', ') + '.';
+        const configuredBudget = Number(env.SCANNER_PRECISION_TIMEOUT_MS || PRECISION_BUDGET_MS);
+        const precisionBudget = Number.isFinite(configuredBudget)
+          ? Math.max(2000, Math.min(PRECISION_BUDGET_MS, configuredBudget))
+          : PRECISION_BUDGET_MS;
+        const precisionVision = await extractVisionDocument(env, {
+          system: EXTRACT_SYSTEM,
+          base64,
+          mediaType,
+          prompt: precisionPrompt,
+          documentType: precisionType,
+          precision: true,
+          preferredProvider: vision.provider,
+          timeoutMs: precisionBudget,
+          deadlineMs,
+        });
+        const precisionExtracted = normalizeExtraction(JSON.parse(extractJson(precisionVision.text)));
+        const precisionWarnings = applyFieldPlausibility(precisionExtracted);
+        ({ extracted, warnings: plausibilityWarnings } = mergePrecisionReads(
+          extracted, plausibilityWarnings, precisionExtracted, precisionWarnings, requestedDocType,
+        ));
+      } catch {
+        console.warn('scanner precision pass unavailable', { scanId });
       }
     }
 
@@ -316,28 +323,25 @@ function shouldAttemptPrecisionPass(provider, elapsedMs, requestedDocType, extra
 }
 
 function shouldRunPrecisionPass(requestedDocType, extracted) {
-  if (!['auto', 'ticket'].includes(requestedDocType)) return false;
-  const core = ['citationNumber', 'violationCode', 'courtOrAgency', 'violationDate', 'courtDate', 'dueDate', 'bailAmount'];
-  const missingOrUncertain = core.filter((key) => {
-    const field = extracted && extracted[key];
-    return !(field && field.found === true && field.value && field.confident === true);
-  }).length;
-  const legibility = extracted && extracted.legibility;
-  return (legibility === 'good' || legibility === 'fair') && missingOrUncertain >= 2;
+  if (!extracted || !['good', 'fair', 'poor'].includes(extracted.legibility)) return false;
+  const documentType = resolveDocumentType(requestedDocType, extracted);
+  if (!documentType && requestedDocType === 'license' && !usableField(extracted.drivingLicenseNumber)) return false;
+  const groups = PRECISION_KEY_GROUPS[documentType || requestedDocType] || PRECISION_KEY_GROUPS.ticket;
+  const hasEvidence = groups.some((group) => group.some((key) => usableField(extracted[key])));
+  return hasEvidence && groups.filter((group) => !group.some((key) => confidentField(extracted[key]))).length >= 2;
+}
+
+function confidentField(field) {
+  return usableField(field) && field.confident === true;
 }
 
 function extractionScore(extracted, warnings, requestedDocType) {
-  const type = requestedDocType === 'license' ? 'license' : requestedDocType === 'notice' ? 'notice' : 'ticket';
-  const keyGroups = type === 'license'
-    ? [['drivingLicenseNumber'], ['defendantName'], ['dateOfBirth'], ['drivingLicenseState']]
-    : type === 'notice'
-      ? [['courtOrAgency'], ['dueDate', 'courtDate'], ['citationNumber'], ['defendantName', 'mailingAddress']]
-      : [['citationNumber'], ['violationCode'], ['courtOrAgency'], ['dueDate', 'courtDate'], ['violationDate']];
+  const keyGroups = PRECISION_KEY_GROUPS[requestedDocType] || PRECISION_KEY_GROUPS.ticket;
   let score = extracted && extracted.legibility === 'good' ? 3 : extracted && extracted.legibility === 'fair' ? 2 : 0;
   for (const group of keyGroups) {
-    const fields = group.map((key) => extracted && extracted[key]).filter(Boolean);
-    if (fields.some((field) => field.found === true && field.value)) score += 2;
-    if (fields.some((field) => field.found === true && field.value && field.confident === true)) score += 1;
+    const fields = group.map((key) => extracted?.[key]);
+    if (fields.some(usableField)) score += 2;
+    if (fields.some(confidentField)) score += 1;
   }
   score -= Math.min(6, (Array.isArray(warnings) ? warnings.length : 0) * 0.5);
   return score;
@@ -354,16 +358,48 @@ function preferExtraction(candidate, candidateWarnings, current, currentWarnings
 }
 
 function reconcilePrecisionConflicts(firstRead, reread, selected, warnings) {
-  // A fuller reread does not resolve a disagreement about a critical field.
-  for (const key of ['citationNumber', 'violationCode', 'violationDate', 'courtDate', 'dueDate']) {
+  const comparable = (value) => value.trim().replace(/\s+/g, ' ').toUpperCase();
+  for (const key of FIELD_KEYS) {
     const original = firstRead[key];
     const second = reread[key];
-    if (original?.value && second?.value &&
-        original.value.trim().toUpperCase() !== second.value.trim().toUpperCase()) {
+    if (usableField(original) && usableField(second) &&
+        comparable(original.value) !== comparable(second.value)) {
       selected[key].confident = false;
       warnings.push({ field: key, reason: 'precision_read_conflict' });
     }
   }
+}
+
+function mergePrecisionReads(first, firstWarnings, second, secondWarnings, requestedType) {
+  const firstType = resolveDocumentType(requestedType, first);
+  const secondType = resolveDocumentType(requestedType, second);
+  if (firstType && secondType && firstType !== secondType) {
+    const warnings = [...firstWarnings, { field: 'documentType', reason: 'precision_read_conflict' }];
+    reconcilePrecisionConflicts(first, second, first, warnings);
+    return { extracted: first, warnings };
+  }
+
+  const useSecond = (!firstType && Boolean(secondType)) || (
+    firstType === secondType &&
+    preferExtraction(second, secondWarnings, first, firstWarnings, firstType || requestedType)
+  );
+  const extracted = useSecond ? second : first;
+  const other = useSecond ? first : second;
+  const warnings = [...(useSecond ? secondWarnings : firstWarnings)];
+  const flaggedFields = new Set([...firstWarnings, ...secondWarnings].map((warning) => warning.field));
+  const hasViolationRow = VIOLATION_ROW.some((key) => usableField(extracted[key]) || flaggedFields.has(key));
+  for (const key of FIELD_KEYS) {
+    if (usableField(extracted[key]) || !usableField(other[key]) || flaggedFields.has(key)) continue;
+    if (hasViolationRow && VIOLATION_ROW.includes(key)) continue;
+    extracted[key] = { ...other[key], confident: false };
+  }
+  reconcilePrecisionConflicts(first, second, extracted, warnings);
+  for (const warning of applyFieldPlausibility(extracted)) {
+    if (!warnings.some((item) => item.field === warning.field && item.reason === warning.reason)) warnings.push(warning);
+  }
+  extracted.unknownFields = [...new Set([...first.unknownFields, ...second.unknownFields])]
+    .filter((key) => !usableField(extracted[key]));
+  return { extracted, warnings };
 }
 
 function buildNextSteps(documentType, assessment) {
@@ -530,7 +566,7 @@ function normalizeField(raw) {
     found = value !== null;
   }
 
-  return { value, found, confident };
+  return { value: found ? value : null, found, confident };
 }
 
 function sanitizeValue(value) {

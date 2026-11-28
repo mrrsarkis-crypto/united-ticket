@@ -8,6 +8,7 @@
   // Preserve handwriting detail for ticket OCR. Modern phone photos can stay near
   // native resolution while remaining well below the scanner's 10 MB file limit.
   var MAX_DIMENSION = 4200;
+  var MAX_PIXELS = 12000000;
   var TARGET_BYTES = 3000000;
 
   // Every scanner request previously had no timeout and no AbortController. If a
@@ -83,7 +84,7 @@
     return new Promise(function (resolve, reject) {
       var image = new Image();
       image.onload = function () { resolve(image); };
-      image.onerror = reject;
+      image.onerror = function () { reject(new Error('This image could not be opened. Try uploading it as a JPG or PNG.')); };
       image.src = dataUrl;
     });
   }
@@ -93,28 +94,68 @@
     if (!window.__uttPreprocessHeicPromise) {
       window.__uttPreprocessHeicPromise = new Promise(function (resolve, reject) {
         var script = document.createElement('script');
+        var timer = setTimeout(function () {
+          script.remove();
+          reject(new Error('HEIC converter took too long to load'));
+        }, 12000);
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
         script.async = true;
         script.onload = function () {
+          clearTimeout(timer);
           window.heic2any ? resolve(window.heic2any) : reject(new Error('HEIC converter did not initialize'));
         };
-        script.onerror = function () { reject(new Error('HEIC converter failed to load')); };
+        script.onerror = function () {
+          clearTimeout(timer);
+          reject(new Error('HEIC converter failed to load'));
+        };
         document.head.appendChild(script);
+      }).catch(function (error) {
+        window.__uttPreprocessHeicPromise = null;
+        throw error;
       });
     }
     return window.__uttPreprocessHeicPromise;
   }
 
   async function convertHeic(dataUrl) {
-    var lower = String(dataUrl || '').slice(0, 48).toLowerCase();
-    if (lower.indexOf('image/heic') < 0 && lower.indexOf('image/heif') < 0) return dataUrl;
-
     var response = await fetchWithTimeout(dataUrl);
     var sourceBlob = await response.blob();
     var converter = await loadHeicConverter();
     var converted = await converter({ blob: sourceBlob, toType: 'image/jpeg', quality: 0.94 });
     if (Array.isArray(converted)) converted = converted[0];
+    if (!converted) throw new Error('No image was found in the HEIC file');
     return blobToDataUrl(converted);
+  }
+
+  function normalizeDataUrl(dataUrl) {
+    var header = /^data:([^;,]*);base64,/i.exec(dataUrl);
+    if (!header) return dataUrl;
+
+    var type = header[1].toLowerCase();
+    if (type && type !== 'application/octet-stream' && type !== 'binary/octet-stream') {
+      return 'data:' + type + ';base64,' + dataUrl.slice(header[0].length);
+    }
+
+    // FileReader uses application/octet-stream when the picker supplies no MIME.
+    var signature;
+    try { signature = atob(dataUrl.slice(header[0].length, header[0].length + 64)); }
+    catch (_) { return dataUrl; }
+    if (signature.startsWith('%PDF-')) type = 'application/pdf';
+    if (signature.startsWith('\xff\xd8\xff')) type = 'image/jpeg';
+    if (signature.startsWith('\x89PNG\r\n\x1a\n')) type = 'image/png';
+    if (signature.slice(4, 8) === 'ftyp' && /(?:heic|heix|hevc|hevx|heim|heis|mif1|msf1)/.test(signature.slice(8))) {
+      type = 'image/heic';
+    }
+    return 'data:' + type + ';base64,' + dataUrl.slice(header[0].length);
+  }
+
+  function percentile(histogram, fraction, total) {
+    var remaining = Math.max(1, Math.ceil(fraction * total));
+    for (var i = 0; i < histogram.length; i++) {
+      remaining -= histogram[i];
+      if (remaining <= 0) return i;
+    }
+    return 255;
   }
 
   function measureImage(image) {
@@ -130,6 +171,8 @@
     canvas.height = sampleHeight;
     var ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, sampleWidth, sampleHeight);
     ctx.drawImage(image, 0, 0, sampleWidth, sampleHeight);
 
     var pixels;
@@ -137,12 +180,14 @@
     catch (_) { return null; }
 
     var gray = new Float32Array(sampleWidth * sampleHeight);
+    var histogram = new Uint32Array(256);
     var sum = 0;
     var sumSquares = 0;
     for (var i = 0; i < gray.length; i++) {
       var p = i * 4;
       var value = 0.299 * pixels[p] + 0.587 * pixels[p + 1] + 0.114 * pixels[p + 2];
       gray[i] = value;
+      histogram[Math.round(value)]++;
       sum += value;
       sumSquares += value * value;
     }
@@ -161,17 +206,21 @@
       }
     }
     var sharpness = edgeCount ? edgeSum / edgeCount : 0;
+    var darkPoint = percentile(histogram, 0.01, gray.length);
+    var lightPoint = percentile(histogram, 0.99, gray.length);
 
     var largest = Math.max(width, height);
     var smallest = Math.min(width, height);
     var warnings = [];
     if (largest < 1000 || smallest < 500) warnings.push('low_resolution');
     if (brightness < 35) warnings.push('too_dark');
-    if (brightness > 245) warnings.push('too_bright');
+    if (brightness > 245 && darkPoint > 220) warnings.push('too_bright');
     if (contrast < 18) warnings.push('low_contrast');
     if (sharpness < 4.2) warnings.push('possible_blur');
 
-    var hardReject = largest < 500 || smallest < 250 || brightness < 12 || brightness > 253 || contrast < 6;
+    // Sparse text and tightly cropped photos can be readable even when averages
+    // look white, dark, or low contrast. Only reject tiny or near-blank input.
+    var hardReject = largest < 300 || smallest < 120 || (contrast < 1.5 && sharpness < 0.4);
     var grade = hardReject ? 'poor' : (warnings.length >= 2 ? 'fair' : 'good');
 
     return {
@@ -182,8 +231,69 @@
       sharpness: Math.round(sharpness * 10) / 10,
       grade: grade,
       hardReject: hardReject,
-      warnings: warnings.slice(0, 5)
+      warnings: warnings.slice(0, 5),
+      darkPoint: darkPoint,
+      lightPoint: lightPoint
     };
+  }
+
+  function adjustTone(ctx, width, height, quality) {
+    var range = quality.lightPoint - quality.darkPoint;
+    if (range < 3) return false;
+
+    // Unlike fixed contrast() and brightness() filters, this stretches the
+    // visible marks around the tones actually present in this photo.
+    var gain = Math.max(1, Math.min(5, 110 / range));
+    var shift = 222 - quality.lightPoint * gain;
+    var pixels;
+    try { pixels = ctx.getImageData(0, 0, width, height); }
+    catch (_) { return false; }
+    for (var i = 0; i < pixels.data.length; i += 4) {
+      var luminance = 0.299 * pixels.data[i] + 0.587 * pixels.data[i + 1] + 0.114 * pixels.data[i + 2];
+      var delta = luminance * (gain - 1) + shift;
+      pixels.data[i] += delta;
+      pixels.data[i + 1] += delta;
+      pixels.data[i + 2] += delta;
+    }
+    ctx.putImageData(pixels, 0, 0);
+    return true;
+  }
+
+  function encodeJpeg(image, width, height, needsTone, quality) {
+    var canvas = document.createElement('canvas');
+    var scale = Math.min(1, MAX_DIMENSION / Math.max(width, height), Math.sqrt(MAX_PIXELS / (width * height)));
+    var qualities = [0.94, 0.86, 0.78];
+    var smallest = '';
+    var toned = false;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      canvas.width = Math.max(1, Math.floor(width * scale));
+      canvas.height = Math.max(1, Math.floor(height * scale));
+      var ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: needsTone });
+      if (!ctx) break;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      toned = needsTone && adjustTone(ctx, canvas.width, canvas.height, quality);
+
+      for (var q = 0; q < qualities.length; q++) {
+        var candidate = canvas.toDataURL('image/jpeg', qualities[q]);
+        if (!candidate.startsWith('data:image/jpeg;base64,')) continue;
+        if (dataUrlBytes(candidate) <= TARGET_BYTES) return { image: candidate, toned: toned };
+        if (!smallest || candidate.length < smallest.length) smallest = candidate;
+      }
+      scale *= smallest ? Math.min(0.76, Math.sqrt(TARGET_BYTES / dataUrlBytes(smallest)) * 0.92) : 0.76;
+    }
+    return { image: smallest, toned: toned };
+  }
+
+  function uploadQuality(measured) {
+    if (!measured) return null;
+    var quality = Object.assign({}, measured);
+    delete quality.darkPoint;
+    delete quality.lightPoint;
+    return quality;
   }
 
   async function preprocessImage(dataUrl, existingQuality) {
@@ -191,63 +301,69 @@
       return { image: dataUrl, quality: existingQuality || null };
     }
 
-    var prefix = dataUrl.slice(0, 48).toLowerCase();
-    if (prefix.indexOf('application/pdf') >= 0) {
+    dataUrl = normalizeDataUrl(dataUrl);
+    if (dataUrl.startsWith('data:application/pdf')) {
       return { image: dataUrl, quality: existingQuality || null };
     }
-
-    dataUrl = await convertHeic(dataUrl);
-    if (dataUrl.indexOf('data:image/') !== 0) {
+    if (!dataUrl.startsWith('data:image/')) {
       return { image: dataUrl, quality: existingQuality || null };
     }
-
-    var image = await loadImage(dataUrl);
+    var isHeic = /^data:image\/hei[cf](?:-sequence)?[;,]/i.test(dataUrl);
+    var image;
+    try { image = await loadImage(dataUrl); }
+    catch (error) {
+      if (!isHeic) throw error;
+      try {
+        dataUrl = await convertHeic(dataUrl);
+        image = await loadImage(dataUrl);
+      } catch (_) {
+        throw new Error('This HEIC photo could not be opened. Export it as a JPG or PNG and try again.');
+      }
+    }
     var before = measureImage(image);
-    if (!before) return { image: dataUrl, quality: existingQuality || null };
+    var width = image.naturalWidth || image.width;
+    var height = image.naturalHeight || image.height;
+    if (!width || !height) return { image: dataUrl, quality: existingQuality || null };
 
-    var needsResize = Math.max(before.width, before.height) > MAX_DIMENSION || dataUrlBytes(dataUrl) > TARGET_BYTES;
-    var needsTone = before.warnings.indexOf('too_dark') >= 0 ||
-      before.warnings.indexOf('too_bright') >= 0 ||
-      before.warnings.indexOf('low_contrast') >= 0;
+    var needsJpeg = !/^data:image\/(jpeg|png)[;,]/.test(dataUrl);
+    var needsResize = Math.max(width, height) > MAX_DIMENSION || width * height > MAX_PIXELS || dataUrlBytes(dataUrl) > TARGET_BYTES;
+    var needsTone = before && !before.hardReject && before.warnings.some(function (warning) {
+      return ['too_dark', 'too_bright', 'low_contrast'].indexOf(warning) >= 0;
+    });
 
-    if (!needsResize && !needsTone) {
-      return { image: dataUrl, quality: before };
+    if (!needsResize && !needsTone && !needsJpeg) {
+      return { image: dataUrl, quality: uploadQuality(before) || existingQuality || null };
     }
 
-    var scale = Math.min(1, MAX_DIMENSION / Math.max(before.width, before.height));
-    var canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(before.width * scale));
-    canvas.height = Math.max(1, Math.round(before.height * scale));
-    var ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) return { image: dataUrl, quality: before };
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (typeof ctx.filter === 'string' && needsTone) {
-      var contrastBoost = before.contrast < 18 ? 1.22 : 1.12;
-      var brightnessBoost = before.brightness < 55 ? 1.08 : (before.brightness > 230 ? 0.96 : 1);
-      ctx.filter = 'contrast(' + contrastBoost + ') brightness(' + brightnessBoost + ')';
+    var encoded = encodeJpeg(image, width, height, needsTone, before);
+    if (!encoded.image || (!needsResize && !needsJpeg && !encoded.toned)) {
+      return { image: dataUrl, quality: uploadQuality(before) || existingQuality || null };
     }
-
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    ctx.filter = 'none';
-
-    var enhanced = canvas.toDataURL('image/jpeg', 0.94);
-    if (!enhanced) return { image: dataUrl, quality: before };
-
-    var finalImage = await loadImage(enhanced);
-    var after = measureImage(finalImage) || before;
-
-    return { image: enhanced, quality: after };
+    var after = measureImage(await loadImage(encoded.image));
+    if (encoded.toned && after && before && after.hardReject && !before.hardReject) {
+      if (!needsResize && !needsJpeg) return { image: dataUrl, quality: uploadQuality(before) };
+      encoded = encodeJpeg(image, width, height, false, before);
+      if (!encoded.image) return { image: dataUrl, quality: uploadQuality(before) };
+      after = measureImage(await loadImage(encoded.image));
+    }
+    return { image: encoded.image, quality: uploadQuality(after || before) || existingQuality || null };
   }
+
+  window.UTTDPreprocessImage = preprocessImage;
+  window.UTTDPrepareScannerFile = async function (file, options) {
+    var originalImage = await blobToDataUrl(file);
+    var result = await preprocessImage(originalImage);
+    if (options && options.includeOriginal === true) result.originalImage = originalImage;
+    return result;
+  };
 
   window.fetch = async function (input, init) {
     if (!isScannerRequest(input)) return fetchWithTimeout(input, init);
 
     var requestInit = Object.assign({}, init || {});
+    var prepared = requestInit.uttScannerPrepared === true;
+    delete requestInit.uttScannerPrepared;
+    if (prepared) return fetchWithTimeout(input, requestInit);
     if (typeof requestInit.body !== 'string') return fetchWithTimeout(input, requestInit);
 
     try {

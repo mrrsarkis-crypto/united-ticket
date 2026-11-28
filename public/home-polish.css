@@ -1,0 +1,311 @@
+.utt-home {
+  --home-ink: #2e2a24;
+  --home-muted: #554b3e;
+  --home-bronze: #75451e;
+  --home-paper: #fffdf8;
+  --home-line: #d4c6ae;
+}
+
+.utt-home .site-header {
+  box-shadow: 0 4px 14px rgba(46, 42, 36, .08);
+}
+
+.utt-home .nav-list > li > a {
+  white-space: nowrap;
+}
+
+.utt-home .nav-links a.cta,
+.utt-home .mobile-convert .mobile-primary {
+  background: var(--home-bronze) !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
+.utt-home .nav-links a.cta:hover,
+.utt-home .mobile-convert .mobile-primary:hover {
+  background: #5d3618 !important;
+}
+
+.utt-home .hero {
+  color: var(--home-ink);
+  padding-block: clamp(2.75rem, 6vw, 5.5rem);
+}
+
+.utt-home .hero::before,
+.utt-home .hero::after {
+  display: none;
+}
+
+.utt-home .hero .hero-inner {
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  gap: clamp(2rem, 6vw, 6rem);
+  text-align: left;
+}
+
+.utt-home .hero .home-eyebrow {
+  color: var(--home-bronze) !important;
+  font-size: .875rem;
+  font-weight: 750;
+  letter-spacing: .035em;
+  margin: 0 0 .75rem;
+}
+
+.utt-home .hero h1 {
+  font-size: clamp(2.6rem, 5.3vw, 4.8rem);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+  text-shadow: none;
+  max-width: 14ch;
+  margin: 0 0 1rem;
+}
+
+.utt-home .home-heading-accent {
+  color: var(--home-bronze);
+}
+
+.utt-home .hero .hero-sub {
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.6;
+  max-width: 53ch;
+  margin: 0 0 1.5rem;
+}
+
+.utt-home .hero .hero-actions {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: .625rem;
+  margin: 0;
+}
+
+.utt-home .hero-actions .btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: .75rem 1rem;
+  text-align: center;
+  box-shadow: none;
+}
+
+.utt-home .hero-actions .home-secondary {
+  border: 1px solid var(--home-bronze);
+  background: var(--home-paper);
+  color: var(--home-bronze);
+}
+
+.utt-home .hero-actions .home-secondary:hover {
+  background: #f0e6d6;
+}
+
+.utt-home .hero .home-call {
+  margin: .875rem 0 0;
+  color: var(--home-muted) !important;
+  font-size: .95rem;
+}
+
+.utt-home .home-call a,
+.utt-home .home-trust a,
+.utt-home .home-owner a {
+  color: var(--home-bronze);
+  font-weight: 750;
+  text-underline-offset: .14em;
+}
+
+.utt-home .home-owner {
+  inline-size: min(100%, 25rem);
+  min-width: 0;
+  margin: 0;
+  justify-self: end;
+  overflow: hidden;
+  border: 1px solid var(--home-line);
+  border-radius: 16px;
+  background: var(--home-paper);
+  box-shadow: 0 12px 28px rgba(46, 42, 36, .12);
+}
+
+.utt-home .home-owner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 6 / 5;
+  object-fit: cover;
+  object-position: center 23%;
+}
+
+.utt-home .home-owner figcaption {
+  display: grid;
+  gap: .125rem;
+  padding: .85rem 1rem;
+  font-size: .92rem;
+  color: var(--home-muted);
+}
+
+.utt-home .home-trust {
+  background: var(--home-paper);
+  border-block: 1px solid var(--home-line);
+}
+
+.utt-home .home-trust-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1.25rem;
+  padding-block: .85rem;
+  color: var(--home-muted);
+  font-size: .94rem;
+}
+
+.utt-home .section-dark .price h3,
+.utt-home .section-dark .price .amount {
+  color: var(--home-ink) !important;
+}
+
+.utt-home .section-dark .price p {
+  color: var(--home-muted) !important;
+}
+
+.utt-home #track,
+.utt-home #contact {
+  scroll-margin-top: 6rem;
+}
+
+.utt-home .track .row input {
+  min-width: 0;
+}
+
+.utt-home .section-yelp {
+  background: #eee5d5;
+  color: var(--home-ink);
+}
+
+.utt-home .yelp-inner {
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.utt-home .section-yelp h2,
+.utt-home .section-yelp p {
+  color: inherit;
+}
+
+.utt-home .home-quotes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 1 0 100%;
+  gap: 1rem;
+}
+
+.utt-home .home-quotes blockquote {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--home-line);
+  border-radius: 12px;
+  background: var(--home-paper);
+  color: var(--home-ink);
+  line-height: 1.6;
+}
+
+.utt-home .home-quotes cite {
+  display: block;
+  margin-top: .65rem;
+  font-size: .88rem;
+  color: var(--home-muted);
+}
+
+.utt-home a:focus-visible,
+.utt-home button:focus-visible,
+.utt-home input:focus-visible {
+  outline: 2px solid #1b5a83;
+  outline-offset: 3px;
+}
+
+.utt-home #uttScanFloat,
+.utt-home:has(#uttAdConsentBanner) .mobile-convert,
+.utt-home:has(#uttAdConsentBanner) #uttAIBubble {
+  display: none;
+}
+
+.utt-home #uttAdConsentReopen {
+  position: static !important;
+  min-height: 44px !important;
+  margin: 1rem max(20px, calc((100% - 1184px) / 2)) 0;
+  border-color: var(--home-line) !important;
+  background: var(--home-paper) !important;
+  color: var(--home-ink) !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 860px) {
+  .utt-home .hero .hero-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, .7fr);
+    gap: 1.5rem;
+  }
+
+  .utt-home .nav-links .nav-list {
+    width: 100%;
+  }
+}
+
+@media (max-width: 650px) {
+  .utt-home .hero {
+    padding-block: 2.25rem;
+  }
+
+  .utt-home .hero .hero-inner,
+  .utt-home .home-quotes {
+    grid-template-columns: 1fr;
+  }
+
+  .utt-home .hero h1 {
+    font-size: clamp(2.35rem, 10vw, 3.5rem);
+  }
+
+  .utt-home .home-owner {
+    justify-self: start;
+  }
+
+  .utt-home .home-owner img {
+    aspect-ratio: 3 / 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .utt-home {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .utt-home .hero .hero-actions {
+    flex-direction: column;
+  }
+
+  .utt-home .hero-actions .btn {
+    width: 100%;
+  }
+
+  .utt-home .mobile-convert {
+    background: var(--home-paper);
+    border-color: var(--home-line);
+    box-shadow: 0 4px 20px rgba(46, 42, 36, .14);
+  }
+
+  .utt-home .mobile-convert a {
+    min-height: 44px;
+    font-size: .8rem;
+  }
+
+  .utt-home .mobile-convert .mobile-phone {
+    border-color: var(--home-line);
+    color: var(--home-bronze);
+  }
+
+  .utt-home #uttAIBubble {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .utt-home .track .row {
+    flex-wrap: wrap;
+  }
+}

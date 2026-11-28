@@ -80,13 +80,15 @@ for (const file of await walk(outDir)) {
     changed = true;
   }
 
-  if (!html.includes('/scanner-preprocess.js')) {
-    html = html.replace(/<head([^>]*)>/i, `$&\n${scannerPreprocessTag}`);
-    changed = true;
-  }
-  if (!html.includes('/scanner-client.js')) {
-    html = html.replace(/<head([^>]*)>/i, `$&\n${scannerClientTag}`);
-    changed = true;
+  if (/\bid=["']fileInput["']/.test(html)) {
+    const tags = [
+      ['/scanner-preprocess.js', scannerPreprocessTag],
+      ['/scanner-client.js', scannerClientTag],
+    ].filter(([src]) => !html.includes(src)).map(([, tag]) => tag);
+    if (tags.length) {
+      html = html.replace(/<\/head\s*>/i, `${tags.join('\n')}\n$&`);
+      changed = true;
+    }
   }
 
   if (monetized && !html.includes(`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisher}`)) {
