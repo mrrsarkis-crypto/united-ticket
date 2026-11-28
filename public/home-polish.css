@@ -176,6 +176,11 @@
   min-width: 0;
 }
 
+.utt-home .footer-addr a {
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+
 .utt-home .section-yelp {
   background: #eee5d5;
   color: var(--home-ink);
